@@ -1,6 +1,6 @@
 # Project Overview
 
-This project is a trading replay tool designed for practicing day trading. It will be a Streamlit application that loads historical data from Interactive Brokers (IB) via the TWS API. The data will be stored in a MongoDB database named "replay".
+This project is a repo to support my swing trading activities.
 
 **Core Values:** Extremely lightweight and simple implementation
 
@@ -31,7 +31,7 @@ This project is a trading replay tool designed for practicing day trading. It wi
 `tests/broker/`: tests related to the broker connection
 `tests/logging/`: tests related to the logging utility
 `tests/mongodb/`: tests related to the database connection
-`tests/replay/`: tests related to the replay streamlit app.
+
 
 
 

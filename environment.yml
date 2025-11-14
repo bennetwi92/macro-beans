@@ -1,4 +1,4 @@
-name: replay-tool
+name: macro-beans
 channels:
   - conda-forge
 dependencies:

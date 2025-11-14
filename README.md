@@ -1,6 +1,6 @@
-# Replay-Tool
+# Macro-beans
 
-The replay tool will be a streamlit app that I will use to load data from interactive brokers using the tws api and then simulate trading so that i can practice day trading after the fact.
+This is a repo to support my swing trading activities
 
 ## Language and Technology
 
