@@ -1,0 +1,16 @@
+name: replay-tool
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - streamlit
+  - pymongo
+  - pandas
+  - pytz
+  - plotly
+  - pip:
+    - ibapi
+    - loguru
+    - pytest
+    - pytest-mock
+    - freezegun
