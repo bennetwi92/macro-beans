@@ -1,11 +1,56 @@
 # Macro-beans
 
-This is a repo to support my swing trading activities
+Python-based swing trading analysis for opportunistic trading opportunities.
 
-## Language and Technology
+## Current Focus: VIX Options Strategy
 
-Python will be used as the main language.
+This repository contains tools for analyzing VIX call options strategies, focusing on entering positions when VIX is at low levels (15-16 range) and profiting from volatility spikes.
 
-The repo will be a series of adhoc investigations into potential opportunities. I think these will also be scripts and any results should be presented in a streamlit app.
+## Quick Start
 
-The objective of the project is to help me to take opportunistic trades.
+```bash
+# Create and activate conda environment
+conda env create -f environment.yml
+conda activate macro-beans
+
+# Run the VIX options calculator
+streamlit run scripts/vix_options_calculator.py
+```
+
+## Repository Structure
+
+```
+macro-beans/
+├── scripts/
+│   ├── vix_options_calculator.py    # Main interactive calculator
+│   └── archive/                     # Deprecated scripts
+├── src/
+│   └── vix_analysis/               # Modular analysis components
+│       ├── probability.py          # Spike/downside probability calculations
+│       ├── options_pricing.py      # Options valuation and scenarios
+│       ├── visualizations.py       # Chart generation
+│       └── ui_components.py        # Streamlit UI components
+├── docs/
+│   └── vix_range_low/
+│       ├── vix_range_low_strategy.md   # Strategy overview
+│       └── GREEKS_GUIDE.md             # Guide to using options Greeks
+└── environment.yml                  # Conda environment specification
+```
+
+## VIX Options Calculator
+
+The interactive calculator provides:
+- **Probability Analysis**: Historical probability of VIX reaching target levels
+- **Scenario Modeling**: Multiple VIX spike scenarios with expected values
+- **Greeks Integration**: Input actual Theta and Vega from options chain
+- **Downside Risk Analysis**: Recency-weighted stop loss recommendations
+- **Theta Decay Visualization**: Chart showing decay vs spike scenarios
+- **Trade Recommendations**: Position sizing and exit strategies
+
+## Technology Stack
+
+- **Language**: Python 3.11
+- **UI Framework**: Streamlit
+- **Data**: yfinance (VIX historical data)
+- **Visualization**: Plotly
+- **Environment**: Conda
