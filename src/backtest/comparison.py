@@ -15,24 +15,41 @@ class StrategyComparison:
         self.results: list[BacktestResult] = []
 
     def run_all(self, strategies: list[Strategy],
-                data: pd.DataFrame, prices: pd.Series) -> pd.DataFrame:
+                data: pd.DataFrame, prices: pd.Series,
+                eval_start: str = None, eval_end: str = None) -> pd.DataFrame:
         """
         Run every strategy, compute metrics, return a ranked DataFrame.
+
+        Strategies receive the FULL data for signal generation (preserving
+        history for ML training, expanding-window features, etc.), but
+        metrics are computed only on the evaluation window [eval_start, eval_end].
         """
         self.results = []
         rows = []
 
         for strategy in strategies:
             try:
+                # Generate signals on FULL data (strategies need history)
                 signals = strategy.generate_signals(data)
+
+                # Slice to evaluation window for backtesting
+                eval_prices = prices
+                eval_signals = signals
+                if eval_start is not None:
+                    eval_prices = eval_prices.loc[eval_start:]
+                    eval_signals = eval_signals.loc[eval_start:]
+                if eval_end is not None:
+                    eval_prices = eval_prices.loc[:eval_end]
+                    eval_signals = eval_signals.loc[:eval_end]
+
                 result = self.engine.run(
-                    prices, signals,
+                    eval_prices, eval_signals,
                     strategy_name=strategy.name,
                     params=strategy.config.params,
                 )
 
-                # Count trades from position changes
-                position = signals.clip(0, 1).round()
+                # Count trades from position changes in eval window
+                position = eval_signals.clip(0, 1).round()
                 n_trades = int(position.diff().abs().sum())
 
                 metrics = compute_metrics(result.returns, self.risk_free_rate)

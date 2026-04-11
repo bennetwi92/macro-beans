@@ -138,7 +138,7 @@ class FeatureEngine:
             if rel_df.empty or "close" not in rel_df.columns:
                 continue
 
-            rel_close = rel_df["close"].reindex(df.index, method="ffill")
+            rel_close = rel_df["close"].reindex(df.index).ffill()
 
             # Daily returns of related asset
             df[f"{name.lower()}_ret_1d"] = rel_close.pct_change()
@@ -148,14 +148,14 @@ class FeatureEngine:
 
         # Specific cross-asset features
         if "XLE" in related and "SPX" in related:
-            xle = related["XLE"]["close"].reindex(df.index, method="ffill")
-            spx = related["SPX"]["close"].reindex(df.index, method="ffill")
+            xle = related["XLE"]["close"].reindex(df.index).ffill()
+            spx = related["SPX"]["close"].reindex(df.index).ffill()
             xle_ret = xle.pct_change(20)
             spx_ret = spx.pct_change(20)
             df["xle_vs_spx_20"] = xle_ret - spx_ret
 
         if "GOLD" in related:
-            gold = related["GOLD"]["close"].reindex(df.index, method="ffill")
+            gold = related["GOLD"]["close"].reindex(df.index).ffill()
             df["oil_gold_ratio"] = df["close"] / gold
             ratio = df["oil_gold_ratio"]
             mean = ratio.rolling(60).mean()
@@ -163,21 +163,21 @@ class FeatureEngine:
             df["oil_gold_zscore"] = (ratio - mean) / std
 
         if "SPX" in related:
-            spx = related["SPX"]["close"].reindex(df.index, method="ffill")
+            spx = related["SPX"]["close"].reindex(df.index).ffill()
             df["spx_sma_200"] = spx.rolling(200).mean()
             df["spx_above_200"] = (spx > df["spx_sma_200"]).astype(float)
 
         if "VIX" in related:
-            vix = related["VIX"]["close"].reindex(df.index, method="ffill")
+            vix = related["VIX"]["close"].reindex(df.index).ffill()
             df["vix"] = vix
 
         if "DXY" in related:
-            dxy = related["DXY"]["close"].reindex(df.index, method="ffill")
+            dxy = related["DXY"]["close"].reindex(df.index).ffill()
             df["dxy_mom_20"] = dxy.pct_change(20)
 
         if "CL" in related and "BZ" in related:
-            cl = related["CL"]["close"].reindex(df.index, method="ffill")
-            bz = related["BZ"]["close"].reindex(df.index, method="ffill")
+            cl = related["CL"]["close"].reindex(df.index).ffill()
+            bz = related["BZ"]["close"].reindex(df.index).ffill()
             # Roll yield proxy: ETF underperformance vs spot = negative roll yield (contango)
             etf_ret_20 = df["close"].pct_change(20)
             spot_ret_20 = bz.pct_change(20)
