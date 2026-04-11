@@ -1,0 +1,10 @@
+start_date: "2016-01-01"
+end_date: "2026-04-10"
+initial_capital: 100000
+cost_bps: 10
+risk_free_rate: 0.04
+
+walk_forward:
+  train_pct: 0.6
+  validation_pct: 0.2
+  test_pct: 0.2

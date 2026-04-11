@@ -1,0 +1,11 @@
+primary:
+  BRNT: "BRNT.L"
+
+related:
+  DXY: "DX-Y.NYB"
+  GOLD: "GC=F"
+  SPX: "^GSPC"
+  VIX: "^VIX"
+  CL: "CL=F"
+  BZ: "BZ=F"
+  XLE: "XLE"

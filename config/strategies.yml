@@ -1,0 +1,91 @@
+trend:
+  sma_crossover:
+    pairs: [[10, 50], [20, 100], [50, 200]]
+  ema_crossover:
+    pairs: [[12, 26], [20, 50]]
+  momentum:
+    lookback_periods: [10, 20, 60]
+  donchian:
+    windows: [20, 50]
+
+mean_reversion:
+  bollinger:
+    window: 20
+    num_std: [1.5, 2.0, 2.5]
+  rsi:
+    period: 14
+    oversold: [25, 30]
+    exit: 50
+  zscore:
+    windows: [20, 50]
+    entry_threshold: [-1.5, -2.0]
+    exit_threshold: 0.0
+
+carry:
+  roll_yield:
+    lookback: [20, 60]
+
+macro:
+  usd_inverse:
+    momentum_window: 20
+  vix_regime:
+    low_threshold: 20
+    high_threshold: 25
+  combined:
+    usd_window: 20
+    vix_threshold: 22
+
+volatility:
+  breakout:
+    atr_multiplier: [2.0, 3.0]
+    atr_window: 14
+    lookback: 20
+  low_vol_regime:
+    vol_window: 20
+    percentile: 50
+  vol_adjusted:
+    momentum_window: 20
+    vol_window: 20
+
+seasonal:
+  monthly:
+    long_months: [1, 2, 6, 9]
+  day_of_week:
+    enabled: true
+
+cross_asset:
+  energy_relative_strength:
+    window: 20
+  oil_gold_ratio:
+    zscore_window: 60
+    entry_threshold: -1.5
+  equity_overlay:
+    sma_window: 200
+
+technical_composite:
+  variants:
+    - threshold: 2
+    - threshold: 3
+
+ml:
+  random_forest:
+    n_estimators: 200
+    max_depth: 5
+    min_train_days: 504
+    retrain_frequency: 21
+  gradient_boosting:
+    n_estimators: 200
+    max_depth: 3
+    min_train_days: 504
+    retrain_frequency: 21
+
+ensemble:
+  equal_weight:
+    top_n: 7
+    threshold: 0.5
+  sharpe_weighted:
+    top_n: 7
+    threshold: 0.5
+  regime_switch:
+    vol_window: 60
+    vol_percentile: 50

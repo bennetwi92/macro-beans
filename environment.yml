@@ -3,4 +3,15 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
-
+  - pandas
+  - numpy
+  - scipy
+  - pyyaml
+  - plotly
+  - pip:
+    - yfinance
+    - scikit-learn
+    - loguru
+    - pytest
+    - pytest-mock
+    - freezegun
