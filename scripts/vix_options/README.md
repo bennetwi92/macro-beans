@@ -9,7 +9,7 @@ Multi-page Streamlit application for analyzing VIX call options strategies.
 conda activate macro-beans
 
 # Run from the repository root
-streamlit run scripts/vix_options_calculator.py
+streamlit run scripts/vix_options/vix_options_calculator.py
 ```
 
 The app will open in your browser at http://localhost:8501

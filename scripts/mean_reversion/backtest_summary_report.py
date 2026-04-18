@@ -2,11 +2,13 @@
 Generate summary report from backtest results
 """
 
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 
-# Load results
-df = pd.read_csv('/Users/williambennett/Github/macro-beans/data/backtest_results_270day.csv')
+REPO = Path(__file__).resolve().parents[2]
+df = pd.read_csv(REPO / 'data' / 'backtests' / 'backtest_results_270day.csv')
 
 print("="*80)
 print("MEAN REVERSION STRATEGY - 270-DAY WALK-FORWARD BACKTEST REPORT")

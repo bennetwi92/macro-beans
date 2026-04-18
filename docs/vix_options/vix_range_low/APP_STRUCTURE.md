@@ -192,7 +192,7 @@ The old version is archived at `scripts/archive/vix_options_calculator.py` for r
 
 ```bash
 conda activate macro-beans
-streamlit run scripts/vix_options_calculator.py
+streamlit run scripts/vix_options/vix_options_calculator.py
 ```
 
 Streamlit automatically discovers pages in the `pages/` directory and creates navigation in the sidebar.

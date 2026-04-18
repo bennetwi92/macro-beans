@@ -24,9 +24,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-REPO = Path(__file__).resolve().parents[1]
-DATA = REPO / "data"
-DATA.mkdir(exist_ok=True)
+REPO = Path(__file__).resolve().parents[2]
+DATA = REPO / "data" / "event_studies"
+DATA.mkdir(parents=True, exist_ok=True)
 
 TOP_N = 25  # top moves in each direction
 

@@ -36,21 +36,21 @@ Friday's -15.7% WTI crash priced in a bullish-for-equities / bearish-for-oil out
 
 ### 1. Weekend event study (n=7 Saturday/Sunday oil shocks since 2006)
 
-Ran `scripts/oil_weekend_event_study.py`. Key findings:
+Ran `scripts/event_studies/oil_weekend_event_study.py`. Key findings:
 - Mean USO Monday gap: +3.2% (clean events), range -0.65% to +9.2%
 - Dominant historical regimes: supply shock (Abqaiq-like, extends and holds) vs de-escalation shock (B-2 strikes 2025-like, crashes)
 - **2025-06-21 US B-2 strikes on Iran** is the closest political analog; USO crashed -8.07% Monday, -12% by T+5 on "sell the news" dynamic
 
 ### 2. Friday-crash study (n=472 down-Fridays, USO 2006–2026)
 
-Ran `scripts/oil_friday_crash_study.py`. Key findings:
+Ran `scripts/event_studies/oil_friday_crash_study.py`. Key findings:
 - Friday -15.7% is **off the historical distribution** — only 1 precedent for -10%+ Fridays in USO (Omicron 2021-11-26)
 - Omicron precedent: Monday gap +4.7%, close +1.1%, **faded to -5.2% by T+2**
 - Base rate for Friday ≤-5%: 50% positive Monday gap, but only 35.7% positive Monday close (mean -3.17%) — momentum continuation, not mean reversion
 
 ### 3. Pair event study under three sizings
 
-Ran `scripts/oil_nasdaq_pair_event_study.py` on long-oil + short-Nasdaq pair. Key findings:
+Ran `scripts/event_studies/oil_nasdaq_pair_event_study.py` on long-oil + short-Nasdaq pair. Key findings:
 
 Clean events (n=6), T+0 close from Friday close:
 

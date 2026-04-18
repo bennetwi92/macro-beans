@@ -32,19 +32,40 @@ conda activate macro-beans
 
 ## Repository Structure
 
-- `scripts/` - Ad-hoc investigation scripts for trading opportunities
-- `src/` - Source code for reusable components and utilities
-- `docs/` - Documentation files
+Scripts, docs, and data are all organised by topic subdirectory:
+
+```
+scripts/
+  mean_reversion/   # Scanner, walk-forward backtest, dashboard, training
+  event_studies/    # Oil and copper event-study scripts
+  vix_options/      # Streamlit calculator (pages/ subdir for multipage)
+  storage_model/    # Gas storage dashboard
+  tools/            # Generic market tools
+  archive/          # Deprecated scripts
+src/
+  models/           # Mean-reversion model package
+  storage_model/    # Gas storage valuation engine
+  vix_analysis/     # VIX options analysis components
+docs/
+  mean_reversion/   event_studies/   reference/   vix_options/
+data/
+  event_studies/    backtests/   stock_history/
+```
+
+When adding new analyses:
+- Drop the script into the matching topic subdir under `scripts/`. Use `Path(__file__).resolve().parents[2]` to resolve the repo root from inside any script.
+- Write outputs to the matching topic subdir under `data/`.
+- If reusable, factor library code into `src/<topic>/`.
+- Document findings in the matching topic subdir under `docs/`.
 
 ## Development Workflow
 
-Since this is a project for ad-hoc trading analyses:
-- Scripts in `scripts/` are expected to be exploratory and investigation-focused
-- Streamlit apps should be used to present analysis results
-- Each analysis should be self-contained and focused on specific trading opportunities
+- Scripts in `scripts/` are exploratory and investigation-focused.
+- Streamlit apps present results; run from repo root, e.g. `streamlit run scripts/vix_options/vix_options_calculator.py`.
+- Each analysis is self-contained and focused on a specific trading opportunity.
 
 ## Key Technologies
 
 - **Language**: Python 3.11
 - **Presentation**: Streamlit (for visualizing trading analysis results)
-- **Environment**: Conda
+- **Environment**: Conda (documented) / system Python 3.11 (working)

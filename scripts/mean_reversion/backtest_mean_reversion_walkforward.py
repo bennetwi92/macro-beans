@@ -8,12 +8,16 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import warnings
 warnings.filterwarnings('ignore')
 
-DATA_DIR = 'data/stock_history'
+REPO = Path(__file__).resolve().parents[2]
+DATA_DIR = str(REPO / 'data' / 'stock_history')
+REPO_DATA = REPO / 'data' / 'backtests'
+REPO_DATA.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
@@ -577,7 +581,7 @@ def main():
                 best_period = lookback
 
             # Save to CSV
-            output_path = f'/Users/williambennett/Github/macro-beans/data/backtest_results_{lookback}day.csv'
+            output_path = str(REPO_DATA / f'backtest_results_{lookback}day.csv')
             backtester.save_results(results_df, output_path)
 
     # If no signals with uptrend requirement, try without it
@@ -597,7 +601,7 @@ def main():
             best_signals = signals
             best_period = "180_no_uptrend"
 
-            output_path = '/Users/williambennett/Github/macro-beans/data/backtest_results_180day_no_uptrend.csv'
+            output_path = str(REPO_DATA / 'backtest_results_180day_no_uptrend.csv')
             backtester.save_results(results_df, output_path)
 
     # Print final recommendations

@@ -111,8 +111,8 @@ def main() -> None:
     df = load()
     fridays = find_fridays(df)
 
-    out_dir = Path(__file__).resolve().parent.parent / "data"
-    out_dir.mkdir(exist_ok=True)
+    out_dir = Path(__file__).resolve().parents[2] / "data" / "event_studies"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     # Save the full Friday data
     fridays.to_csv(out_dir / "oil_friday_returns.csv", index=False)

@@ -5,9 +5,9 @@ What macro/geopolitical events have driven the largest daily moves in WisdomTree
 **Method:** Pulled 3HCL.L history (2012-12-20 → 2026-04-17, 3,365 days) and ranked the top 25 up-days and 25 down-days by daily return. Cross-checked each with COMEX HG=F to confirm a copper-driven move. Then web-researched the proximate cause of each cluster.
 
 **Files:**
-- Script: `scripts/copper_event_study.py`
-- Raw data: `data/copper_event_study_top_moves.csv`
-- Chart: `data/copper_event_study_chart.png`
+- Script: `scripts/event_studies/copper_event_study.py`
+- Raw data: `data/event_studies/copper_event_study_top_moves.csv`
+- Chart: `data/event_studies/copper_event_study_chart.png`
 
 ---
 

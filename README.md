@@ -1,56 +1,56 @@
 # Macro-beans
 
-Python-based swing trading analysis for opportunistic trading opportunities.
+Python-based swing trading analysis. Personal research repo for opportunistic trade ideas — mean-reversion scanning, event studies, VIX options, gas storage modelling.
 
-## Current Focus: VIX Options Strategy
-
-This repository contains tools for analyzing VIX call options strategies, focusing on entering positions when VIX is at low levels (15-16 range) and profiting from volatility spikes.
-
-## Quick Start
+## Quick start
 
 ```bash
-# Create and activate conda environment
+# Conda environment (per environment.yml)
 conda env create -f environment.yml
 conda activate macro-beans
 
-# Run the VIX options calculator
-streamlit run scripts/vix_options_calculator.py
+# Or use the system Python 3.11 directly (deps already installed)
+/usr/local/bin/python3 scripts/event_studies/copper_event_study.py
 ```
 
-## Repository Structure
+## Repository structure
 
 ```
 macro-beans/
 ├── scripts/
-│   ├── vix_options_calculator.py    # Main interactive calculator
-│   └── archive/                     # Deprecated scripts
+│   ├── mean_reversion/      # Production mean-reversion scanner + backtest + dashboard
+│   ├── event_studies/       # One-off macro/geopolitical event studies (oil, copper)
+│   ├── vix_options/         # VIX options calculator (Streamlit multipage app)
+│   ├── storage_model/       # Gas storage model dashboard
+│   ├── tools/               # General market tools (data download, dashboards)
+│   └── archive/             # Deprecated scripts
 ├── src/
-│   └── vix_analysis/               # Modular analysis components
-│       ├── probability.py          # Spike/downside probability calculations
-│       ├── options_pricing.py      # Options valuation and scenarios
-│       ├── visualizations.py       # Chart generation
-│       └── ui_components.py        # Streamlit UI components
+│   ├── models/              # Mean-reversion model package (config, features, model)
+│   ├── storage_model/       # Gas storage valuation engine
+│   └── vix_analysis/        # VIX options analysis components
 ├── docs/
-│   └── vix_range_low/
-│       ├── vix_range_low_strategy.md   # Strategy overview
-│       └── GREEKS_GUIDE.md             # Guide to using options Greeks
-└── environment.yml                  # Conda environment specification
+│   ├── mean_reversion/      # Strategy guide and backtest writeups
+│   ├── event_studies/       # Event-study reports + trade records
+│   ├── reference/           # Reference docs (LSE ETF universe, project setup)
+│   └── vix_options/         # VIX options strategy docs
+├── data/
+│   ├── event_studies/       # Output CSVs and charts from event-study scripts
+│   ├── backtests/           # Backtest results CSVs
+│   └── stock_history/       # Cached yfinance OHLCV data
+├── models/                  # Pickled trained models
+├── environment.yml
+├── CLAUDE.md                # Guidance for Claude Code (Python interpreter, conventions)
+└── README.md
 ```
 
-## VIX Options Calculator
+## Active strategies / components
 
-The interactive calculator provides:
-- **Probability Analysis**: Historical probability of VIX reaching target levels
-- **Scenario Modeling**: Multiple VIX spike scenarios with expected values
-- **Greeks Integration**: Input actual Theta and Vega from options chain
-- **Downside Risk Analysis**: Recency-weighted stop loss recommendations
-- **Theta Decay Visualization**: Chart showing decay vs spike scenarios
-- **Trade Recommendations**: Position sizing and exit strategies
+- **Mean reversion** (`scripts/mean_reversion/`, `src/models/`) — scan mega-cap tech for mean-reversion setups; walk-forward backtested. See `docs/mean_reversion/mean_reversion_strategy_guide.md`.
+- **Event studies** (`scripts/event_studies/`, `docs/event_studies/`) — analyse historical reactions to oil/copper geopolitical events to inform LSE inverse/leveraged ETF pair trades. See `docs/event_studies/event_driven_trading_framework.md`.
+- **LSE inverse/leveraged ETF universe** — reference for relative-value pair-trade construction. See `docs/reference/lse_inverse_leveraged_etf_universe.md`.
+- **VIX options calculator** (`scripts/vix_options/`) — Streamlit multipage app for sizing VIX call positions. Run with `streamlit run scripts/vix_options/vix_options_calculator.py`.
+- **Gas storage model** (`scripts/storage_model/`, `src/storage_model/`) — replica of a real gas storage valuation model.
 
-## Technology Stack
+## Tech stack
 
-- **Language**: Python 3.11
-- **UI Framework**: Streamlit
-- **Data**: yfinance (VIX historical data)
-- **Visualization**: Plotly
-- **Environment**: Conda
+Python 3.11 · pandas / numpy · yfinance · matplotlib / plotly · Streamlit

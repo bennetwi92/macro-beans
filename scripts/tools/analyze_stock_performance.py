@@ -119,9 +119,11 @@ def analyze_stock_performance():
     print(f"  Average Success Rate: {high_vol['Success_Rate'].mean():.2%}")
     print(f"  Stocks: {', '.join(high_vol['Symbol'].tolist())}")
 
-    # Save results
-    df_results.to_csv('data/stock_performance_analysis.csv', index=False)
-    print("\n[Saved detailed results to data/stock_performance_analysis.csv]")
+    from pathlib import Path
+    out_path = Path(__file__).resolve().parents[2] / 'data' / 'backtests' / 'stock_performance_analysis.csv'
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df_results.to_csv(out_path, index=False)
+    print(f"\n[Saved detailed results to {out_path}]")
 
     return df_results, poor_performers['Symbol'].tolist()
 

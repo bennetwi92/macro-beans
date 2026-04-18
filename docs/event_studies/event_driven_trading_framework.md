@@ -93,7 +93,7 @@ Options on US ETFs (USO, SPY, QQQ, GLD) bypass PRIIPs and are tradeable. But: co
 
 **Asset class check first.** The regime table and analogs below are oil-specific — built from Saturday oil shocks since USO inception. **If the current event is in a different asset class** (equities earnings/CPI/FOMC, FX central bank action, crypto exchange failure, rates surprise, etc.), **do not force-fit these analogs**. Instead, use the structure of the regime table as a *template* and research fresh analogs via web for the relevant asset. The five regime archetypes below (genuine shock / policy shock / risk-premium / whipsaw-already-priced / telegraphed / escalation-in-priced-markets) generalise across asset classes even though the specific events don't.
 
-Run `scripts/oil_weekend_event_study.py` (desktop only) to pull historical precedent for oil events. For other assets, adapt the script or work from web-researched analogs inline.
+Run `scripts/event_studies/oil_weekend_event_study.py` (desktop only) to pull historical precedent for oil events. For other assets, adapt the script or work from web-researched analogs inline.
 
 **Oil events to benchmark against** (weekend oil shocks, n=7, since USO inception):
 - 2011-03-19 Libya intervention
@@ -117,7 +117,7 @@ Run `scripts/oil_weekend_event_study.py` (desktop only) to pull historical prece
 
 The last regime is the main **downside landmine** — escalations in already-priced markets can CRASH oil on the "sell-the-news" dynamic.
 
-**For Friday-crash setups specifically**, run `scripts/oil_friday_crash_study.py`. Large down-Fridays in USO (>-5%) historically show **continuation**, not mean reversion — Monday typically continues the fade. Only precedent for -10%+ Fridays (Omicron, 2021-11-26) gave a Monday bounce that fully reversed by Wednesday.
+**For Friday-crash setups specifically**, run `scripts/event_studies/oil_friday_crash_study.py`. Large down-Fridays in USO (>-5%) historically show **continuation**, not mean reversion — Monday typically continues the fade. Only precedent for -10%+ Fridays (Omicron, 2021-11-26) gave a Monday bounce that fully reversed by Wednesday.
 
 ---
 
@@ -137,7 +137,7 @@ If the user wants a pair (relative value) trade rather than single-leg:
 
 ## Step 5 — Sizing methodology
 
-Run `scripts/oil_nasdaq_pair_event_study.py` (or adapt) to compare three sizing approaches.
+Run `scripts/event_studies/oil_nasdaq_pair_event_study.py` (or adapt) to compare three sizing approaches.
 
 ### The three approaches
 
@@ -251,9 +251,9 @@ Save under `docs/trades/YYYY-MM-DD_<event>_review.md` for future calibration.
 
 ## Scripts and data references
 
-- `scripts/oil_weekend_event_study.py` — USO reaction to Saturday oil shocks (n=7)
-- `scripts/oil_friday_crash_study.py` — Conditional Monday return given Friday magnitude (n=472 down-Fridays)
-- `scripts/oil_nasdaq_pair_event_study.py` — Long oil + short Nasdaq pair with vol-parity, equal-notional, and conviction-tilted sizing
+- `scripts/event_studies/oil_weekend_event_study.py` — USO reaction to Saturday oil shocks (n=7)
+- `scripts/event_studies/oil_friday_crash_study.py` — Conditional Monday return given Friday magnitude (n=472 down-Fridays)
+- `scripts/event_studies/oil_nasdaq_pair_event_study.py` — Long oil + short Nasdaq pair with vol-parity, equal-notional, and conviction-tilted sizing
 - `data/oil_weekend_event_study.csv` — Per-event table
 - `data/oil_nasdaq_pair_study.csv` — Pair P&L by sizing method
 

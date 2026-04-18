@@ -246,9 +246,9 @@ def plot_paths(df: pd.DataFrame, out_path: Path) -> None:
 
 
 def main() -> None:
-    repo_root = Path(__file__).resolve().parent.parent
-    data_dir = repo_root / "data"
-    data_dir.mkdir(exist_ok=True)
+    repo_root = Path(__file__).resolve().parents[2]
+    data_dir = repo_root / "data" / "event_studies"
+    data_dir.mkdir(parents=True, exist_ok=True)
 
     df = build_table()
 

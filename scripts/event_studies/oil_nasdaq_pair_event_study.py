@@ -236,8 +236,8 @@ def plot_paths(df: pd.DataFrame, out_dir: Path) -> None:
 
 def main() -> None:
     df = build_table()
-    out_dir = Path(__file__).resolve().parent.parent / "data"
-    out_dir.mkdir(exist_ok=True)
+    out_dir = Path(__file__).resolve().parents[2] / "data" / "event_studies"
+    out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "oil_nasdaq_pair_study.csv", index=False)
     print_results(df)
     plot_paths(df, out_dir)
