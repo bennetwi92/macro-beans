@@ -8,17 +8,27 @@ Macro-beans is a Python-based repository for swing trading analysis and investig
 
 ## Environment Setup
 
-This project uses Conda for environment management:
+**For Claude: use `/usr/local/bin/python3` directly** — it's Python 3.11 with the project deps already installed (yfinance, pandas, numpy, matplotlib, etc.). Conda is *not* on PATH on this machine, so `conda` commands and `conda run -n macro-beans ...` will fail. Do not search for conda envs — just call the interpreter directly:
 
 ```bash
-# Create the conda environment
-conda env create -f environment.yml
-
-# Activate the environment
-conda activate macro-beans
+/usr/local/bin/python3 scripts/your_script.py
 ```
 
-The project uses Python 3.11 as specified in `environment.yml`.
+To check whether a package is available before writing a script:
+```bash
+/usr/local/bin/python3 -c "import yfinance, pandas, numpy, matplotlib"
+```
+
+To install something missing:
+```bash
+/usr/local/bin/python3 -m pip install <pkg>
+```
+
+For human reference, the documented setup is conda-based (Python 3.11 per `environment.yml`):
+```bash
+conda env create -f environment.yml
+conda activate macro-beans
+```
 
 ## Repository Structure
 
