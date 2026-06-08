@@ -23,13 +23,13 @@ from pathlib import Path
 import yfinance as yf
 
 INSTRUMENTS = [
-    # slug,      yahoo,    label,        sublabel
-    ("spx",      "^GSPC",  "S&P 500",    "US Large Cap"),
-    ("ndx",      "^NDX",   "Nasdaq 100", "US Tech"),
-    ("ftse",     "^FTSE",  "FTSE 100",   "UK Large Cap"),
-    ("gold",     "GC=F",   "Gold",       "Precious Metal"),
-    ("silver",   "SI=F",   "Silver",     "Precious Metal"),
-    ("brent",    "BZ=F",   "Brent Oil",  "Energy"),
+    # slug,      yahoo,     label,                    sublabel
+    ("spx",      "VUSA.L",  "S&P 500 (VUSA.L)",       "US Large Cap"),
+    ("ndx",      "EQQQ.L",  "Nasdaq 100 (EQQQ.L)",    "US Tech"),
+    ("ftse",     "ISF.L",   "FTSE 100 (ISF.L)",       "UK Large Cap"),
+    ("gold",     "SGLN.L",  "Gold (SGLN.L)",          "Precious Metal"),
+    ("silver",   "SSLN.L",  "Silver (SSLN.L)",        "Precious Metal"),
+    ("brent",    "BRNT.L",  "Brent Oil (BRNT.L)",     "Energy"),
 ]
 
 START = "1990-01-01"
@@ -61,7 +61,7 @@ def main() -> None:
     menu = []
 
     for slug, ticker, label, sublabel in INSTRUMENTS:
-        print(f"  fetching {label:<12s} ({ticker}) ...", end=" ", flush=True)
+        print(f"  fetching {label:<22s} ...", end=" ", flush=True)
         bars = fetch_bars(ticker)
         payload = {
             "meta": {
