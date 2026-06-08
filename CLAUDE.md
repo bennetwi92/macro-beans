@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Macro-beans is a Python-based repository for swing trading analysis and investigations. The project focuses on identifying opportunistic trading opportunities through ad-hoc analyses and scripts, with results presented via Streamlit apps.
+Macro-beans is a personal trading-research repository. It contains:
+
+- **Research scripts** in Python that investigate specific trading
+  opportunities — event studies, beta-hedged pair backtests, mean-reversion
+  scanners, gas-storage valuation, VIX options analysis. Results land in
+  `data/<topic>/` and are sometimes wrapped in Streamlit dashboards.
+- **A public website** — the Macro Beans web platform at
+  https://bennetwi92.github.io/macro-beans/ — a beginner-friendly,
+  arcade-styled site that exposes a small set of these analyses to
+  retail traders.
 
 ## Environment Setup
 
@@ -63,26 +72,35 @@ When adding new analyses:
 
 ## Development Workflow
 
-- Scripts in `scripts/` are exploratory and investigation-focused.
-- Streamlit apps present internal analyses; run from repo root, e.g. `streamlit run scripts/vix_options/vix_options_calculator.py`.
-- Each analysis is self-contained and focused on a specific trading opportunity.
+Work in this repo falls into two broad tracks. Identify which one a
+request belongs to before starting:
 
-## Web platform (Macro Beans site)
+1. **Research / studies** — exploratory scripts in `scripts/<topic>/`
+   that fetch data, compute, and write outputs (CSV / PNG) into
+   `data/<topic>/`. Self-contained Python, often paired with a docs
+   note under `docs/<topic>/`. Streamlit apps may present results.
+2. **Public web platform** — the static site under `web/` (sources),
+   `scripts/site/` (build scripts), and `.github/workflows/deploy.yml`
+   (CI/CD), served at https://bennetwi92.github.io/macro-beans/. A
+   beginner-friendly arcade-styled analytics site.
 
-The repo also hosts a public, beginner-friendly static site at
-**https://bennetwi92.github.io/macro-beans/** (sources in `web/`, build
-scripts in `scripts/site/`, deploy workflow in `.github/workflows/deploy.yml`).
+A change usually belongs to exactly one track. If you're tempted to
+straddle both, stop and split the work.
 
-**Before changing anything under `web/`, `scripts/site/`, or `.github/workflows/`
-— read the `macro-beans-site` skill** (`.claude/skills/macro-beans-site/SKILL.md`).
-It's the source of truth for the design system, code conventions, how to
-add an instrument / portfolio / strategy page, local testing, and the
-deploy pipeline. Treat its "Hard rules — do not break these" list as
-binding.
+## Project skills
 
-The skill auto-activates for relevant work but read it explicitly if a
-prompt mentions the website, a new strategy page, a portfolio, the
-GitHub Pages deploy, or any file under those paths.
+Skill files in `.claude/skills/` document specific workflows in depth.
+**Always consult the relevant skill before starting work in its area** —
+treat its rules as binding even if the prompt doesn't mention them.
+Skills auto-activate for relevant prompts, but the catalog below makes
+the mapping explicit.
+
+| Skill | Read it when |
+|-------|--------------|
+| [`macro-beans-site`](.claude/skills/macro-beans-site/SKILL.md) | Touching anything under `web/`, `scripts/site/`, or `.github/workflows/`; adding an instrument / portfolio / strategy page; deploying the site; or changing the public site's design, copy, or data pipeline. |
+
+More skills may be added over time (e.g. for producing event
+studies / research). Check `.claude/skills/` for the current set.
 
 ## Key Technologies
 
