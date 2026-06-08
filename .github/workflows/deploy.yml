@@ -38,8 +38,11 @@ jobs:
       - name: Install build dependencies
         run: pip install --quiet "yfinance>=0.2.40" "pandas>=2.0"
 
-      - name: Build data JSON
+      - name: Build instrument data
         run: python scripts/site/build_data.py
+
+      - name: Build portfolio data
+        run: python scripts/site/build_portfolios.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

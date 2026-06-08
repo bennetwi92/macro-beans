@@ -78,6 +78,7 @@ h1,h2,h3,.pixel{ font-family:var(--pixel); font-weight:400; }
 /* ---------- controls ---------- */
 .ctl-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
 .ctl-grid-4{ grid-template-columns:repeat(4,1fr); }
+.ctl-grid-2{ grid-template-columns:repeat(2,1fr); }
 .ctl{ background:var(--inset); border:2px solid var(--line); padding:13px 13px 15px; display:flex; flex-direction:column; }
 .ctl .clab{ font-family:var(--pixel); font-size:8px; color:var(--dim); line-height:1.8; margin-bottom:11px; min-height:26px; }
 .seg{ display:flex; flex-direction:column; gap:6px; }
@@ -225,6 +226,66 @@ table{ width:100%; border-collapse:collapse; }
 .league .ix{ line-height:1.1; }
 .league .ix-name{ display:block; color:var(--ink); font-size:21px; }
 .league .ix-ticker{ display:block; font-family:var(--pixel); font-size:8px; color:var(--dim); margin-top:6px; letter-spacing:.4px; }
+
+/* ---------- equity chart (portfolios page) ---------- */
+.chart-wrap{
+  background:var(--inset);
+  border:2px solid var(--line);
+  padding:8px;
+}
+.eq-chart{ width:100%; height:auto; display:block; }
+.chart-error{
+  padding:30px;
+  color:var(--loss);
+  font-size:20px;
+  text-align:center;
+}
+
+/* ---------- snapshot stat grid ---------- */
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.stat{
+  background:var(--inset);
+  border:2px solid var(--line);
+  padding:14px 16px 16px;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.stat-label{
+  font-family:var(--pixel);
+  font-size:8px;
+  color:var(--dim);
+  line-height:1.7;
+  margin-bottom:10px;
+}
+.stat-main{
+  font-size:30px;
+  color:var(--ink);
+  line-height:1.1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.stat-main.pos{ color:var(--win); }
+.stat-main.neg{ color:var(--loss); }
+.stat-side{
+  font-size:17px;
+  color:var(--dim);
+  margin-top:4px;
+}
+.stat-side.pos{ color:var(--win); }
+.stat-side.neg{ color:var(--loss); }
+.stat-sub{
+  font-size:14px;
+  color:var(--dim);
+  margin-top:auto;
+  padding-top:10px;
+  line-height:1.35;
+}
 
 /* ---------- prose (about page) ---------- */
 .prose{ max-width:68ch; font-size:21px; line-height:1.55; color:var(--ink); margin:0; }
