@@ -84,8 +84,12 @@ function computeSnapshot(bars, modeIdx){
 /* ---------- SVG chart ---------- */
 
 function renderChart(bars, modeIdx, label, color){
-  const W = 1000, H = 380;
-  const padL = 70, padR = 24, padT = 24, padB = 36;
+  // Narrower viewBox on phones so axis labels don't scale down into
+  // illegibility (the SVG always stretches to the container width, so a
+  // smaller viewBox means a larger effective font). See css mobile section.
+  const mobile = window.innerWidth <= 700;
+  const W = mobile ? 480 : 1000, H = mobile ? 340 : 380;
+  const padL = mobile ? 48 : 70, padR = mobile ? 14 : 24, padT = 24, padB = 36;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
 
@@ -281,6 +285,22 @@ function wireControls(){
     if(!btn) return;
     state.mode = btn.dataset.value;
     update();
+  });
+
+  // Re-render the chart when crossing the mobile/desktop breakpoint so the
+  // viewBox geometry (see renderChart) matches the viewport. Cheap — the
+  // portfolio payload is cached, so update() does no network work.
+  let lastMobile = window.innerWidth <= 700;
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const nowMobile = window.innerWidth <= 700;
+      if(nowMobile !== lastMobile){
+        lastMobile = nowMobile;
+        update();
+      }
+    }, 150);
   });
 }
 

@@ -193,6 +193,50 @@ A native `<select>` absolutely positioned over the visible label with `opacity:0
 #### Cells with positive/negative state
 Use `.cell-pos` / `.cell-neg` for `<td>` (dark-green / dark-red background + colored text). Use `.pos` / `.neg` for text-only colouring.
 
+### Responsive / mobile
+
+**Every page must look good on a phone.** A large share of retail readers
+arrive on mobile, so a layout that only works at desktop width is a bug, not
+a polish item. The responsive rules live in one place: the
+`/* responsive / mobile */` section at the bottom of `web/css/macro-beans.css`,
+driven by two breakpoints — **760px** (phones + small tablets) and **440px**
+(narrow phones). Build to these patterns and you get mobile for free; invent a
+new full-width layout and you have to handle it yourself.
+
+Rules:
+
+- **Always ship the viewport tag.** Every page `<head>` already has
+  `<meta name="viewport" content="width=device-width, initial-scale=1.0">`.
+  A new page copied from a template inherits it — keep it.
+- **Reuse the shared components** (panel, control grid, picker, seg, tables,
+  stat-grid, glossary). They already collapse correctly at both breakpoints,
+  so a page assembled from them needs **no bespoke mobile CSS**.
+- **Multi-column grids must collapse.** `.ctl-grid`/`.ctl-grid-4`/`.ctl-grid-2`
+  and `.stat-grid` go to 2 columns at 760px and 1 column at 440px; the home
+  `.card-grid` goes to 1 column at 820px. If you add a new grid, give it the
+  same treatment in the responsive section — never leave 4–5 columns fixed.
+- **Dense data tables scroll, they don't crush.** Wrap any wide table
+  (4+ data columns) in `.logwrap`, which is `overflow-x:auto`. At the 760px
+  breakpoint the table keeps a `min-width` so columns stay readable and the
+  user swipes horizontally instead of reading squashed cells. Add a `min-width`
+  rule for any new wide table class. The compact 4-column scoreboard
+  (`.score`) is the exception — it just shrinks to fit.
+- **No fixed pixel widths that exceed a phone.** Avoid `width:`/`min-width:`
+  in px on layout containers (the glossary's old `200px` term column is the
+  kind of thing that breaks — it stacks to one column on mobile). Use grid
+  fractions, `max-width`, and `ch`.
+- **SVG charts get a narrower viewBox on mobile.** An SVG that stretches to the
+  container width scales its text down with it; on a phone a 1000-unit viewBox
+  renders axis labels at ~5px. `portfolios.js` `renderChart` switches to a
+  ~480-unit viewBox when `window.innerWidth <= 700` and re-renders on resize
+  (cheap — payloads are cached). Copy that pattern for any new chart.
+- **Tap targets and no zoom-on-focus.** Native form controls (`<select>`,
+  `.range`) use font-size ≥ 16px so iOS Safari doesn't zoom when they're
+  focused. Keep chips/buttons comfortably tappable.
+- **Test at phone width before pushing.** Serve locally and check at ~375px
+  (DevTools device toolbar, or just narrow the window): no horizontal page
+  scroll on the `<body>`, controls reachable, tables swipe, nothing clipped.
+
 ### What NOT to do visually
 
 - **No scanlines, no CRT curvature, no glow blur.** These were tried and explicitly cut.
@@ -294,7 +338,7 @@ If the new strategy fits the "filter → events → summary" pattern:
    - If it's a fundamentally different shape, write a new function (e.g. `findCrossoverEvents`) in `strategy-engine.js` and import from the new page
 4. **Update masthead nav** on all pages (`index.html`, `buy-the-bounce.html`, `-league.html`, `portfolios.html`, `glossary.html`, `about.html`) only if it deserves a new top-level nav slot. Most new pages don't — readers find them via the home page.
 5. **Add a CATALOG entry** in `web/js/catalog.js` (see above) so it shows on the home page.
-6. **Test locally**, commit, push.
+6. **Test locally — including at phone width** (see [Responsive / mobile](#responsive--mobile)): no horizontal page scroll, controls reachable, wide tables swipe. Then commit, push.
 
 If the new page is an analysis/calculator/chart (not strategy-shaped), use `portfolios.html` as the template instead — that pattern covers picker + chart + stats + blurb.
 
@@ -321,6 +365,12 @@ open http://localhost:8765/buy-the-bounce.html
 ```
 
 You can iterate on HTML/CSS/JS without re-running the build scripts — just reload the page.
+
+**Check mobile too.** Open the browser DevTools device toolbar (or just drag the
+window down to ~375px wide) and confirm each page you touched: the `<body>` has
+no horizontal scrollbar, control grids have collapsed, wide tables swipe inside
+their bordered box, and nothing is clipped or overlapping. See
+[Responsive / mobile](#responsive--mobile) for the rules these checks enforce.
 
 ## Deploy
 
@@ -375,6 +425,7 @@ Repository **must be public** for free GitHub Pages. Don't change it back to pri
 - ❌ Don't make the repo private (free Pages requires public).
 - ❌ Don't pull in a charting library for what an SVG polyline can do.
 - ❌ Don't hard-code hex colors — reference CSS variables from `:root`.
+- ❌ Don't ship a page that breaks on a phone — multi-column grids must collapse, wide tables must scroll inside `.logwrap`, and no layout container may exceed phone width. See [Responsive / mobile](#responsive--mobile).
 
 ## Cheat sheet
 
@@ -383,6 +434,7 @@ Repository **must be public** for free GitHub Pages. Don't change it back to pri
 | Add a tradeable instrument | `scripts/site/build_data.py` → `INSTRUMENTS` |
 | Add a pair portfolio | `scripts/site/build_portfolios.py` → `PORTFOLIOS` |
 | Change colors / fonts | `web/css/macro-beans.css` → `:root` |
+| Adjust mobile / responsive behaviour | `web/css/macro-beans.css` → `/* responsive / mobile */` (760px & 440px breakpoints) |
 | Change event-detection logic | `web/js/strategy-engine.js` |
 | Add a strategy page | Copy `buy-the-bounce.html` + `.js` |
 | Add a comparison page | Copy `buy-the-bounce-league.html` + `.js` |

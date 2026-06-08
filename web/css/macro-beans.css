@@ -184,7 +184,7 @@ table{ width:100%; border-collapse:collapse; }
 .pos{ color:var(--win); } .neg{ color:var(--loss); }
 
 /* ---------- event log ---------- */
-.logwrap{ border:2px solid var(--line); }
+.logwrap{ border:2px solid var(--line); overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .log{ border-collapse:collapse; width:100%; }
 .log thead th{ position:sticky; top:0; z-index:2; font-family:var(--pixel); font-size:9px; color:var(--cyan); background:var(--inset); padding:13px 14px; text-align:right; border-bottom:2px solid var(--line); }
 .log thead th:first-child{ text-align:left; color:var(--dim); }
@@ -417,3 +417,80 @@ table{ width:100%; border-collapse:collapse; }
 .foot{ text-align:center; color:var(--dim); font-family:var(--pixel); font-size:9px; line-height:2.2; margin-top:34px; }
 .foot .warn-line{ color:var(--gold); }
 .foot .built{ color:var(--dim); }
+
+/* ---------- responsive / mobile ----------
+   Single source of truth for the site's mobile behaviour. Two breakpoints:
+   760px (phones + small tablets) and 440px (narrow phones). Patterns:
+   - multi-column control / stat grids collapse to 2 cols, then 1 col
+   - dense data tables (.log, .league) keep their columns and scroll
+     horizontally inside .logwrap rather than crushing
+   - the compact scoreboard (.score, 4 cols) just shrinks to fit
+   - large display type steps down; the pixel font stays small/legible
+   New pages should fall into these patterns rather than add bespoke rules. */
+@media (max-width: 760px){
+  body{ font-size:19px; padding:24px 14px 70px; }
+
+  .panel{ padding:20px 16px; }
+  .panel + .panel{ margin-top:18px; }
+
+  /* masthead + nav */
+  .mast{ gap:12px 16px; margin-bottom:22px; }
+  .logo{ font-size:18px; gap:9px; }
+  .logo .dot{ width:11px; height:11px; }
+  .nav{ gap:12px 16px; }
+
+  /* strategy header */
+  .strat{ margin-bottom:18px; gap:14px; }
+  .strat h1{ font-size:20px; line-height:1.4; }
+  .strat .lede{ font-size:19px; }
+
+  /* home hero */
+  .hero{ padding:22px 18px; }
+  .hero-h{ font-size:18px; }
+  .hero-lede{ font-size:19px; }
+
+  /* verdict */
+  .verdict{ padding:20px 18px; }
+  .verdict .vtext{ font-size:23px; line-height:1.4; }
+  .verdict .vmeta{ font-size:18px; }
+
+  /* control grids collapse to two columns */
+  .ctl-grid, .ctl-grid-4, .ctl-grid-2{ grid-template-columns:repeat(2,1fr); }
+
+  /* dense tables scroll horizontally instead of crushing */
+  .log{ min-width:520px; }
+  .league{ min-width:610px; }
+  .log td, .league td{ font-size:18px; padding:9px 11px; }
+  .log td:first-child{ font-size:17px; }
+  .log thead th, .league thead th{ padding:11px 11px; }
+
+  /* compact scoreboard shrinks to fit */
+  .score th, .score td{ padding:9px 9px; }
+  .score tbody td{ font-size:21px; }
+  .score thead th{ font-size:8px; }
+  .score tbody th{ font-size:8px; }
+
+  /* snapshot stats */
+  .stat-grid{ grid-template-columns:repeat(2,1fr); }
+  .stat-main{ font-size:25px; }
+
+  /* glossary stacks term above definition */
+  .glossary .entry{ grid-template-columns:1fr; gap:7px; }
+  .glossary dt{ font-size:10px; }
+  .glossary dd{ font-size:19px; }
+
+  /* prose */
+  .prose{ font-size:19px; }
+}
+
+@media (max-width: 440px){
+  body{ padding:20px 12px 64px; }
+
+  /* one control / stat per row on the narrowest screens */
+  .ctl-grid, .ctl-grid-4, .ctl-grid-2{ grid-template-columns:1fr; }
+  .stat-grid{ grid-template-columns:1fr; }
+
+  .strat h1{ font-size:18px; }
+  .verdict .vtext{ font-size:21px; }
+  .nav{ gap:10px 14px; font-size:9px; }
+}
