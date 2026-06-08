@@ -161,7 +161,7 @@ table{ width:100%; border-collapse:collapse; }
 .pos{ color:var(--win); } .neg{ color:var(--loss); }
 
 /* ---------- event log ---------- */
-.logwrap{ max-height:520px; overflow:auto; border:2px solid var(--line); }
+.logwrap{ border:2px solid var(--line); }
 .log{ border-collapse:collapse; width:100%; }
 .log thead th{ position:sticky; top:0; z-index:2; font-family:var(--pixel); font-size:9px; color:var(--cyan); background:var(--inset); padding:13px 14px; text-align:right; border-bottom:2px solid var(--line); }
 .log thead th:first-child{ text-align:left; color:var(--dim); }
@@ -172,10 +172,6 @@ table{ width:100%; border-collapse:collapse; }
 .cell-pos{ color:var(--win); background:var(--win-bg); }
 .cell-neg{ color:var(--loss); background:var(--loss-bg); }
 .trig{ color:var(--ink); }
-
-.logwrap::-webkit-scrollbar{ width:14px; }
-.logwrap::-webkit-scrollbar-track{ background:var(--inset); }
-.logwrap::-webkit-scrollbar-thumb{ background:var(--line-2); border:3px solid var(--inset); }
 
 /* ---------- prose (about page) ---------- */
 .prose{ max-width:68ch; font-size:21px; line-height:1.55; color:var(--ink); margin:0; }
