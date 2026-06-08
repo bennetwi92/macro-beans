@@ -133,8 +133,10 @@ function renderInstrumentMenu(){
 function updateInstrumentLabel(){
   const inst = instruments.find(i => i.slug === state.instrument);
   if(!inst) return;
-  const lab = document.getElementById("instrument-label");
-  if(lab) lab.textContent = inst.label;
+  const nameEl = document.getElementById("instrument-name");
+  const tickerEl = document.getElementById("instrument-ticker");
+  if(nameEl) nameEl.textContent = inst.name || inst.label;
+  if(tickerEl) tickerEl.textContent = inst.ticker || "";
   const badge = document.getElementById("strat-badge");
   if(badge) badge.innerHTML = `${escapeHtml(inst.label)}<br>${escapeHtml(inst.sublabel)}`;
 }

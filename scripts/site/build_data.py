@@ -23,13 +23,26 @@ from pathlib import Path
 import yfinance as yf
 
 INSTRUMENTS = [
-    # slug,      yahoo,     label,                    sublabel
-    ("spx",      "VUSA.L",  "S&P 500 (VUSA.L)",       "US Large Cap"),
-    ("ndx",      "EQQQ.L",  "Nasdaq 100 (EQQQ.L)",    "US Tech"),
-    ("ftse",     "ISF.L",   "FTSE 100 (ISF.L)",       "UK Large Cap"),
-    ("gold",     "SGLN.L",  "Gold (SGLN.L)",          "Precious Metal"),
-    ("silver",   "SSLN.L",  "Silver (SSLN.L)",        "Precious Metal"),
-    ("brent",    "BRNT.L",  "Brent Oil (BRNT.L)",     "Energy"),
+    # slug,       yahoo,     name,                  sublabel
+    # ---- equities ----
+    ("spx",       "VUSA.L",  "S&P 500",             "US Large Cap"),
+    ("ndx",       "EQQQ.L",  "Nasdaq 100",          "US Tech"),
+    ("ftse",      "ISF.L",   "FTSE 100",            "UK Large Cap"),
+    ("ftse250",   "MIDD.L",  "FTSE 250",            "UK Mid Cap"),
+    ("world",     "IWDA.L",  "MSCI World",          "Global Equity"),
+    ("em",        "EIMI.L",  "MSCI Emerging Mkts",  "Emerging Markets"),
+    ("japan",     "IJPA.L",  "MSCI Japan",          "Japan Equity"),
+    ("estoxx",    "CSX5.L",  "Euro Stoxx 50",       "Europe Equity"),
+    # ---- bonds ----
+    ("ustreas",   "IDTL.L",  "US Treasuries 20Y+",  "US Long Bonds"),
+    ("gilts",     "IGLT.L",  "UK Gilts",            "UK Government Bonds"),
+    # ---- commodities ----
+    ("gold",      "SGLN.L",  "Gold",                "Precious Metal"),
+    ("silver",    "SSLN.L",  "Silver",              "Precious Metal"),
+    ("copper",    "COPA.L",  "Copper",              "Industrial Metal"),
+    ("brent",     "BRNT.L",  "Brent Oil",           "Energy"),
+    ("wti",       "CRUD.L",  "WTI Crude",           "Energy"),
+    ("natgas",    "NGAS.L",  "Natural Gas",         "Energy"),
 ]
 
 START = "1990-01-01"
@@ -60,13 +73,15 @@ def main() -> None:
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     menu = []
 
-    for slug, ticker, label, sublabel in INSTRUMENTS:
-        print(f"  fetching {label:<22s} ...", end=" ", flush=True)
+    for slug, ticker, name, sublabel in INSTRUMENTS:
+        label = f"{name} ({ticker})"
+        print(f"  fetching {label:<28s} ...", end=" ", flush=True)
         bars = fetch_bars(ticker)
         payload = {
             "meta": {
                 "slug": slug,
                 "ticker": ticker,
+                "name": name,
                 "label": label,
                 "sublabel": sublabel,
                 "first_date": bars[0][0],
@@ -82,6 +97,8 @@ def main() -> None:
         print(f"{len(bars):>5d} bars  ->  {path.name} ({size_kb:.0f} kB)")
         menu.append({
             "slug": slug,
+            "name": name,
+            "ticker": ticker,
             "label": label,
             "sublabel": sublabel,
             "n_bars": len(bars),
