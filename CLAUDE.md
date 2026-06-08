@@ -40,6 +40,7 @@ scripts/
   event_studies/    # Oil and copper event-study scripts
   vix_options/      # Streamlit calculator (pages/ subdir for multipage)
   storage_model/    # Gas storage dashboard
+  site/             # Build scripts for the public web platform (see below)
   tools/            # Generic market tools
   archive/          # Deprecated scripts
 src/
@@ -50,6 +51,8 @@ docs/
   mean_reversion/   event_studies/   reference/   vix_options/
 data/
   event_studies/    backtests/   stock_history/
+web/                # Public static site (Macro Beans web platform)
+.github/workflows/  # CI/CD for the web platform (deploy.yml)
 ```
 
 When adding new analyses:
@@ -61,11 +64,29 @@ When adding new analyses:
 ## Development Workflow
 
 - Scripts in `scripts/` are exploratory and investigation-focused.
-- Streamlit apps present results; run from repo root, e.g. `streamlit run scripts/vix_options/vix_options_calculator.py`.
+- Streamlit apps present internal analyses; run from repo root, e.g. `streamlit run scripts/vix_options/vix_options_calculator.py`.
 - Each analysis is self-contained and focused on a specific trading opportunity.
+
+## Web platform (Macro Beans site)
+
+The repo also hosts a public, beginner-friendly static site at
+**https://bennetwi92.github.io/macro-beans/** (sources in `web/`, build
+scripts in `scripts/site/`, deploy workflow in `.github/workflows/deploy.yml`).
+
+**Before changing anything under `web/`, `scripts/site/`, or `.github/workflows/`
+— read the `macro-beans-site` skill** (`.claude/skills/macro-beans-site/SKILL.md`).
+It's the source of truth for the design system, code conventions, how to
+add an instrument / portfolio / strategy page, local testing, and the
+deploy pipeline. Treat its "Hard rules — do not break these" list as
+binding.
+
+The skill auto-activates for relevant work but read it explicitly if a
+prompt mentions the website, a new strategy page, a portfolio, the
+GitHub Pages deploy, or any file under those paths.
 
 ## Key Technologies
 
 - **Language**: Python 3.11
-- **Presentation**: Streamlit (for visualizing trading analysis results)
+- **Internal presentation**: Streamlit (for ad-hoc analysis dashboards)
+- **Public presentation**: static HTML/CSS/vanilla-ES-module JS site under `web/`, served via GitHub Pages
 - **Environment**: Conda (documented) / system Python 3.11 (working)
