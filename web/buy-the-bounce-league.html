@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Macro Beans — Buy the Bounce</title>
+<title>Macro Beans — Buy the Bounce · League Table</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -23,27 +23,15 @@
 
   <div class="strat">
     <div>
-      <h1>BUY THE BOUNCE</h1>
-      <div class="lede">When the market drops hard in a single day, does it tend to recover over the next few days? This page shows every time it happened — and what came next.</div>
-      <a class="strat-link" href="buy-the-bounce-league.html">COMPARE ACROSS ALL INSTRUMENTS →</a>
+      <h1>BUY THE BOUNCE — LEAGUE TABLE</h1>
+      <div class="lede">The same bounce setup applied across every instrument, side by side. Click a column to sort.</div>
+      <a class="strat-link" href="buy-the-bounce.html">← DIVE INTO ONE INSTRUMENT</a>
     </div>
   </div>
 
   <section class="panel">
-    <div class="sec-h"><span class="tick"></span><h2>SETTINGS</h2><span class="note">change anything to re-run the analysis</span></div>
-    <div class="ctl-grid">
-
-      <div class="ctl">
-        <div class="clab">INSTRUMENT</div>
-        <label class="pick">
-          <span class="pick-text">
-            <span id="instrument-name">—</span>
-            <span id="instrument-ticker"></span>
-          </span>
-          <span class="car">▾</span>
-          <select id="instrument-select" aria-label="Instrument"></select>
-        </label>
-      </div>
+    <div class="sec-h"><span class="tick"></span><h2>SETTINGS</h2><span class="note">applied to every instrument below</span></div>
+    <div class="ctl-grid ctl-grid-4">
 
       <div class="ctl">
         <div class="clab">DIRECTION</div>
@@ -82,32 +70,24 @@
     </div>
   </section>
 
-  <!--
-  <section class="verdict" id="verdict" style="margin-top:26px;">
-    <div class="vlabel"><span class="pip"></span> THE VERDICT</div>
-    <div class="vtext" id="verdict-text">Loading…</div>
-    <div class="vmeta" id="verdict-meta"></div>
-  </section>
-  -->
-
   <section class="panel">
-    <div class="sec-h"><span class="tick"></span><h2>SUMMARY</h2><span class="note">returns are cumulative from entry</span></div>
-    <table class="score">
-      <thead>
-        <tr><th>HOLDING PERIOD</th><th>DAY 1</th><th>DAY 2</th><th>DAY 3</th></tr>
-      </thead>
-      <tbody id="score-body"></tbody>
-    </table>
-  </section>
-
-  <section class="panel">
-    <div class="sec-h"><span class="tick"></span><h2>EVENT LOG</h2><span class="note" id="log-count"></span></div>
+    <div class="sec-h"><span class="tick"></span><h2>LEAGUE TABLE</h2><span class="note" id="league-note">loading…</span></div>
     <div class="logwrap">
-      <table class="log">
+      <table class="league">
         <thead>
-          <tr><th>DATE</th><th>TRIGGER MOVE</th><th>DAY 1</th><th>DAY 2</th><th>DAY 3</th></tr>
+          <tr id="league-head">
+            <th class="sort-able" data-key="name"     data-default-dir="asc">INSTRUMENT</th>
+            <th class="sort-able" data-key="n"        data-default-dir="desc">EVENTS</th>
+            <th class="sort-able" data-key="rate_d1"  data-default-dir="desc">WIN % D1</th>
+            <th class="sort-able" data-key="avg_d1"   data-default-dir="desc">AVG D1</th>
+            <th class="sort-able" data-key="rate_d3"  data-default-dir="desc">WIN % D3</th>
+            <th class="sort-able" data-key="avg_d3"   data-default-dir="desc">AVG D3</th>
+            <th class="sort-able" data-key="worst_d3" data-default-dir="asc">WORST D3</th>
+          </tr>
         </thead>
-        <tbody id="log-body"></tbody>
+        <tbody id="league-body">
+          <tr><td colspan="7" class="empty">loading…</td></tr>
+        </tbody>
       </table>
     </div>
   </section>
@@ -119,6 +99,6 @@
 
 </div>
 
-<script type="module" src="js/buy-the-bounce.js"></script>
+<script type="module" src="js/buy-the-bounce-league.js"></script>
 </body>
 </html>

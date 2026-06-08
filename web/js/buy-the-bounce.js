@@ -4,8 +4,15 @@
    and renders the verdict + scoreboard + event log. All computation is local
    to the browser; data is pre-built JSON served from web/data/. */
 
+import {
+  HORIZONS,
+  findEvents,
+  computeStats,
+  fmt, fmtInt, cls,
+  escapeHtml,
+} from "./strategy-engine.js";
+
 const DATA_BASE = "data";
-const HORIZONS = [1, 2, 3];
 
 const state = {
   instrument: "spx",
@@ -37,87 +44,6 @@ async function loadBars(slug){
   cache.set(slug, j);
   return j;
 }
-
-/* ---------- event detection + stats ---------- */
-
-/* bars: [[date_iso, open, close], ...]
-   opts: {direction:'down'|'up', threshold:pct (positive number), entry:'close'|'open', range:'5y'|'all'}
-   returns: [{date, trig, d1, d2, d3}] in chronological order. */
-function findEvents(bars, opts){
-  const thr = opts.threshold / 100;
-  const sign = opts.direction === "down" ? -1 : 1;
-  const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
-  const needed = opts.entry === "open" ? 4 : 3;     // bars after t we need
-  const events = [];
-
-  for(let i = 1; i < bars.length - needed; i++){
-    const [date, , close]      = bars[i];
-    const prevClose            = bars[i-1][2];
-    const trig                 = close / prevClose - 1;
-    if(sign === -1 && trig > -thr) continue;
-    if(sign === +1 && trig < +thr) continue;
-    if(minDate && date < minDate) continue;
-
-    let entryPrice, exitIndexBase;
-    if(opts.entry === "close"){
-      entryPrice    = close;
-      exitIndexBase = i;                // exits are i+1, i+2, i+3
-    } else {
-      entryPrice    = bars[i+1][1];     // next day's open
-      exitIndexBase = i+1;              // exits are i+2, i+3, i+4
-    }
-    const ds = HORIZONS.map(h => bars[exitIndexBase + h][2] / entryPrice - 1);
-
-    events.push({
-      date,
-      trig: trig * 100,
-      d1: ds[0] * 100,
-      d2: ds[1] * 100,
-      d3: ds[2] * 100,
-    });
-  }
-  return events;
-}
-
-function yearsAgo(bars, n){
-  const lastDate = bars[bars.length - 1][0];
-  const [Y, M, D] = lastDate.split("-").map(Number);
-  return `${Y - n}-${String(M).padStart(2,"0")}-${String(D).padStart(2,"0")}`;
-}
-
-function computeStats(events){
-  return HORIZONS.map((_, idx) => {
-    const key = ["d1","d2","d3"][idx];
-    const vals = events.map(e => e[key]);
-    const n = vals.length;
-    if(n === 0) return {n:0, wins:0, rate:NaN, avg:NaN, med:NaN, worst:NaN, best:NaN};
-    const wins = vals.filter(v => v > 0).length;
-    return {
-      n, wins,
-      rate:  wins / n * 100,
-      avg:   vals.reduce((a,b)=>a+b,0) / n,
-      med:   median(vals),
-      worst: Math.min(...vals),
-      best:  Math.max(...vals),
-    };
-  });
-}
-
-function median(arr){
-  const s = [...arr].sort((a,b)=>a-b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2;
-}
-
-/* ---------- formatting ---------- */
-
-const fmt = v => {
-  if(!Number.isFinite(v)) return "—";
-  const sign = v > 0 ? "+" : (v < 0 ? "−" : "");
-  return sign + Math.abs(v).toFixed(1) + "%";
-};
-const cls = v => !Number.isFinite(v) ? "" : (v > 0 ? "cell-pos" : (v < 0 ? "cell-neg" : ""));
-const fmtInt = v => Number.isFinite(v) ? Math.round(v).toString() : "—";
 
 /* ---------- rendering ---------- */
 
@@ -245,12 +171,6 @@ function renderBuiltLine(){
   if(!builtAt) return;
   const d = builtAt.slice(0, 10);
   document.getElementById("built-line").textContent = `MACRO BEANS · DATA REFRESHED ${d}`;
-}
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  })[c]);
 }
 
 /* ---------- main update loop ---------- */
