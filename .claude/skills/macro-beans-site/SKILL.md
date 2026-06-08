@@ -43,6 +43,7 @@ There is **no backend, no database, no API keys, no auth**. Keep it that way.
 
 ```
 web/
+  index.html                   home page (publication index)
   buy-the-bounce.html          single-instrument strategy page (TEMPLATE)
   buy-the-bounce-league.html   cross-instrument comparison table
   portfolios.html              pair-portfolio equity-curve dashboard
@@ -51,6 +52,8 @@ web/
   css/macro-beans.css          all styles (one file)
   js/
     strategy-engine.js         shared pure functions (findEvents, computeStats, formatters)
+    catalog.js                 publication index — list of every published piece
+    home.js                    home page logic (renders cards from catalog.js)
     buy-the-bounce.js          strategy page logic
     buy-the-bounce-league.js   league page logic
     portfolios.js              portfolios page logic
@@ -256,6 +259,30 @@ Page voice is direct, second-person where useful ("you'd be up 1.8%"), and short
 3. Sanity-check the equity curve (last value, drawdown range). If the LETF curve hits absurd numbers (>100x) over a long history, that's mathematically correct daily-compound LETF behavior on a strongly trending pair — but warn the user when reviewing.
 4. Commit and push.
 
+## How to publish a new page (any type)
+
+Whenever you ship a new page, **also add an entry to `web/js/catalog.js`**.
+The home page (`index.html`) auto-renders every catalog entry as a card
+under the right category section, with a NEW badge for 14 days. Skipping
+this step is the single most common way a published piece becomes
+invisible to readers.
+
+```js
+// web/js/catalog.js → CATALOG array
+{
+  slug:  "my-new-thing",
+  type:  "strategy",          // or "calculator" | "portfolio"
+  title: "My New Thing",
+  blurb: "One short sentence describing what it does.",
+  page:  "my-new-thing.html",
+  added: "YYYY-MM-DD",
+},
+```
+
+To introduce a brand-new category (beyond strategy/calculator/portfolio),
+append to the `CATEGORIES` array in the same file and add a corresponding
+nav link if it warrants top-level visibility.
+
 ## How to add a new strategy page
 
 If the new strategy fits the "filter → events → summary" pattern:
@@ -265,8 +292,9 @@ If the new strategy fits the "filter → events → summary" pattern:
 3. **Adjust the event-detection logic**:
    - If the new logic is a tweak of `findEvents`, add an option to it in `strategy-engine.js`
    - If it's a fundamentally different shape, write a new function (e.g. `findCrossoverEvents`) in `strategy-engine.js` and import from the new page
-4. **Update masthead nav** on all pages (`buy-the-bounce.html`, `-league.html`, `portfolios.html`, `glossary.html`, `about.html`) if it deserves a top-level nav slot. Otherwise link from the strategies page.
-5. **Test locally**, commit, push.
+4. **Update masthead nav** on all pages (`index.html`, `buy-the-bounce.html`, `-league.html`, `portfolios.html`, `glossary.html`, `about.html`) only if it deserves a new top-level nav slot. Most new pages don't — readers find them via the home page.
+5. **Add a CATALOG entry** in `web/js/catalog.js` (see above) so it shows on the home page.
+6. **Test locally**, commit, push.
 
 If the new page is an analysis/calculator/chart (not strategy-shaped), use `portfolios.html` as the template instead — that pattern covers picker + chart + stats + blurb.
 
@@ -360,6 +388,7 @@ Repository **must be public** for free GitHub Pages. Don't change it back to pri
 | Add a comparison page | Copy `buy-the-bounce-league.html` + `.js` |
 | Add a chart/calculator page | Copy `portfolios.html` + `.js` |
 | Add a glossary term | `web/glossary.html` (alphabetical) |
+| Publish a new page on the home page | `web/js/catalog.js` (append a CATALOG entry) |
 | Change deploy schedule | `.github/workflows/deploy.yml` `cron:` |
 | Trigger a fresh deploy | `gh workflow run deploy.yml -R bennetwi92/macro-beans` |
 | Check site is live | `curl https://bennetwi92.github.io/macro-beans/` |
