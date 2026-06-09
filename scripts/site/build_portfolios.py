@@ -68,6 +68,46 @@ PORTFOLIOS = [
         "short": {"underlying": "^GSPC", "letf": "3USS.L", "label": "S&P 500",    "lev": 3},
         "beta_clip": None,
     },
+    {
+        "slug":  "copper-gold",
+        "name":  "Copper / Gold",
+        "blurb": "Long copper, short gold. Both 3x. Copper — 'Dr Copper' — climbs when global industry is busy; gold climbs when investors are scared. The copper-to-gold ratio is a classic growth-vs-fear gauge: this pair gains when the market prices in faster growth and fades when fear takes over. Beta is clipped to [0.05, 2.0] because the copper-vs-gold correlation drifts between regimes.",
+        "long":  {"underlying": "HG=F", "letf": "3HCL.L", "label": "Copper", "lev": 3},
+        "short": {"underlying": "GC=F", "letf": "3GOS.L", "label": "Gold",   "lev": 3},
+        "beta_clip": [0.05, 2.0],
+    },
+    {
+        "slug":  "crude-gold",
+        "name":  "Crude Oil / Gold",
+        "blurb": "Long WTI crude, short gold. Both 3x. Both are real assets that tend to rise with inflation, but crude is driven by demand and the economic cycle while gold is the haven of choice when growth stalls. Expresses a commodity-reflation view — gains when energy demand and inflation run hot relative to safe-haven flows. Beta is clipped to [0, 2.0] because the crude-gold link is loose and shifts with the cycle.",
+        "long":  {"underlying": "CL=F", "letf": "3LOI.L", "label": "WTI Crude", "lev": 3},
+        "short": {"underlying": "GC=F", "letf": "3GOS.L", "label": "Gold",      "lev": 3},
+        "beta_clip": [0.0, 2.0],
+    },
+    {
+        "slug":  "eurostoxx-spx",
+        "name":  "EURO STOXX 50 / S&P 500",
+        "blurb": "Long the EURO STOXX 50, short the S&P 500. Both 3x. A bet that Europe's biggest companies outperform America's — the reverse of the 'US exceptionalism' trade that has dominated the last decade. Gains when European equities close the gap; bleeds when US mega-caps keep leading.",
+        "long":  {"underlying": "^STOXX50E", "letf": "3EUL.L", "label": "EURO STOXX 50", "lev": 3},
+        "short": {"underlying": "^GSPC",     "letf": "3USS.L", "label": "S&P 500",       "lev": 3},
+        "beta_clip": None,
+    },
+    {
+        "slug":  "dax-ftse100",
+        "name":  "DAX 40 / FTSE 100",
+        "blurb": "Long Germany's DAX 40, short the UK's FTSE 100. Both 3x. The DAX is packed with exporters and industrials; the FTSE 100 leans on energy, miners and banks that earn most of their revenue abroad. Expresses a view that Eurozone industry outperforms UK large-caps — sensitive to the euro, German manufacturing and global trade.",
+        "long":  {"underlying": "^GDAXI", "letf": "3DEL.L", "label": "DAX 40",   "lev": 3},
+        "short": {"underlying": "^FTSE",  "letf": "3UKS.L", "label": "FTSE 100", "lev": 3},
+        "beta_clip": None,
+    },
+    {
+        "slug":  "brent-wti",
+        "name":  "Brent / WTI Crude",
+        "blurb": "Long Brent crude, short WTI. Both 3x. Brent is the global oil benchmark; WTI is the US landlocked grade. The gap between them — the Brent-WTI spread — widens when US supply is plentiful or world supply is tight, and narrows when the reverse holds. A focused bet on that spread rather than the direction of oil itself.",
+        "long":  {"underlying": "BZ=F", "letf": "3BLR.L", "label": "Brent Crude", "lev": 3},
+        "short": {"underlying": "CL=F", "letf": "3OIS.L", "label": "WTI Crude",   "lev": 3},
+        "beta_clip": None,
+    },
 ]
 
 
@@ -92,6 +132,14 @@ def build_portfolio(p: dict) -> tuple[list[list], dict]:
     # Align on common dates
     closes = pd.DataFrame({"long": long_close, "short": short_close}).dropna()
     rets = closes.pct_change().dropna()
+
+    # Winsorize raw daily returns. Guards against bad ticks and futures
+    # artifacts (e.g. the 2020-04-20 WTI front-month print of -$37, a
+    # ~-306% "daily return") that a real daily-rebalanced LETF wrapper
+    # could never realize — and which would otherwise flip the cumulative
+    # equity curve through zero or inflate it spuriously. The band is wide
+    # enough never to touch legitimate index/metal moves.
+    rets = rets.clip(lower=-0.5, upper=1.0)
 
     cov = rets["long"].rolling(LOOKBACK).cov(rets["short"])
     var = rets["short"].rolling(LOOKBACK).var()
