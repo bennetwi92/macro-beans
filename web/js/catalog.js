@@ -32,7 +32,7 @@ export const CATALOG = [
     slug:  "portfolios",
     type:  "portfolio",
     title: "Pair Portfolios",
-    blurb: "Relative-value long-short portfolios, beta-hedged. Track each one's historical equity curve and drawdowns.",
+    blurb: "Relative-value long-short pairs, beta-hedged — from leveraged-ETF index pairs to UK single-share CFD pairs priced with real Trading 212 costs.",
     page:  "portfolios.html",
     added: "2026-06-08",
   },

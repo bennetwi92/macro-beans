@@ -8,8 +8,27 @@ const DATA_BASE = "data";
 
 const state = {
   slug: null,
-  mode: "letf",   // 'letf' or 'under'
+  mode: "letf",   // slot key: 'letf' = column 2 (wrapper / net), 'under' = column 1 (gross / 1x)
 };
+
+// Per-kind labels for the two curves. The 'letf' slot is always column 2,
+// 'under' is always column 1 — only the wording changes between an LETF
+// index pair and a CFD single-share pair.
+const KIND_LABELS = {
+  letf: {
+    clab: "WRAPPER",
+    letf:  { chip: "LSE LETF wrap", label: "LETF WRAPPER", word: "LETF wrapper" },
+    under: { chip: "1x underlying", label: "1X UNDERLYING", word: "1x underlying" },
+  },
+  cfd: {
+    clab: "VIEW",
+    letf:  { chip: "Net of costs", label: "NET OF T212 COSTS", word: "net of T212 costs" },
+    under: { chip: "Gross spread", label: "GROSS SPREAD",      word: "gross spread, no costs" },
+  },
+};
+
+function kindOf(meta){ return meta && meta.kind === "cfd" ? "cfd" : "letf"; }
+function legDisp(leg){ return leg.letf || leg.ticker || leg.label; }
 
 let menu = [];
 const cache = new Map();
@@ -178,31 +197,47 @@ function renderPortfolioMenu(){
 function renderPortfolioLabel(p){
   document.getElementById("portfolio-name").textContent = p.name;
   document.getElementById("portfolio-legs").textContent =
-    `${p.long.letf} + ${p.short.letf}`;
+    `${legDisp(p.long)} + ${legDisp(p.short)}`;
 }
 
-function renderModeChips(){
+function applyKindLabels(meta){
+  const cfg = KIND_LABELS[kindOf(meta)];
+  document.getElementById("mode-clab").textContent = cfg.clab;
   const seg = document.getElementById("mode-seg");
   for(const opt of seg.querySelectorAll(".opt")){
     opt.classList.toggle("on", opt.dataset.value === state.mode);
+    const slot = cfg[opt.dataset.value];
+    if(slot) opt.textContent = slot.chip;
   }
 }
 
 function renderBlurb(meta){
   document.getElementById("portfolio-blurb").textContent = meta.blurb;
   const beta = meta.beta_clip
-    ? `, beta clipped to [${meta.beta_clip[0]}, ${meta.beta_clip[1]}]`
+    ? `, hedge ratio clipped to [${meta.beta_clip[0]}, ${meta.beta_clip[1]}]`
     : "";
-  document.getElementById("portfolio-legs-line").innerHTML =
-    `Long leg: <b>${escapeHtml(meta.long.label)}</b> via ` +
-    `<b>${escapeHtml(meta.long.letf)}</b> (${meta.long.lev}x). ` +
-    `Short leg: <b>${escapeHtml(meta.short.label)}</b> via ` +
-    `<b>${escapeHtml(meta.short.letf)}</b> (${meta.short.lev}x short). ` +
-    `Hedge ratio recomputed daily from prior ${meta.lookback}-day window${beta}.`;
+  const legsEl = document.getElementById("portfolio-legs-line");
+  if(kindOf(meta) === "cfd"){
+    const markup = meta.markup_annual != null ? (meta.markup_annual * 100).toFixed(1) : "3.0";
+    legsEl.innerHTML =
+      `Long leg: <b>${escapeHtml(meta.long.label)}</b> (${escapeHtml(meta.long.ticker || "")}). ` +
+      `Short leg: <b>${escapeHtml(meta.short.label)}</b> (${escapeHtml(meta.short.ticker || "")}), held short. ` +
+      `Hedge ratio recomputed daily from the prior ${meta.lookback}-day window${beta}. ` +
+      `The net view applies Trading 212 CFD costs: zero commission, no FX fee (both legs are GBP-listed), ` +
+      `and overnight financing every night — the benchmark rate (≈ BoE Bank Rate) plus a ~${markup}% per-year markup on the long leg, ` +
+      `minus the same markup credited on the short. On a balanced pair the benchmark cancels and the running cost is roughly twice the markup.`;
+  } else {
+    legsEl.innerHTML =
+      `Long leg: <b>${escapeHtml(meta.long.label)}</b> via ` +
+      `<b>${escapeHtml(meta.long.letf)}</b> (${meta.long.lev}x). ` +
+      `Short leg: <b>${escapeHtml(meta.short.label)}</b> via ` +
+      `<b>${escapeHtml(meta.short.letf)}</b> (${meta.short.lev}x short). ` +
+      `Hedge ratio recomputed daily from prior ${meta.lookback}-day window${beta}.`;
+  }
 }
 
-function renderStats(snap, mode){
-  const modeWord = mode === "letf" ? "LETF wrapper" : "1x underlying";
+function renderStats(snap, mode, meta){
+  const modeWord = KIND_LABELS[kindOf(meta)][mode].word;
   const rows = [
     {
       label: "CURRENT VALUE",
@@ -256,16 +291,17 @@ function renderBuiltLine(){
 
 async function update(){
   const payload = await loadPortfolio(state.slug);
+  const meta = payload.meta;
   const modeIdx = state.mode === "letf" ? 2 : 1;
   const color = state.mode === "letf" ? "var(--cyan)" : "var(--magenta)";
-  const label = state.mode === "letf" ? "LETF WRAPPER" : "1X UNDERLYING";
+  const label = KIND_LABELS[kindOf(meta)][state.mode].label;
 
-  renderPortfolioLabel(payload.meta);
-  renderModeChips();
-  renderBlurb(payload.meta);
+  renderPortfolioLabel(meta);
+  applyKindLabels(meta);
+  renderBlurb(meta);
 
   const snap = computeSnapshot(payload.bars, modeIdx);
-  renderStats(snap, state.mode);
+  renderStats(snap, state.mode, meta);
 
   const wrap = document.getElementById("chart-wrap");
   wrap.innerHTML = renderChart(payload.bars, modeIdx, label, color);
