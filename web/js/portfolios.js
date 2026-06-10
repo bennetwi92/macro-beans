@@ -3,8 +3,16 @@
    hand-rolled SVG line chart plus four snapshot stats. */
 
 import { escapeHtml } from "./strategy-engine.js";
+import { CATALOG } from "./catalog.js";
 
 const DATA_BASE = "data";
+
+// Reports tied to a portfolio, keyed by portfolio slug. Sourced from the
+// publication catalog so there's one source of truth for what's published.
+const REPORTS_BY_PORTFOLIO = new Map(
+  CATALOG.filter(c => c.type === "report" && c.portfolio)
+         .map(c => [c.portfolio, c])
+);
 
 const state = {
   slug: null,
@@ -311,6 +319,16 @@ function renderStats(snap, mode, meta){
     `${modeWord} · ${snap.firstDate} → ${snap.lastDate}`;
 }
 
+// Show a deep-dive link when the selected portfolio has a published report.
+function renderReport(){
+  const panel = document.getElementById("report-panel");
+  const report = REPORTS_BY_PORTFOLIO.get(state.slug);
+  if(!report){ panel.hidden = true; return; }
+  document.getElementById("report-blurb").textContent = report.blurb;
+  document.getElementById("report-link").href = report.page;
+  panel.hidden = false;
+}
+
 function renderBuiltLine(){
   if(!builtAt) return;
   document.getElementById("built-line").textContent =
@@ -329,6 +347,7 @@ async function update(){
   renderPortfolioLabel(meta);
   applyKindLabels(meta);
   renderBlurb(meta);
+  renderReport();
 
   const snap = computeSnapshot(payload.bars, modeIdx);
   renderStats(snap, state.mode, meta);
