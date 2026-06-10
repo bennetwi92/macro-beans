@@ -49,9 +49,22 @@ async function loadBars(slug){
 
 function renderInstrumentMenu(){
   const sel = document.getElementById("instrument-select");
-  sel.innerHTML = instruments.map(i =>
-    `<option value="${i.slug}">${i.label}</option>`
-  ).join("");
+  const opt = i => `<option value="${i.slug}">${i.label}</option>`;
+  // Group into <optgroup> sections (the list is long enough to warrant it).
+  // Preserve the order groups first appear in the menu; fall back to a flat
+  // list if the data predates the `group` field.
+  const groups = [];
+  const byGroup = new Map();
+  for(const i of instruments){
+    const g = i.group || "";
+    if(!byGroup.has(g)){ byGroup.set(g, []); groups.push(g); }
+    byGroup.get(g).push(i);
+  }
+  sel.innerHTML = (groups.length === 1 && groups[0] === "")
+    ? instruments.map(opt).join("")
+    : groups.map(g =>
+        `<optgroup label="${escapeHtml(g)}">${byGroup.get(g).map(opt).join("")}</optgroup>`
+      ).join("");
   sel.value = state.instrument;
   updateInstrumentLabel();
 }
