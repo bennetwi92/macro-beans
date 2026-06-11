@@ -419,6 +419,59 @@ table{ width:100%; border-collapse:collapse; }
 .foot .warn-line{ color:var(--gold); }
 .foot .built{ color:var(--dim); }
 
+/* ---------- seasonality heatmap (best-months page) ----------
+   Each cell is shaded from its dark base toward the win/loss colour by a
+   per-cell intensity passed in as the inline custom property --i (0..1).
+   color-mix keeps the hex out of JS and references the palette variables. */
+.heat{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+.heat-cell{
+  background:var(--inset);
+  border:2px solid var(--line);
+  padding:12px 12px 13px;
+  display:flex; flex-direction:column; min-width:0;
+}
+.heat-cell.pos{ background:color-mix(in srgb, var(--win-bg),  var(--win)  calc(var(--i,0) * 62%)); border-color:var(--line-2); }
+.heat-cell.neg{ background:color-mix(in srgb, var(--loss-bg), var(--loss) calc(var(--i,0) * 62%)); border-color:var(--line-2); }
+.heat-cell.thin{ opacity:.5; }
+.heat-cell .hc-mon{ font-family:var(--pixel); font-size:9px; color:var(--dim); letter-spacing:.5px; margin-bottom:9px; }
+.heat-cell.pos .hc-mon, .heat-cell.neg .hc-mon{ color:var(--ink); }
+.heat-cell .hc-big{ font-size:26px; color:var(--ink); line-height:1; }
+.heat-cell .hc-sub{ font-size:14px; color:var(--dim); margin-top:7px; line-height:1.3; }
+
+/* ---------- seasonality league grid (best-months league) ---------- */
+.heat-league{ border-collapse:collapse; width:100%; }
+.heat-league thead th{
+  font-family:var(--pixel);
+  font-size:8px;
+  color:var(--cyan);
+  background:var(--inset);
+  padding:12px 8px;
+  text-align:center;
+  border-bottom:2px solid var(--line);
+  user-select:none;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.heat-league thead th.ix-col{ text-align:left; color:var(--dim); }
+.heat-league thead th:hover{ color:var(--ink); }
+.heat-league thead th.sort-asc::after{  content:" ▲"; color:var(--lime); }
+.heat-league thead th.sort-desc::after{ content:" ▼"; color:var(--lime); }
+.heat-league td{
+  padding:9px 8px;
+  font-size:17px;
+  text-align:center;
+  border:1px solid var(--line);
+  white-space:nowrap;
+}
+.heat-league td.ix{ text-align:left; line-height:1.1; }
+.heat-league .ix-name{ display:block; color:var(--ink); font-size:20px; }
+.heat-league .ix-ticker{ display:block; font-family:var(--pixel); font-size:8px; color:var(--dim); margin-top:5px; letter-spacing:.4px; }
+.heat-league .hl-cell{ color:var(--ink); }
+.heat-league .hl-cell.pos{ background:color-mix(in srgb, var(--win-bg),  var(--win)  calc(var(--i,0) * 62%)); }
+.heat-league .hl-cell.neg{ background:color-mix(in srgb, var(--loss-bg), var(--loss) calc(var(--i,0) * 62%)); }
+.heat-league .hl-cell.thin{ color:var(--dim); background:var(--inset); }
+.heat-league .empty{ text-align:center; color:var(--dim); padding:40px 14px; }
+
 /* ---------- responsive / mobile ----------
    Single source of truth for the site's mobile behaviour. Two breakpoints:
    760px (phones + small tablets) and 440px (narrow phones). Patterns:
@@ -465,6 +518,12 @@ table{ width:100%; border-collapse:collapse; }
   .log td:first-child{ font-size:17px; }
   .log thead th, .league thead th{ padding:11px 11px; }
 
+  /* seasonality heatmap reflows; the league grid swipes */
+  .heat{ grid-template-columns:repeat(3,1fr); gap:8px; }
+  .heat-cell .hc-big{ font-size:23px; }
+  .heat-league{ min-width:740px; }
+  .heat-league td{ font-size:16px; padding:8px 6px; }
+
   /* compact scoreboard shrinks to fit */
   .score th, .score td{ padding:9px 9px; }
   .score tbody td{ font-size:21px; }
@@ -490,6 +549,7 @@ table{ width:100%; border-collapse:collapse; }
   /* one control / stat per row on the narrowest screens */
   .ctl-grid, .ctl-grid-4, .ctl-grid-3, .ctl-grid-2{ grid-template-columns:1fr; }
   .stat-grid{ grid-template-columns:1fr; }
+  .heat{ grid-template-columns:repeat(2,1fr); }
 
   .strat h1{ font-size:18px; }
   .verdict .vtext{ font-size:21px; }
