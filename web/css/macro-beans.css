@@ -230,6 +230,12 @@ table{ width:100%; border-collapse:collapse; }
 .league .ix-name{ display:block; color:var(--ink); font-size:21px; }
 .league .ix-ticker{ display:block; font-family:var(--pixel); font-size:8px; color:var(--dim); margin-top:6px; letter-spacing:.4px; }
 
+/* ---------- scanner ---------- */
+/* Instrument cell deep-links to the matching strategy page; keep it looking
+   like the rest of the cell, with a cyan hover to signal it's clickable. */
+.scanner td.ix a{ display:block; text-decoration:none; }
+.scanner td.ix a:hover .ix-name{ color:var(--cyan); }
+
 /* ---------- home: hero ---------- */
 .hero{
   border:3px solid var(--gold);

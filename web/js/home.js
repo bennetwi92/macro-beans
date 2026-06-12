@@ -36,6 +36,7 @@ function renderCard(item){
 // #reports) so the masthead nav links land on the right section.
 const SECTION_ID = {
   strategy:   "strategies",
+  signal:     "signals",
   calculator: "calculators",
   portfolio:  "portfolios",
   report:     "reports",
