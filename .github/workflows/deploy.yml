@@ -41,6 +41,12 @@ jobs:
       - name: Build instrument data
         run: python scripts/site/build_data.py
 
+      - name: Build reference data
+        # Registry-derived JSON for the Instruments / Symbols pages. Reads the
+        # registry (no yfinance, no duckdb) and enriches web symbols with
+        # freshness from the instruments.json built in the previous step.
+        run: python scripts/site/build_reference.py
+
       - name: Build portfolio data
         run: python scripts/site/build_portfolios.py
 

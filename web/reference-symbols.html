@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Beans — Symbols</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/macro-beans.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <a class="logo" href="index.html"><span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span></a>
+    <nav class="nav">
+      <a href="index.html#strategies">STRATEGIES</a>
+      <a href="scanner.html">SCANNER</a>
+      <a href="index.html#portfolios">PORTFOLIOS</a>
+      <a href="reference-instruments.html" class="on">REFERENCE</a>
+      <a href="glossary.html">GLOSSARY</a>
+      <a href="about.html">ABOUT</a>
+    </nav>
+  </header>
+
+  <div class="strat">
+    <div>
+      <h1>SYMBOLS</h1>
+      <div class="lede">Every concrete ticker behind those markets — the LSE ETFs charted on the site and the US tickers in the research universe — with venue, surface and freshness.</div>
+      <a class="strat-link" href="reference-instruments.html">← BACK TO INSTRUMENTS</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>FILTERS</h2><span class="note">narrow the table below</span></div>
+    <div class="ctl-grid ctl-grid-4">
+
+      <div class="ctl">
+        <div class="clab">VENUE</div>
+        <div class="seg" id="venue-seg">
+          <button type="button" class="opt on" data-value="all">All</button>
+          <button type="button" class="opt"    data-value="LSE">LSE</button>
+          <button type="button" class="opt"    data-value="US">US</button>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">SURFACE</div>
+        <div class="seg" id="surface-seg">
+          <button type="button" class="opt on" data-value="all">All</button>
+          <button type="button" class="opt"    data-value="web">Web</button>
+          <button type="button" class="opt"    data-value="research">Research</button>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">CATEGORY</div>
+        <select class="filter-select" id="category-select" aria-label="Filter by category">
+          <option value="all">All categories</option>
+        </select>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">FIND</div>
+        <input type="text" class="filter-input" id="find-input"
+               placeholder="ticker or market" aria-label="Find by ticker or market">
+      </div>
+
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>ALL SYMBOLS</h2><span class="note" id="table-note">loading…</span></div>
+    <div class="logwrap">
+      <table class="league reftable">
+        <thead>
+          <tr id="table-head">
+            <th class="sort-able" data-key="ticker"          data-default-dir="asc">TICKER</th>
+            <th class="sort-able" data-key="instrument_name" data-default-dir="asc">INSTRUMENT</th>
+            <th class="sort-able" data-key="venue"           data-default-dir="asc">VENUE</th>
+            <th class="sort-able" data-key="surface"         data-default-dir="asc">SURFACE</th>
+            <th class="sort-able" data-key="category"        data-default-dir="asc">CATEGORY</th>
+            <th class="sort-able" data-key="n_bars"          data-default-dir="desc">BARS</th>
+            <th class="sort-able" data-key="last_date"       data-default-dir="desc">LAST DATA</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="7" class="empty">loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="warn-line">⚠ PAST RESULTS ARE NOT A PROMISE OF FUTURE RETURNS · NOT FINANCIAL ADVICE</div>
+    <div class="built" id="built-line">MACRO BEANS</div>
+  </div>
+
+</div>
+
+<script type="module" src="js/reference-symbols.js"></script>
+</body>
+</html>

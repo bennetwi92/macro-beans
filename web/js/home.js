@@ -41,6 +41,7 @@ const SECTION_ID = {
   calculator: "calculators",
   portfolio:  "portfolios",
   report:     "reports",
+  reference:  "reference",
 };
 
 function renderCategory(cat){

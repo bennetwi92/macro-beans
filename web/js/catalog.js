@@ -3,7 +3,7 @@
    piece by appending one object. Keep `added` in YYYY-MM-DD; the home
    page tags it as NEW for 14 days.
 
-   type:     "strategy" | "calculator" | "portfolio" | "report"
+   type:     "strategy" | "calculator" | "portfolio" | "report" | "reference"
    slug:     short identifier (used as DOM id, must be unique)
    title:    display title for the card
    blurb:    one short sentence (~20 words)
@@ -87,6 +87,22 @@ export const CATALOG = [
     added: "2026-06-12",
   },
   {
+    slug:  "reference-instruments",
+    type:  "reference",
+    title: "Instruments",
+    blurb: "Every market we track in one sortable table — what it is, where it lists, and which strategies cover it.",
+    page:  "reference-instruments.html",
+    added: "2026-06-12",
+  },
+  {
+    slug:  "reference-symbols",
+    type:  "reference",
+    title: "Symbols",
+    blurb: "Every concrete ticker behind those markets — LSE ETFs and US tickers — with venue, surface and freshness.",
+    page:  "reference-symbols.html",
+    added: "2026-06-12",
+  },
+  {
     slug:      "report-shell-bp",
     type:      "report",
     title:     "Shell vs BP: What's Driving the Swings",
@@ -104,6 +120,7 @@ export const CATEGORIES = [
   { key: "calculator", label: "CALCULATORS",  blurb: "Tools to size, value, or score a trade." },
   { key: "portfolio",  label: "PORTFOLIOS",   blurb: "Multi-leg positions tracked over time." },
   { key: "report",     label: "REPORTS",      blurb: "Deep dives on what's been moving a market or a pair." },
+  { key: "reference",  label: "REFERENCE",    blurb: "The full map of markets and tickers behind the site." },
 ];
 
 export const NEW_BADGE_DAYS = 14;

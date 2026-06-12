@@ -310,8 +310,11 @@ group = "Bonds & Credit"
 slug = "gold"
 name = "Gold"
 category = "Commodities"
-surfaces = ["web"]
+# Dual-surface: an LSE ETF on the web, GLD in the research universe. The same
+# logical exposure carries two symbols -- see src/data/registry Instrument.symbols().
+surfaces = ["web", "research"]
 web_ticker = "SGLN.L"
+research_ticker = "GLD"
 sublabel = "Precious Metal"
 group = "Commodities"
 
@@ -757,13 +760,6 @@ name = "Marathon Petroleum"
 category = "Energy"
 surfaces = ["research"]
 research_ticker = "MPC"
-
-[[instrument]]
-slug = "gld"
-name = "SPDR Gold Shares"
-category = "Commodity ETF"
-surfaces = ["research"]
-research_ticker = "GLD"
 
 [[instrument]]
 slug = "corn"

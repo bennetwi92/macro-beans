@@ -21,6 +21,37 @@ from src.data.paths import CONFIG_DIR
 
 INSTRUMENTS_TOML = CONFIG_DIR / "instruments.toml"
 PORTFOLIOS_TOML = CONFIG_DIR / "portfolios.toml"
+STRATEGIES_TOML = CONFIG_DIR / "strategies.toml"
+
+
+def _venue_of(ticker: str) -> str:
+    """Classify a ticker into a display venue (for the reference pages).
+
+    Purely cosmetic: ``.L`` is an LSE listing, ``=F`` a future, ``^`` an index,
+    and anything else on the research side is treated as US-listed.
+    """
+    if ticker.endswith(".L"):
+        return "LSE"
+    if ticker.endswith("=F"):
+        return "FUTURE"
+    if ticker.startswith("^"):
+        return "INDEX"
+    return "US"
+
+
+@dataclass(frozen=True)
+class Symbol:
+    """One concrete market ticker carried by an instrument.
+
+    An instrument is a logical exposure; a symbol is the venue-specific ticker
+    that actually points at price data. An instrument with both a web_ticker
+    and a research_ticker yields two symbols.
+    """
+
+    ticker: str          # e.g. "VUSA.L" or "GLD"
+    surface: str         # "web" | "research"
+    venue: str           # "LSE" | "US" | "FUTURE" | "INDEX" (display only)
+    role: str            # "web_ticker" | "research_ticker"
 
 
 @dataclass(frozen=True)
@@ -39,6 +70,22 @@ class Instrument:
 
     def on(self, surface: str) -> bool:
         return surface in self.surfaces
+
+    def symbols(self) -> tuple[Symbol, ...]:
+        """Every concrete ticker this exposure carries, one per (surface, role).
+
+        Only emits a symbol when its surface is declared in ``surfaces`` -- the
+        surfaces list stays the single source of truth for where an instrument
+        is live.
+        """
+        out: list[Symbol] = []
+        if self.web_ticker and self.on("web"):
+            out.append(Symbol(self.web_ticker, "web", _venue_of(self.web_ticker), "web_ticker"))
+        if self.research_ticker and self.on("research"):
+            out.append(
+                Symbol(self.research_ticker, "research", _venue_of(self.research_ticker), "research_ticker")
+            )
+        return tuple(out)
 
 
 @dataclass(frozen=True)
@@ -73,6 +120,20 @@ class Portfolio:
     short: PortfolioLeg
     kind: str = "letf"
     beta_clip: tuple[float, float] | None = None
+
+
+@dataclass(frozen=True)
+class Strategy:
+    """A published strategy and the data surface it needs to run.
+
+    An instrument is "covered" by a strategy iff it carries the symbol on
+    ``requires_surface`` (see ``instrument_covers``).
+    """
+
+    slug: str
+    name: str
+    requires_surface: str
+    page: str | None = None
 
 
 def _load_toml(path: Path) -> dict:
@@ -151,11 +212,41 @@ def load_portfolios() -> list[Portfolio]:
     return out
 
 
+@lru_cache(maxsize=1)
+def load_strategies() -> list[Strategy]:
+    """Return the published strategies defined in ``config/strategies.toml``."""
+    raw = _load_toml(STRATEGIES_TOML)
+    return [
+        Strategy(
+            slug=entry["slug"],
+            name=entry["name"],
+            requires_surface=entry["requires_surface"],
+            page=entry.get("page"),
+        )
+        for entry in raw.get("strategy", [])
+    ]
+
+
+def instrument_covers(inst: Instrument, strat: Strategy) -> bool:
+    """True iff the instrument carries the symbol the strategy consumes."""
+    return inst.on(strat.requires_surface)
+
+
+def coverage_map(inst: Instrument, strategies: list[Strategy]) -> dict[str, bool]:
+    """Per-strategy coverage for one instrument, keyed by strategy slug."""
+    return {s.slug: instrument_covers(inst, s) for s in strategies}
+
+
 __all__ = [
     "Instrument",
     "Portfolio",
     "PortfolioLeg",
+    "Strategy",
+    "Symbol",
+    "coverage_map",
+    "instrument_covers",
     "load_instruments",
     "load_portfolios",
+    "load_strategies",
     "research_tickers",
 ]
