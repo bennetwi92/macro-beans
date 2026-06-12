@@ -1,11 +1,16 @@
-"""Data loader for stock price data"""
+"""Data loader for stock price data.
+
+Sources prices from the shared MarketStore (DuckDB cache) rather than reading
+CSVs directly, so the model side and the rest of the repo share one cache and
+one universe definition (the registry).
+"""
 
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional
 import logging
-from pathlib import Path
-import os
+
+from src.data.store import MarketStore
 
 logger = logging.getLogger(__name__)
 
@@ -13,45 +18,27 @@ logger = logging.getLogger(__name__)
 class DataLoader:
     """Load and prepare stock data for model training"""
 
-    def __init__(self, data_path: str = "/Users/williambennett/Github/macro-beans/data/stock_history"):
-        """Initialize data loader"""
-        self.data_path = Path(data_path)
-        if not self.data_path.exists():
-            raise ValueError(f"Data path {data_path} does not exist")
+    def __init__(self, store: MarketStore = None):
+        """Initialize data loader backed by the DuckDB price cache."""
+        self.store = store or MarketStore()
 
-        # Get available symbols
-        self.available_symbols = [
-            f.stem for f in self.data_path.glob("*.csv")
-        ]
-        logger.info(f"Found {len(self.available_symbols)} symbols in {data_path}")
+        # Available universe = whatever is cached in the store.
+        self.available_symbols = self.store.available_tickers()
+        logger.info(f"Found {len(self.available_symbols)} symbols in the price cache")
 
     def load_symbol(self, symbol: str, start_date: str = None, end_date: str = None) -> pd.DataFrame:
-        """Load data for a single symbol"""
-        file_path = self.data_path / f"{symbol}.csv"
-
-        if not file_path.exists():
-            logger.warning(f"Data file for {symbol} not found")
-            return pd.DataFrame()
-
+        """Load data for a single symbol as a Date-column frame (legacy shape)."""
         try:
-            df = pd.read_csv(file_path)
+            prices = self.store.get_prices(symbol, start=start_date, end=end_date)
 
-            # Convert date column - handle timezone aware dates by removing timezone
-            df['Date'] = pd.to_datetime(df['Date'], utc=True).dt.tz_localize(None)
+            if prices.empty:
+                logger.warning(f"No cached data for {symbol}")
+                return pd.DataFrame()
 
-            # Sort by date
-            df = df.sort_values('Date')
-
-            # Filter by date range if specified
-            if start_date:
-                df = df[df['Date'] >= pd.to_datetime(start_date)]
-            if end_date:
-                df = df[df['Date'] <= pd.to_datetime(end_date)]
-
-            # Add symbol column
+            # Legacy contract: 'Date' is a column (not the index), plus 'Symbol'.
+            df = prices.reset_index().sort_values('Date')
             df['Symbol'] = symbol
 
-            # Basic data validation
             required_cols = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume']
             if not all(col in df.columns for col in required_cols):
                 logger.warning(f"Missing required columns for {symbol}")

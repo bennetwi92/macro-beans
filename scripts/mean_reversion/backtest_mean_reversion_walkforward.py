@@ -3,6 +3,7 @@
 Replays scanner daily and tracks actual outcomes with proper look-ahead bias prevention
 """
 
+import sys
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -15,9 +16,13 @@ import warnings
 warnings.filterwarnings('ignore')
 
 REPO = Path(__file__).resolve().parents[2]
-DATA_DIR = str(REPO / 'data' / 'stock_history')
+sys.path.insert(0, str(REPO))
+from src.data.store import MarketStore  # noqa: E402
+
 REPO_DATA = REPO / 'data' / 'backtests'
 REPO_DATA.mkdir(parents=True, exist_ok=True)
+
+_STORE = MarketStore()
 
 
 @dataclass
@@ -64,13 +69,10 @@ class WalkForwardBacktest:
         self.require_uptrend = require_uptrend
 
     def load_stock_data(self, symbol: str) -> Optional[pd.DataFrame]:
-        """Load cached stock data"""
-        filepath = os.path.join(DATA_DIR, f"{symbol}.csv")
-        if not os.path.exists(filepath):
+        """Load cached stock data from the DuckDB price store."""
+        data = _STORE.get_prices(symbol)
+        if data.empty:
             return None
-
-        data = pd.read_csv(filepath, index_col=0, parse_dates=True)
-        data.index = pd.to_datetime(data.index, utc=True).tz_localize(None)
         return data
 
     def calculate_rsi(self, prices: pd.Series, period: int = 2) -> pd.Series:

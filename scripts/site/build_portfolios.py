@@ -25,12 +25,17 @@ Run locally:
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
+# Make `src` importable so we can read the shared portfolio registry.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.data.registry import load_portfolios  # noqa: E402
 
 LOOKBACK = 60
 START = "2000-01-01"
@@ -78,94 +83,38 @@ BANK_RATE_STEPS = [
     ("2025-08-07", 0.0400),
 ]
 
-PORTFOLIOS = [
-    {
-        "slug":  "silver-gold",
-        "name":  "Silver / Gold",
-        "kind":  "letf",
-        "blurb": "Long silver, short gold. Silver is the higher-beta industrial precious metal; gold is the safe-haven. Expresses a pro-cyclical, reflationary view — gains when growth expectations rise faster than risk-off demand.",
-        "long":  {"underlying": "SI=F", "letf": "3SIL.L", "label": "Silver",   "lev": 3},
-        "short": {"underlying": "GC=F", "letf": "3GOS.L", "label": "Gold",     "lev": 3},
-        "beta_clip": None,
-    },
-    {
-        "slug":  "gold-treasuries",
-        "name":  "Gold / 10Y Treasuries",
-        "kind":  "letf",
-        "blurb": "Long gold, short 10-year US Treasuries. Captures real-yield repricing and inflation surprises — gold rallies when real yields fall, but the bond leg drags when nominal yields move. Beta is clipped to [0.1, 2.0] because gold-vs-bond correlation flips between regimes.",
-        "long":  {"underlying": "GC=F", "letf": "3GOL.L", "label": "Gold",     "lev": 3},
-        "short": {"underlying": "ZN=F", "letf": "3TYS.L", "label": "10Y UST",  "lev": 3},
-        "beta_clip": [0.1, 2.0],
-    },
-    {
-        "slug":  "ftse250-ftse100",
-        "name":  "FTSE 250 / FTSE 100",
-        "kind":  "letf",
-        "blurb": "Long UK mid-caps (domestic-revenue heavy), short UK large-caps (international-revenue heavy, GBP-sensitive). Expresses a positive view on UK domestic activity / sterling. Note the asymmetric leverage: 2x long mid via 2MCL.L, 3x short large via 3UKS.L.",
-        "long":  {"underlying": "^FTMC", "letf": "2MCL.L", "label": "FTSE 250", "lev": 2},
-        "short": {"underlying": "^FTSE", "letf": "3UKS.L", "label": "FTSE 100", "lev": 3},
-        "beta_clip": None,
-    },
-    {
-        "slug":  "ndx-spx",
-        "name":  "Nasdaq 100 / S&P 500",
-        "kind":  "letf",
-        "blurb": "Long Nasdaq 100, short S&P 500. Both 3x. Expresses a positive view on the tech-vs-broad-market dispersion. Will outperform when mega-cap tech leads, underperform when leadership broadens to value/cyclicals.",
-        "long":  {"underlying": "^NDX",  "letf": "QQQ3.L", "label": "Nasdaq 100", "lev": 3},
-        "short": {"underlying": "^GSPC", "letf": "3USS.L", "label": "S&P 500",    "lev": 3},
-        "beta_clip": None,
-    },
+def _leg_to_dict(leg) -> dict:
+    """Registry PortfolioLeg -> a leg dict, omitting fields that don't apply.
 
-    # --- LSE single-share pairs, traded as CFDs on Trading 212 ----------------
-    # Same-sector UK names that move together, so the hedge strips out the sector
-    # and leaves the gap between the two companies (a classic mean-reversion pair).
-    # All GBP-listed, so no FX fee — the only running cost is overnight financing.
-    {
-        "slug":  "shell-bp",
-        "name":  "Shell / BP",
-        "kind":  "cfd",
-        "blurb": "Long Shell, short BP — the two London-listed oil supermajors. Both rise and fall with the crude oil price, so hedging one against the other strips out the oil move and leaves the gap between the companies: relative strategy, production and trading results. A textbook mean-reversion pair. Both trade in pence on the LSE, so on a GBP Trading 212 account there is no currency-conversion fee — the only running cost is overnight CFD financing.",
-        "long":  {"underlying": "SHEL.L", "ticker": "SHEL", "label": "Shell"},
-        "short": {"underlying": "BP.L",   "ticker": "BP",   "label": "BP"},
-        "beta_clip": [0.2, 3.0],
-    },
-    {
-        "slug":  "lloyds-natwest",
-        "name":  "Lloyds / NatWest",
-        "kind":  "cfd",
-        "blurb": "Long Lloyds, short NatWest — two UK-focused high-street banks. Both live or die on UK interest rates, mortgages and the domestic economy, so the hedge removes the sector move and isolates relative margins, capital returns and bank-specific news. Tight, liquid and GBP-denominated — no FX fee, just overnight financing.",
-        "long":  {"underlying": "LLOY.L", "ticker": "LLOY", "label": "Lloyds"},
-        "short": {"underlying": "NWG.L",  "ticker": "NWG",  "label": "NatWest"},
-        "beta_clip": [0.2, 3.0],
-    },
-    {
-        "slug":  "tesco-sainsburys",
-        "name":  "Tesco / Sainsbury's",
-        "kind":  "cfd",
-        "blurb": "Long Tesco, short Sainsbury's — Britain's two largest listed supermarkets. Both track UK food inflation and the grocery market-share fight; hedging one against the other leaves the gap between the market leader and its smaller, thinner-margin rival. GBP shares, so no currency fee — only overnight financing.",
-        "long":  {"underlying": "TSCO.L", "ticker": "TSCO", "label": "Tesco"},
-        "short": {"underlying": "SBRY.L", "ticker": "SBRY", "label": "Sainsbury's"},
-        "beta_clip": [0.2, 3.0],
-    },
-    {
-        "slug":  "bat-imperial",
-        "name":  "BAT / Imperial Brands",
-        "kind":  "cfd",
-        "blurb": "Long British American Tobacco, short Imperial Brands — the two UK-listed tobacco majors. Both are defensive, high-yield and move on regulation and the shift to next-generation products, so the hedge isolates the gap between them. Note both earn heavily in dollars, which can drive the spread. GBP-listed — no FX fee, only overnight financing.",
-        "long":  {"underlying": "BATS.L", "ticker": "BATS", "label": "BAT"},
-        "short": {"underlying": "IMB.L",  "ticker": "IMB",  "label": "Imperial"},
-        "beta_clip": [0.2, 3.0],
-    },
-    {
-        "slug":  "glencore-rio",
-        "name":  "Glencore / Rio Tinto",
-        "kind":  "cfd",
-        "blurb": "Long Glencore, short Rio Tinto — two London-listed diversified miners geared to global commodity demand. Rio leans on iron ore; Glencore on copper, coal and commodity trading. Hedging the pair removes the broad mining move and leaves their differing commodity mix. History starts in 2011 when Glencore floated. GBP shares — no FX fee, only overnight financing.",
-        "long":  {"underlying": "GLEN.L", "ticker": "GLEN", "label": "Glencore"},
-        "short": {"underlying": "RIO.L",  "ticker": "RIO",  "label": "Rio Tinto"},
-        "beta_clip": [0.2, 3.0],
-    },
-]
+    LETF legs carry letf+lev; CFD legs carry ticker. Drop the Nones so the
+    JSON matches the hand-written shape each `kind` expects downstream.
+    """
+    d = {"underlying": leg.underlying}
+    if leg.letf is not None:
+        d["letf"] = leg.letf
+    if leg.ticker is not None:
+        d["ticker"] = leg.ticker
+    d["label"] = leg.label
+    if leg.lev is not None:
+        d["lev"] = leg.lev
+    return d
+
+
+def _portfolio_to_dict(p) -> dict:
+    """Registry Portfolio -> the dict shape build_portfolio() expects."""
+    return {
+        "slug": p.slug,
+        "name": p.name,
+        "kind": p.kind,
+        "blurb": p.blurb,
+        "long": _leg_to_dict(p.long),
+        "short": _leg_to_dict(p.short),
+        "beta_clip": list(p.beta_clip) if p.beta_clip else None,
+    }
+
+
+# Pair portfolios come from the unified registry (config/portfolios.toml).
+PORTFOLIOS = [_portfolio_to_dict(p) for p in load_portfolios()]
 
 
 def bank_rate_series(index: pd.DatetimeIndex) -> pd.Series:

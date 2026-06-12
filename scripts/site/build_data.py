@@ -17,63 +17,22 @@ payload small. Dates are trading days only (whatever yfinance returns).
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yfinance as yf
 
-# Each entry: slug, Yahoo ticker (LSE ETF), display name, sublabel, group.
-# `group` is the dropdown section heading on the strategy page; pick liquid
-# LSE-listed ETFs so the strategy is tradable (see the macro-beans-site skill).
-# The set spans major macro themes (regions, rates, credit, commodities) and
-# microeconomic themes (US sectors, single-theme baskets).
+# Make `src` importable so we can read the shared instrument registry.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.data.registry import load_instruments  # noqa: E402
+
+# Web instruments come from the unified registry (config/instruments.toml).
+# (slug, web_ticker, name, sublabel, group) tuples, web surface only. `group`
+# is the dropdown section heading; add/edit instruments in the TOML, not here.
 INSTRUMENTS = [
-    # ---- Stock Markets (broad equity indices + regions) ----
-    ("spx",        "VUSA.L",  "S&P 500",             "US Large Cap",          "Stock Markets"),
-    ("ndx",        "EQQQ.L",  "Nasdaq 100",          "US Tech",               "Stock Markets"),
-    ("ftse",       "ISF.L",   "FTSE 100",            "UK Large Cap",          "Stock Markets"),
-    ("ftse250",    "MIDD.L",  "FTSE 250",            "UK Mid Cap",            "Stock Markets"),
-    ("world",      "IWDA.L",  "MSCI World",          "Global Equity",         "Stock Markets"),
-    ("em",         "EIMI.L",  "MSCI Emerging Mkts",  "Emerging Markets",      "Stock Markets"),
-    ("japan",      "IJPA.L",  "MSCI Japan",          "Japan Equity",          "Stock Markets"),
-    ("estoxx",     "CSX5.L",  "Euro Stoxx 50",       "Europe Equity",         "Stock Markets"),
-    ("china",      "FXC.L",   "China Large Cap",     "China Equity",          "Stock Markets"),
-    ("india",      "NDIA.L",  "India",               "India Equity",          "Stock Markets"),
-    ("asiaxjp",    "CPXJ.L",  "Asia Pacific",        "ex-Japan",              "Stock Markets"),
-    # ---- US Sectors (microeconomic / sector-rotation themes) ----
-    ("us_tech",    "IUIT.L",  "US Technology",       "Technology",            "US Sectors"),
-    ("us_fins",    "IUFS.L",  "US Financials",       "Financials",            "US Sectors"),
-    ("us_energy",  "IUES.L",  "US Energy",           "Energy",                "US Sectors"),
-    ("us_health",  "IUHC.L",  "US Health Care",      "Health Care",           "US Sectors"),
-    ("us_staples", "IUCS.L",  "US Cons. Staples",    "Consumer Staples",      "US Sectors"),
-    ("us_discr",   "IUCD.L",  "US Cons. Discretionary","Consumer Discretionary","US Sectors"),
-    ("us_util",    "IUUS.L",  "US Utilities",        "Utilities",             "US Sectors"),
-    ("us_indus",   "IUIS.L",  "US Industrials",      "Industrials",           "US Sectors"),
-    # ---- Themes (single-theme baskets) ----
-    ("cleanenergy","INRG.L",  "Clean Energy",        "Global Clean Energy",   "Themes"),
-    ("robotics",   "RBOT.L",  "Automation & Robotics","Robotics & Automation", "Themes"),
-    ("semis",      "SEMI.L",  "Semiconductors",      "Global Chipmakers",     "Themes"),
-    ("goldminers", "SPGP.L",  "Gold Miners",         "Gold Producers",        "Themes"),
-    ("ai",         "AIAG.L",  "AI & Big Data",       "Artificial Intelligence","Themes"),
-    # ---- Bonds & Credit (rates + credit macro themes) ----
-    ("ustreas",    "IDTL.L",  "US Treasuries 20Y+",  "US Long Bonds",         "Bonds & Credit"),
-    ("gilts",      "IGLT.L",  "UK Gilts",            "UK Government Bonds",    "Bonds & Credit"),
-    ("tips",       "ITPS.L",  "US Inflation Bonds",  "US Inflation-Linked",   "Bonds & Credit"),
-    ("hyield",     "IHYU.L",  "US High Yield",       "USD High-Yield Credit", "Bonds & Credit"),
-    ("igcorp",     "LQDE.L",  "US Corp Bonds",       "USD Investment Grade",  "Bonds & Credit"),
-    ("embd",       "SEMB.L",  "EM Bonds",            "Emerging-Market Debt",  "Bonds & Credit"),
-    ("tbills",     "IBTL.L",  "US T-Bills",          "Cash / 0-1Y Treasuries","Bonds & Credit"),
-    # ---- Commodities ----
-    ("gold",       "SGLN.L",  "Gold",                "Precious Metal",        "Commodities"),
-    ("silver",     "SSLN.L",  "Silver",              "Precious Metal",        "Commodities"),
-    ("copper",     "COPA.L",  "Copper",              "Industrial Metal",      "Commodities"),
-    ("brent",      "BRNT.L",  "Brent Oil",           "Energy",                "Commodities"),
-    ("wti",        "CRUD.L",  "WTI Crude",           "Energy",                "Commodities"),
-    ("natgas",     "NGAS.L",  "Natural Gas",         "Energy",                "Commodities"),
-    ("broadcomm",  "ICOM.L",  "Broad Commodities",   "Diversified Basket",    "Commodities"),
-    # ---- Property ----
-    ("reit_dev",   "IWDP.L",  "Global Property",     "Developed REITs",       "Property"),
-    ("reit_uk",    "IUKP.L",  "UK Property",         "UK REITs",              "Property"),
+    (i.slug, i.web_ticker, i.name, i.sublabel, i.group)
+    for i in load_instruments("web")
 ]
 
 START = "1990-01-01"

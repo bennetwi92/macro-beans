@@ -2,12 +2,16 @@
 Debug script to see why no signals are being generated
 """
 
+import sys
 import pandas as pd
-import os
 from datetime import datetime, timedelta
 import numpy as np
+from pathlib import Path
 
-DATA_DIR = 'data/stock_history'
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.data.store import MarketStore  # noqa: E402
+
+_STORE = MarketStore()
 
 def calculate_rsi(prices, period=2):
     """Calculate RSI using Wilder's smoothing"""
@@ -33,9 +37,7 @@ print(f"Scanning period: {start_date.date()} to {end_date.date()}")
 print("="*80)
 
 for symbol in symbols:
-    filepath = os.path.join(DATA_DIR, f"{symbol}.csv")
-    data = pd.read_csv(filepath, index_col=0, parse_dates=True)
-    data.index = pd.to_datetime(data.index, utc=True).tz_localize(None)
+    data = _STORE.get_prices(symbol)
 
     # Get last 90 days
     recent_data = data[data.index >= start_date].copy()

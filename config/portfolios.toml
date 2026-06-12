@@ -1,0 +1,178 @@
+# Pair-portfolio registry for the public site (scripts/site/build_portfolios.py).
+#
+# Each [[portfolio]] is a beta-hedged long/short pair. `kind` selects how the
+# second equity curve is built:
+#   "letf" -> leveraged-ETF wrapper (legs carry `letf` ticker + `lev` factor)
+#   "cfd"  -> LSE single shares traded as CFDs, net of Trading 212 overnight
+#             financing (legs carry a plain `ticker`)
+# Loaded by src/data/registry.py (stdlib tomllib, no dependency).
+#
+# Adding a portfolio = add one block, then: python scripts/site/build_portfolios.py
+
+# ============================================================================
+# LETF pairs -- leveraged-ETF wrappers on index/future underlyings
+# ============================================================================
+
+[[portfolio]]
+slug = "silver-gold"
+name = "Silver / Gold"
+kind = "letf"
+blurb = "Long silver, short gold. Silver is the higher-beta industrial precious metal; gold is the safe-haven. Expresses a pro-cyclical, reflationary view — gains when growth expectations rise faster than risk-off demand."
+
+[portfolio.long]
+underlying = "SI=F"
+letf = "3SIL.L"
+label = "Silver"
+lev = 3
+
+[portfolio.short]
+underlying = "GC=F"
+letf = "3GOS.L"
+label = "Gold"
+lev = 3
+
+[[portfolio]]
+slug = "gold-treasuries"
+name = "Gold / 10Y Treasuries"
+kind = "letf"
+blurb = "Long gold, short 10-year US Treasuries. Captures real-yield repricing and inflation surprises — gold rallies when real yields fall, but the bond leg drags when nominal yields move. Beta is clipped to [0.1, 2.0] because gold-vs-bond correlation flips between regimes."
+beta_clip = [0.1, 2.0]
+
+[portfolio.long]
+underlying = "GC=F"
+letf = "3GOL.L"
+label = "Gold"
+lev = 3
+
+[portfolio.short]
+underlying = "ZN=F"
+letf = "3TYS.L"
+label = "10Y UST"
+lev = 3
+
+[[portfolio]]
+slug = "ftse250-ftse100"
+name = "FTSE 250 / FTSE 100"
+kind = "letf"
+blurb = "Long UK mid-caps (domestic-revenue heavy), short UK large-caps (international-revenue heavy, GBP-sensitive). Expresses a positive view on UK domestic activity / sterling. Note the asymmetric leverage: 2x long mid via 2MCL.L, 3x short large via 3UKS.L."
+
+[portfolio.long]
+underlying = "^FTMC"
+letf = "2MCL.L"
+label = "FTSE 250"
+lev = 2
+
+[portfolio.short]
+underlying = "^FTSE"
+letf = "3UKS.L"
+label = "FTSE 100"
+lev = 3
+
+[[portfolio]]
+slug = "ndx-spx"
+name = "Nasdaq 100 / S&P 500"
+kind = "letf"
+blurb = "Long Nasdaq 100, short S&P 500. Both 3x. Expresses a positive view on the tech-vs-broad-market dispersion. Will outperform when mega-cap tech leads, underperform when leadership broadens to value/cyclicals."
+
+[portfolio.long]
+underlying = "^NDX"
+letf = "QQQ3.L"
+label = "Nasdaq 100"
+lev = 3
+
+[portfolio.short]
+underlying = "^GSPC"
+letf = "3USS.L"
+label = "S&P 500"
+lev = 3
+
+# ============================================================================
+# CFD pairs -- LSE single shares, traded as CFDs on Trading 212. Same-sector
+# UK names so the hedge strips the sector and leaves the company-vs-company gap.
+# All GBP-listed: no FX fee, only overnight financing.
+# ============================================================================
+
+[[portfolio]]
+slug = "shell-bp"
+name = "Shell / BP"
+kind = "cfd"
+blurb = "Long Shell, short BP — the two London-listed oil supermajors. Both rise and fall with the crude oil price, so hedging one against the other strips out the oil move and leaves the gap between the companies: relative strategy, production and trading results. A textbook mean-reversion pair. Both trade in pence on the LSE, so on a GBP Trading 212 account there is no currency-conversion fee — the only running cost is overnight CFD financing."
+beta_clip = [0.2, 3.0]
+
+[portfolio.long]
+underlying = "SHEL.L"
+ticker = "SHEL"
+label = "Shell"
+
+[portfolio.short]
+underlying = "BP.L"
+ticker = "BP"
+label = "BP"
+
+[[portfolio]]
+slug = "lloyds-natwest"
+name = "Lloyds / NatWest"
+kind = "cfd"
+blurb = "Long Lloyds, short NatWest — two UK-focused high-street banks. Both live or die on UK interest rates, mortgages and the domestic economy, so the hedge removes the sector move and isolates relative margins, capital returns and bank-specific news. Tight, liquid and GBP-denominated — no FX fee, just overnight financing."
+beta_clip = [0.2, 3.0]
+
+[portfolio.long]
+underlying = "LLOY.L"
+ticker = "LLOY"
+label = "Lloyds"
+
+[portfolio.short]
+underlying = "NWG.L"
+ticker = "NWG"
+label = "NatWest"
+
+[[portfolio]]
+slug = "tesco-sainsburys"
+name = "Tesco / Sainsbury's"
+kind = "cfd"
+blurb = "Long Tesco, short Sainsbury's — Britain's two largest listed supermarkets. Both track UK food inflation and the grocery market-share fight; hedging one against the other leaves the gap between the market leader and its smaller, thinner-margin rival. GBP shares, so no currency fee — only overnight financing."
+beta_clip = [0.2, 3.0]
+
+[portfolio.long]
+underlying = "TSCO.L"
+ticker = "TSCO"
+label = "Tesco"
+
+[portfolio.short]
+underlying = "SBRY.L"
+ticker = "SBRY"
+label = "Sainsbury's"
+
+[[portfolio]]
+slug = "bat-imperial"
+name = "BAT / Imperial Brands"
+kind = "cfd"
+blurb = "Long British American Tobacco, short Imperial Brands — the two UK-listed tobacco majors. Both are defensive, high-yield and move on regulation and the shift to next-generation products, so the hedge isolates the gap between them. Note both earn heavily in dollars, which can drive the spread. GBP-listed — no FX fee, only overnight financing."
+beta_clip = [0.2, 3.0]
+
+[portfolio.long]
+underlying = "BATS.L"
+ticker = "BATS"
+label = "BAT"
+
+[portfolio.short]
+underlying = "IMB.L"
+ticker = "IMB"
+label = "Imperial"
+
+[[portfolio]]
+slug = "glencore-rio"
+name = "Glencore / Rio Tinto"
+kind = "cfd"
+blurb = "Long Glencore, short Rio Tinto — two London-listed diversified miners geared to global commodity demand. Rio leans on iron ore; Glencore on copper, coal and commodity trading. Hedging the pair removes the broad mining move and leaves their differing commodity mix. History starts in 2011 when Glencore floated. GBP shares — no FX fee, only overnight financing."
+beta_clip = [0.2, 3.0]
+
+[portfolio.long]
+underlying = "GLEN.L"
+ticker = "GLEN"
+label = "Glencore"
+
+[portfolio.short]
+underlying = "RIO.L"
+ticker = "RIO"
+label = "Rio Tinto"
