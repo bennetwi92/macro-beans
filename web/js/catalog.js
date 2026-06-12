@@ -71,6 +71,14 @@ export const CATALOG = [
     added: "2026-06-08",
   },
   {
+    slug:  "instrument",
+    type:  "tracker",
+    title: "Price Tracker",
+    blurb: "Pick any market and see its price at a glance — where it sits now, how far it has moved, and the recent run on one chart.",
+    page:  "instrument.html",
+    added: "2026-06-12",
+  },
+  {
     slug:  "scanner",
     type:  "signal",
     title: "Scanner",
@@ -92,6 +100,7 @@ export const CATALOG = [
 export const CATEGORIES = [
   { key: "strategy",   label: "STRATEGIES",   blurb: "Trade ideas with historical evidence." },
   { key: "signal",     label: "SCANNER",      blurb: "Every strategy checked across every market — the setups firing right now." },
+  { key: "tracker",    label: "PRICES",       blurb: "Track a market's price and recent moves at a glance." },
   { key: "calculator", label: "CALCULATORS",  blurb: "Tools to size, value, or score a trade." },
   { key: "portfolio",  label: "PORTFOLIOS",   blurb: "Multi-leg positions tracked over time." },
   { key: "report",     label: "REPORTS",      blurb: "Deep dives on what's been moving a market or a pair." },

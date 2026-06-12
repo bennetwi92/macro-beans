@@ -117,7 +117,7 @@ function renderGrid(){
       return `<td class="hl-cell ${pos ? "pos" : "neg"}${thin}" style="--i:${i}">${txt}</td>`;
     }).join("");
     return `<tr>
-      <td class="ix"><span class="ix-name">${escapeHtml(inst.name)}</span><span class="ix-ticker">${escapeHtml(inst.ticker)}</span></td>
+      <td class="ix"><a href="instrument.html?instrument=${encodeURIComponent(inst.slug)}"><span class="ix-name">${escapeHtml(inst.name)}</span><span class="ix-ticker">${escapeHtml(inst.ticker)}</span></a></td>
       ${cells}
     </tr>`;
   }).join("");
