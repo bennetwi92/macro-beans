@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Beans — Price Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/macro-beans.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <a class="logo" href="index.html"><span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span></a>
+    <nav class="nav">
+      <a href="index.html#strategies">STRATEGIES</a>
+      <a href="scanner.html">SCANNER</a>
+      <a href="index.html#portfolios">PORTFOLIOS</a>
+      <a href="index.html#reports">REPORTS</a>
+      <a href="glossary.html">GLOSSARY</a>
+      <a href="about.html">ABOUT</a>
+    </nav>
+  </header>
+
+  <div class="strat">
+    <div>
+      <h1>PRICE TRACKER</h1>
+      <div class="lede">Pick a market and see its price at a glance — where it sits now, how far it has moved, and the run of the last stretch on one chart.</div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>SETTINGS</h2><span class="note">pick a market and a window</span></div>
+    <div class="ctl-grid ctl-grid-2">
+
+      <div class="ctl">
+        <div class="clab">INSTRUMENT</div>
+        <label class="pick">
+          <span class="pick-text">
+            <span id="instrument-name">—</span>
+            <span id="instrument-ticker"></span>
+          </span>
+          <span class="car">▾</span>
+          <select id="instrument-select" aria-label="Instrument"></select>
+        </label>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">WINDOW</div>
+        <div class="seg" id="window-seg">
+          <button type="button" class="opt"    data-value="90d">Last 90 days</button>
+          <button type="button" class="opt on" data-value="1y">Last 1 year</button>
+          <button type="button" class="opt"    data-value="5y">Last 5 years</button>
+          <button type="button" class="opt"    data-value="all">All history</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>PRICE</h2><span class="note" id="chart-note">loading…</span></div>
+    <div class="chart-wrap" id="chart-wrap"></div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>SNAPSHOT</h2><span class="note" id="snapshot-note"></span></div>
+    <div class="stat-grid" id="stat-grid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>WHAT THIS IS</h2></div>
+    <p class="prose" id="tracker-blurb">A plain price chart for one market, adjusted for dividends and splits. The numbers are
+      the closing price each trading day — history, not a live quote — so use it to see the shape of the recent move,
+      not to time the next tick. The currency and units are whatever the market trades in.</p>
+  </section>
+
+  <div class="foot">
+    <div class="warn-line">⚠ PAST RESULTS ARE NOT A PROMISE OF FUTURE RETURNS · NOT FINANCIAL ADVICE</div>
+    <div class="built" id="built-line">MACRO BEANS</div>
+  </div>
+
+</div>
+
+<script type="module" src="js/instrument.js"></script>
+</body>
+</html>

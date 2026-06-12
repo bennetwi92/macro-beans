@@ -198,8 +198,8 @@ function renderTable(){
     const small   = r.n < 10;
     const rateCls = (r.n === 0) ? "" : (r.rate >= 50 ? "cell-pos" : "cell-neg");
     return `<tr>
-      <td class="ix"><a href="${escapeHtml(r.page)}?instrument=${encodeURIComponent(r.slug)}"><span class="ix-name">${escapeHtml(r.name)}</span><span class="ix-ticker">${escapeHtml(r.ticker)}</span></a></td>
-      <td>${escapeHtml(r.strategy)}</td>
+      <td class="ix"><a href="instrument.html?instrument=${encodeURIComponent(r.slug)}"><span class="ix-name">${escapeHtml(r.name)}</span><span class="ix-ticker">${escapeHtml(r.ticker)}</span></a></td>
+      <td><a class="strat-cell" href="${escapeHtml(r.page)}?instrument=${encodeURIComponent(r.slug)}">${escapeHtml(r.strategy)}</a></td>
       <td class="${r.signalCls}">${escapeHtml(r.signal)}</td>
       <td class="dim">${escapeHtml(r.hold)}</td>
       <td class="${rateCls}">${r.n === 0 ? "—" : fmtInt(r.rate) + "%"}</td>

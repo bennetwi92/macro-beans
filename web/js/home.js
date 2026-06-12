@@ -37,6 +37,7 @@ function renderCard(item){
 const SECTION_ID = {
   strategy:   "strategies",
   signal:     "signals",
+  tracker:    "prices",
   calculator: "calculators",
   portfolio:  "portfolios",
   report:     "reports",

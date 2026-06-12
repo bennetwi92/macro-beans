@@ -115,7 +115,7 @@ function renderTable(){
     const rateD1cls = (r.n === 0) ? "" : (r.rate_d1 >= 50 ? "cell-pos" : "cell-neg");
     const rateD3cls = (r.n === 0) ? "" : (r.rate_d3 >= 50 ? "cell-pos" : "cell-neg");
     return `<tr>
-      <td class="ix"><span class="ix-name">${escapeHtml(r.name)}</span><span class="ix-ticker">${escapeHtml(r.ticker)}</span></td>
+      <td class="ix"><a href="instrument.html?instrument=${encodeURIComponent(r.slug)}"><span class="ix-name">${escapeHtml(r.name)}</span><span class="ix-ticker">${escapeHtml(r.ticker)}</span></a></td>
       <td class="${nCls}">${r.n}</td>
       <td class="${rateD1cls}">${r.n === 0 ? "—" : fmtInt(r.rate_d1) + "%"}</td>
       <td class="${cls(r.avg_d1)}">${fmt(r.avg_d1)}</td>
