@@ -34,6 +34,8 @@ class Instrument:
     research_ticker: str | None = None
     web_ticker: str | None = None
     sublabel: str | None = None
+    # Dropdown section heading on the web strategy page (web surface only).
+    group: str | None = None
 
     def on(self, surface: str) -> bool:
         return surface in self.surfaces
@@ -41,23 +43,35 @@ class Instrument:
 
 @dataclass(frozen=True)
 class PortfolioLeg:
-    """One leg of a pair portfolio (the underlying + its LETF wrapper)."""
+    """One leg of a pair portfolio.
+
+    For a LETF pair the leg carries its ``letf`` wrapper ticker and ``lev``
+    leverage factor. For a CFD pair (LSE single shares) it carries the plain
+    ``ticker`` instead. ``underlying`` and ``label`` are common to both.
+    """
 
     underlying: str
-    letf: str
     label: str
-    lev: int
+    letf: str | None = None
+    lev: int | None = None
+    ticker: str | None = None
 
 
 @dataclass(frozen=True)
 class Portfolio:
-    """A beta-hedged pair portfolio for the web site."""
+    """A beta-hedged pair portfolio for the web site.
+
+    ``kind`` selects how the second equity curve is built downstream:
+    ``"letf"`` (leveraged-ETF wrapper) or ``"cfd"`` (spread net of Trading 212
+    overnight financing).
+    """
 
     slug: str
     name: str
     blurb: str
     long: PortfolioLeg
     short: PortfolioLeg
+    kind: str = "letf"
     beta_clip: tuple[float, float] | None = None
 
 
@@ -90,6 +104,7 @@ def _all_instruments() -> tuple[Instrument, ...]:
                 research_ticker=entry.get("research_ticker"),
                 web_ticker=entry.get("web_ticker"),
                 sublabel=entry.get("sublabel"),
+                group=entry.get("group"),
             )
         )
     return tuple(out)
@@ -129,6 +144,7 @@ def load_portfolios() -> list[Portfolio]:
                 blurb=entry["blurb"],
                 long=PortfolioLeg(**entry["long"]),
                 short=PortfolioLeg(**entry["short"]),
+                kind=entry.get("kind", "letf"),
                 beta_clip=tuple(clip) if clip else None,
             )
         )

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Macro Beans — Buy the Bounce · League Table</title>
+<title>Macro Beans — Red Streak · League Table</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -16,7 +16,6 @@
     <a class="logo" href="index.html"><span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span></a>
     <nav class="nav">
       <a href="index.html#strategies" class="on">STRATEGIES</a>
-      <a href="scanner.html">SCANNER</a>
       <a href="index.html#portfolios">PORTFOLIOS</a>
       <a href="index.html#reports">REPORTS</a>
       <a href="glossary.html">GLOSSARY</a>
@@ -26,9 +25,9 @@
 
   <div class="strat">
     <div>
-      <h1>BUY THE BOUNCE — LEAGUE TABLE</h1>
-      <div class="lede">The same bounce setup applied across every instrument, side by side. Click a column to sort.</div>
-      <a class="strat-link" href="buy-the-bounce.html">← DIVE INTO ONE INSTRUMENT</a>
+      <h1>RED STREAK — LEAGUE TABLE</h1>
+      <div class="lede">The same losing-streak setup applied across every instrument, side by side. Click a column to sort.</div>
+      <a class="strat-link" href="red-streak.html">← DIVE INTO ONE INSTRUMENT</a>
     </div>
   </div>
 
@@ -39,18 +38,18 @@
       <div class="ctl">
         <div class="clab">DIRECTION</div>
         <div class="seg" id="direction-seg">
-          <button type="button" class="opt on" data-value="down">Down day</button>
-          <button type="button" class="opt"    data-value="up">Up day</button>
+          <button type="button" class="opt on" data-value="down">Red streak</button>
+          <button type="button" class="opt"    data-value="up">Green streak</button>
         </div>
       </div>
 
       <div class="ctl">
-        <div class="clab">MOVE THRESHOLD</div>
+        <div class="clab">STREAK LENGTH</div>
         <div class="slider">
-          <div class="val" id="threshold-val">−2.0%</div>
-          <input type="range" class="range" id="threshold-range"
-                 min="1" max="6" step="0.1" value="2" aria-label="Move threshold (%)">
-          <div class="track-ends"><span id="track-low">−1%</span><span id="track-high">−6%</span></div>
+          <div class="val" id="streak-val">3 RED DAYS</div>
+          <input type="range" class="range" id="streak-range"
+                 min="2" max="6" step="1" value="3" aria-label="Streak length (days)">
+          <div class="track-ends"><span>2 days</span><span>6 days</span></div>
         </div>
       </div>
 
@@ -80,12 +79,12 @@
         <thead>
           <tr id="league-head">
             <th class="sort-able" data-key="name"     data-default-dir="asc">INSTRUMENT</th>
-            <th class="sort-able" data-key="n"        data-default-dir="desc">EVENTS</th>
+            <th class="sort-able" data-key="n"        data-default-dir="desc">STREAKS</th>
             <th class="sort-able" data-key="rate_d1"  data-default-dir="desc">WIN % D1</th>
             <th class="sort-able" data-key="avg_d1"   data-default-dir="desc">AVG D1</th>
-            <th class="sort-able" data-key="rate_d3"  data-default-dir="desc">WIN % D3</th>
-            <th class="sort-able" data-key="avg_d3"   data-default-dir="desc">AVG D3</th>
-            <th class="sort-able" data-key="worst_d3" data-default-dir="asc">WORST D3</th>
+            <th class="sort-able" data-key="rate_d3"  data-default-dir="desc">WIN % D5</th>
+            <th class="sort-able" data-key="avg_d3"   data-default-dir="desc">AVG D5</th>
+            <th class="sort-able" data-key="worst_d3" data-default-dir="asc">WORST D5</th>
           </tr>
         </thead>
         <tbody id="league-body">
@@ -102,6 +101,6 @@
 
 </div>
 
-<script type="module" src="js/buy-the-bounce-league.js"></script>
+<script type="module" src="js/red-streak-league.js"></script>
 </body>
 </html>

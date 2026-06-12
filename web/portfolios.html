@@ -16,7 +16,9 @@
     <a class="logo" href="index.html"><span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span></a>
     <nav class="nav">
       <a href="index.html#strategies">STRATEGIES</a>
+      <a href="scanner.html">SCANNER</a>
       <a href="index.html#portfolios" class="on">PORTFOLIOS</a>
+      <a href="index.html#reports">REPORTS</a>
       <a href="glossary.html">GLOSSARY</a>
       <a href="about.html">ABOUT</a>
     </nav>
@@ -31,7 +33,7 @@
 
   <section class="panel">
     <div class="sec-h"><span class="tick"></span><h2>SETTINGS</h2><span class="note">pick a portfolio</span></div>
-    <div class="ctl-grid ctl-grid-2">
+    <div class="ctl-grid ctl-grid-3">
 
       <div class="ctl">
         <div class="clab">PORTFOLIO</div>
@@ -46,14 +48,30 @@
       </div>
 
       <div class="ctl">
-        <div class="clab">WRAPPER</div>
+        <div class="clab" id="mode-clab">WRAPPER</div>
         <div class="seg" id="mode-seg">
           <button type="button" class="opt on" data-value="letf">LSE LETF wrap</button>
           <button type="button" class="opt"    data-value="under">1x underlying</button>
         </div>
       </div>
 
+      <div class="ctl">
+        <div class="clab">WINDOW</div>
+        <div class="seg" id="window-seg">
+          <button type="button" class="opt on" data-value="90d">Last 90 days</button>
+          <button type="button" class="opt"    data-value="1y">Last 1 year</button>
+          <button type="button" class="opt"    data-value="5y">Last 5 years</button>
+          <button type="button" class="opt"    data-value="all">All history</button>
+        </div>
+      </div>
+
     </div>
+  </section>
+
+  <section class="panel" id="report-panel" hidden>
+    <div class="sec-h"><span class="tick"></span><h2>DEEP DIVE</h2><span class="note">report</span></div>
+    <p class="prose" id="report-blurb"></p>
+    <a class="strat-link" id="report-link" href="#">READ THE REPORT →</a>
   </section>
 
   <section class="panel">

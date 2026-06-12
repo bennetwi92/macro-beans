@@ -32,6 +32,16 @@ function renderCard(item){
   </a>`;
 }
 
+// Home section anchors are the plural of the category key (e.g. #portfolios,
+// #reports) so the masthead nav links land on the right section.
+const SECTION_ID = {
+  strategy:   "strategies",
+  signal:     "signals",
+  calculator: "calculators",
+  portfolio:  "portfolios",
+  report:     "reports",
+};
+
 function renderCategory(cat){
   const items = CATALOG.filter(i => i.type === cat.key);
   const note = items.length > 0
@@ -42,7 +52,7 @@ function renderCategory(cat){
     ? `<div class="card-grid">${items.map(renderCard).join("")}</div>`
     : `<div class="cat-empty">Nothing here yet — check back as new pieces ship.</div>`;
 
-  return `<section class="panel" id="${escapeHtml(cat.key === 'strategy' ? 'strategies' : (cat.key === 'portfolio' ? 'portfolios' : 'calculators'))}">
+  return `<section class="panel" id="${escapeHtml(SECTION_ID[cat.key] || cat.key)}">
     <div class="sec-h">
       <span class="tick"></span>
       <h2>${escapeHtml(cat.label)}</h2>

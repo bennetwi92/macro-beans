@@ -28,9 +28,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src.data.registry import load_instruments  # noqa: E402
 
 # Web instruments come from the unified registry (config/instruments.toml).
-# (slug, yahoo_ticker, name, sublabel) tuples, web surface only.
+# (slug, web_ticker, name, sublabel, group) tuples, web surface only. `group`
+# is the dropdown section heading; add/edit instruments in the TOML, not here.
 INSTRUMENTS = [
-    (i.slug, i.web_ticker, i.name, i.sublabel)
+    (i.slug, i.web_ticker, i.name, i.sublabel, i.group)
     for i in load_instruments("web")
 ]
 
@@ -62,7 +63,7 @@ def main() -> None:
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     menu = []
 
-    for slug, ticker, name, sublabel in INSTRUMENTS:
+    for slug, ticker, name, sublabel, group in INSTRUMENTS:
         label = f"{name} ({ticker})"
         print(f"  fetching {label:<28s} ...", end=" ", flush=True)
         bars = fetch_bars(ticker)
@@ -73,6 +74,7 @@ def main() -> None:
                 "name": name,
                 "label": label,
                 "sublabel": sublabel,
+                "group": group,
                 "first_date": bars[0][0],
                 "last_date": bars[-1][0],
                 "n_bars": len(bars),
@@ -90,6 +92,7 @@ def main() -> None:
             "ticker": ticker,
             "label": label,
             "sublabel": sublabel,
+            "group": group,
             "n_bars": len(bars),
             "first_date": bars[0][0],
             "last_date": bars[-1][0],

@@ -54,6 +54,98 @@ function yearsAgo(bars, n){
   return `${Y - n}-${String(M).padStart(2,"0")}-${String(D).padStart(2,"0")}`;
 }
 
+/* Horizons (trading days) measured forward for the Red Streak strategy.
+   Stored in the d1/d2/d3 event slots so computeStats can be reused as-is —
+   the pages label the columns DAY 1 / DAY 3 / DAY 5. */
+export const STREAK_HORIZONS = [1, 3, 5];
+
+/* findStreakEvents
+   bars: [[date_iso, open, close], ...]
+   opts: {direction:'down'|'up', streak:N (>=2), entry:'close'|'open',
+          range:'5y'|'all'}
+   An event fires on the day that completes a run of N consecutive closes in
+   the chosen direction (each close below the prior for 'down', above for 'up').
+   returns events in chronological order:
+     [{date, streak, d1, d2, d3}]   (returns are %, cumulative from entry) */
+export function findStreakEvents(bars, opts){
+  const N = Math.max(2, Math.round(opts.streak));
+  const up = opts.direction === "up";
+  const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
+  const maxH = STREAK_HORIZONS[STREAK_HORIZONS.length - 1];
+  const needed = opts.entry === "open" ? maxH + 1 : maxH;
+  const events = [];
+
+  for(let i = N; i < bars.length - needed; i++){
+    const [date, , close] = bars[i];
+
+    // require N consecutive closes in the chosen direction, ending at i
+    let run = true;
+    for(let k = 0; k < N; k++){
+      const c = bars[i - k][2], prev = bars[i - k - 1][2];
+      if(up ? !(c > prev) : !(c < prev)){ run = false; break; }
+    }
+    if(!run) continue;
+    if(minDate && date < minDate) continue;
+
+    let entryPrice, exitIndexBase;
+    if(opts.entry === "close"){
+      entryPrice    = close;
+      exitIndexBase = i;
+    } else {
+      entryPrice    = bars[i + 1][1];
+      exitIndexBase = i + 1;
+    }
+    const ds = STREAK_HORIZONS.map(h => bars[exitIndexBase + h][2] / entryPrice - 1);
+    events.push({
+      date,
+      streak: N,
+      d1: ds[0] * 100,
+      d2: ds[1] * 100,
+      d3: ds[2] * 100,
+    });
+  }
+  return events;
+}
+
+/* ---------- live signals (scanner) ----------
+   These ask "is the setup firing on the most recent bar?" — the question
+   the scanner answers. They mirror the firing conditions in findEvents /
+   findStreakEvents exactly, but require no forward bars (the event finders
+   skip the last few bars because they need forward returns to score, so
+   they never report a signal on the latest bar). Reusing the same
+   comparisons keeps the scanner and the strategy pages in agreement. */
+
+/* liveBounce — does the single-day move on the most recent bar clear the
+   threshold in the chosen direction?
+   opts:{direction:'down'|'up', threshold:pct}
+   returns {triggered, move}   (move is the latest day's % change) */
+export function liveBounce(bars, opts){
+  if(!bars || bars.length < 2) return {triggered:false, move:NaN};
+  const thr  = opts.threshold / 100;
+  const last = bars[bars.length - 1][2];
+  const prev = bars[bars.length - 2][2];
+  const move = last / prev - 1;
+  const triggered = opts.direction === "down" ? move <= -thr : move >= thr;
+  return {triggered, move: move * 100};
+}
+
+/* liveStreak — does a run of at least N consecutive closes in the chosen
+   direction end on the most recent bar?
+   opts:{direction:'down'|'up', streak:N (>=2)}
+   returns {triggered, run}   (run = length of the current consecutive run) */
+export function liveStreak(bars, opts){
+  const N  = Math.max(2, Math.round(opts.streak));
+  const up = opts.direction === "up";
+  if(!bars || bars.length < 2) return {triggered:false, run:0};
+  const last = bars.length - 1;
+  let run = 0;
+  for(let k = 0; last - k - 1 >= 0; k++){
+    const c = bars[last - k][2], prev = bars[last - k - 1][2];
+    if(up ? c > prev : c < prev) run++; else break;
+  }
+  return {triggered: run >= N, run};
+}
+
 /* computeStats — returns [day1, day2, day3] each:
      {n, wins, rate, avg, med, worst, best}    rates as percent points. */
 export function computeStats(events){

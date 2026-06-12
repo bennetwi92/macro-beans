@@ -13,136 +13,381 @@
 # Loaded by src/data/registry.py with the stdlib tomllib (no dependency).
 
 # ============================================================================
-# Web surface -- LSE ETFs shown on the public site (scripts/site/build_data.py)
+# Web surface -- LSE ETFs shown on the public site (scripts/site/build_data.py).
+# `group` is the dropdown section heading; `sublabel` the per-row caption.
 # ============================================================================
+
+# ---- Stock Markets ----
 
 [[instrument]]
 slug = "spx"
 name = "S&P 500"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "VUSA.L"
 sublabel = "US Large Cap"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "ndx"
 name = "Nasdaq 100"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "EQQQ.L"
 sublabel = "US Tech"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "ftse"
 name = "FTSE 100"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "ISF.L"
 sublabel = "UK Large Cap"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "ftse250"
 name = "FTSE 250"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "MIDD.L"
 sublabel = "UK Mid Cap"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "world"
 name = "MSCI World"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "IWDA.L"
 sublabel = "Global Equity"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "em"
 name = "MSCI Emerging Mkts"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "EIMI.L"
 sublabel = "Emerging Markets"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "japan"
 name = "MSCI Japan"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "IJPA.L"
 sublabel = "Japan Equity"
+group = "Stock Markets"
 
 [[instrument]]
 slug = "estoxx"
 name = "Euro Stoxx 50"
-category = "Equity"
+category = "Stock Markets"
 surfaces = ["web"]
 web_ticker = "CSX5.L"
 sublabel = "Europe Equity"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "china"
+name = "China Large Cap"
+category = "Stock Markets"
+surfaces = ["web"]
+web_ticker = "FXC.L"
+sublabel = "China Equity"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "india"
+name = "India"
+category = "Stock Markets"
+surfaces = ["web"]
+web_ticker = "NDIA.L"
+sublabel = "India Equity"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "asiaxjp"
+name = "Asia Pacific"
+category = "Stock Markets"
+surfaces = ["web"]
+web_ticker = "CPXJ.L"
+sublabel = "ex-Japan"
+group = "Stock Markets"
+
+# ---- US Sectors ----
+
+[[instrument]]
+slug = "us_tech"
+name = "US Technology"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUIT.L"
+sublabel = "Technology"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_fins"
+name = "US Financials"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUFS.L"
+sublabel = "Financials"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_energy"
+name = "US Energy"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUES.L"
+sublabel = "Energy"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_health"
+name = "US Health Care"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUHC.L"
+sublabel = "Health Care"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_staples"
+name = "US Cons. Staples"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUCS.L"
+sublabel = "Consumer Staples"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_discr"
+name = "US Cons. Discretionary"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUCD.L"
+sublabel = "Consumer Discretionary"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_util"
+name = "US Utilities"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUUS.L"
+sublabel = "Utilities"
+group = "US Sectors"
+
+[[instrument]]
+slug = "us_indus"
+name = "US Industrials"
+category = "US Sectors"
+surfaces = ["web"]
+web_ticker = "IUIS.L"
+sublabel = "Industrials"
+group = "US Sectors"
+
+# ---- Themes ----
+
+[[instrument]]
+slug = "cleanenergy"
+name = "Clean Energy"
+category = "Themes"
+surfaces = ["web"]
+web_ticker = "INRG.L"
+sublabel = "Global Clean Energy"
+group = "Themes"
+
+[[instrument]]
+slug = "robotics"
+name = "Automation & Robotics"
+category = "Themes"
+surfaces = ["web"]
+web_ticker = "RBOT.L"
+sublabel = "Robotics & Automation"
+group = "Themes"
+
+[[instrument]]
+slug = "semis"
+name = "Semiconductors"
+category = "Themes"
+surfaces = ["web"]
+web_ticker = "SEMI.L"
+sublabel = "Global Chipmakers"
+group = "Themes"
+
+[[instrument]]
+slug = "goldminers"
+name = "Gold Miners"
+category = "Themes"
+surfaces = ["web"]
+web_ticker = "SPGP.L"
+sublabel = "Gold Producers"
+group = "Themes"
+
+[[instrument]]
+slug = "ai"
+name = "AI & Big Data"
+category = "Themes"
+surfaces = ["web"]
+web_ticker = "AIAG.L"
+sublabel = "Artificial Intelligence"
+group = "Themes"
+
+# ---- Bonds & Credit ----
 
 [[instrument]]
 slug = "ustreas"
 name = "US Treasuries 20Y+"
-category = "Bond"
+category = "Bonds & Credit"
 surfaces = ["web"]
 web_ticker = "IDTL.L"
 sublabel = "US Long Bonds"
+group = "Bonds & Credit"
 
 [[instrument]]
 slug = "gilts"
 name = "UK Gilts"
-category = "Bond"
+category = "Bonds & Credit"
 surfaces = ["web"]
 web_ticker = "IGLT.L"
 sublabel = "UK Government Bonds"
+group = "Bonds & Credit"
+
+[[instrument]]
+slug = "tips"
+name = "US Inflation Bonds"
+category = "Bonds & Credit"
+surfaces = ["web"]
+web_ticker = "ITPS.L"
+sublabel = "US Inflation-Linked"
+group = "Bonds & Credit"
+
+[[instrument]]
+slug = "hyield"
+name = "US High Yield"
+category = "Bonds & Credit"
+surfaces = ["web"]
+web_ticker = "IHYU.L"
+sublabel = "USD High-Yield Credit"
+group = "Bonds & Credit"
+
+[[instrument]]
+slug = "igcorp"
+name = "US Corp Bonds"
+category = "Bonds & Credit"
+surfaces = ["web"]
+web_ticker = "LQDE.L"
+sublabel = "USD Investment Grade"
+group = "Bonds & Credit"
+
+[[instrument]]
+slug = "embd"
+name = "EM Bonds"
+category = "Bonds & Credit"
+surfaces = ["web"]
+web_ticker = "SEMB.L"
+sublabel = "Emerging-Market Debt"
+group = "Bonds & Credit"
+
+[[instrument]]
+slug = "tbills"
+name = "US T-Bills"
+category = "Bonds & Credit"
+surfaces = ["web"]
+web_ticker = "IBTL.L"
+sublabel = "Cash / 0-1Y Treasuries"
+group = "Bonds & Credit"
+
+# ---- Commodities ----
 
 [[instrument]]
 slug = "gold"
 name = "Gold"
-category = "Commodity"
+category = "Commodities"
 surfaces = ["web"]
 web_ticker = "SGLN.L"
 sublabel = "Precious Metal"
+group = "Commodities"
 
 [[instrument]]
 slug = "silver"
 name = "Silver"
-category = "Commodity"
+category = "Commodities"
 surfaces = ["web"]
 web_ticker = "SSLN.L"
 sublabel = "Precious Metal"
+group = "Commodities"
 
 [[instrument]]
 slug = "copper"
 name = "Copper"
-category = "Commodity"
+category = "Commodities"
 surfaces = ["web"]
 web_ticker = "COPA.L"
 sublabel = "Industrial Metal"
+group = "Commodities"
 
 [[instrument]]
 slug = "brent"
 name = "Brent Oil"
-category = "Commodity"
+category = "Commodities"
 surfaces = ["web"]
 web_ticker = "BRNT.L"
 sublabel = "Energy"
+group = "Commodities"
 
 [[instrument]]
 slug = "wti"
 name = "WTI Crude"
-category = "Commodity"
+category = "Commodities"
 surfaces = ["web"]
 web_ticker = "CRUD.L"
 sublabel = "Energy"
+group = "Commodities"
 
 [[instrument]]
 slug = "natgas"
 name = "Natural Gas"
-category = "Commodity"
+category = "Commodities"
 surfaces = ["web"]
 web_ticker = "NGAS.L"
 sublabel = "Energy"
+group = "Commodities"
+
+[[instrument]]
+slug = "broadcomm"
+name = "Broad Commodities"
+category = "Commodities"
+surfaces = ["web"]
+web_ticker = "ICOM.L"
+sublabel = "Diversified Basket"
+group = "Commodities"
+
+# ---- Property ----
+
+[[instrument]]
+slug = "reit_dev"
+name = "Global Property"
+category = "Property"
+surfaces = ["web"]
+web_ticker = "IWDP.L"
+sublabel = "Developed REITs"
+group = "Property"
+
+[[instrument]]
+slug = "reit_uk"
+name = "UK Property"
+category = "Property"
+surfaces = ["web"]
+web_ticker = "IUKP.L"
+sublabel = "UK REITs"
+group = "Property"
 
 # ============================================================================
 # Research surface -- US-listed universe cached in DuckDB (mean-reversion

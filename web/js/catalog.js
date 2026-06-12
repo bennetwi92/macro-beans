@@ -3,12 +3,14 @@
    piece by appending one object. Keep `added` in YYYY-MM-DD; the home
    page tags it as NEW for 14 days.
 
-   type:    "strategy" | "calculator" | "portfolio"
-   slug:    short identifier (used as DOM id, must be unique)
-   title:   display title for the card
-   blurb:   one short sentence (~20 words)
-   page:    relative URL of the destination page
-   added:   ISO date the piece was first published (controls NEW badge)
+   type:     "strategy" | "calculator" | "portfolio" | "report"
+   slug:     short identifier (used as DOM id, must be unique)
+   title:    display title for the card
+   blurb:    one short sentence (~20 words)
+   page:     relative URL of the destination page
+   added:    ISO date the piece was first published (controls NEW badge)
+   portfolio (reports only, optional): slug of the pair portfolio this report
+             belongs to, so portfolios.html can surface a deep-dive link.
 */
 
 export const CATALOG = [
@@ -29,19 +31,70 @@ export const CATALOG = [
     added: "2026-06-08",
   },
   {
+    slug:  "red-streak",
+    type:  "strategy",
+    title: "Red Streak",
+    blurb: "When a market closes down several days in a row, does it bounce? Every losing streak in history and what came next.",
+    page:  "red-streak.html",
+    added: "2026-06-11",
+  },
+  {
+    slug:  "red-streak-league",
+    type:  "strategy",
+    title: "Red Streak — League Table",
+    blurb: "The same losing-streak setup across every instrument in one sortable view. Spot which markets snap back hardest.",
+    page:  "red-streak-league.html",
+    added: "2026-06-11",
+  },
+  {
+    slug:  "best-months",
+    type:  "strategy",
+    title: "Best Months",
+    blurb: "Does the calendar matter? A colour-shaded year showing which months have historically been kind to a market — and which have not.",
+    page:  "best-months.html",
+    added: "2026-06-11",
+  },
+  {
+    slug:  "best-months-league",
+    type:  "strategy",
+    title: "Best Months — League Table",
+    blurb: "Every market's calendar footprint in one grid. Rank instruments by any month of the year.",
+    page:  "best-months-league.html",
+    added: "2026-06-11",
+  },
+  {
     slug:  "portfolios",
     type:  "portfolio",
     title: "Pair Portfolios",
-    blurb: "Relative-value long-short portfolios, beta-hedged. Track each one's historical equity curve and drawdowns.",
+    blurb: "Relative-value long-short pairs, beta-hedged — from leveraged-ETF index pairs to UK single-share CFD pairs priced with real Trading 212 costs.",
     page:  "portfolios.html",
     added: "2026-06-08",
+  },
+  {
+    slug:  "scanner",
+    type:  "signal",
+    title: "Scanner",
+    blurb: "One page that checks every strategy against every market and lists what's triggered as of the last close — so you only have to look here.",
+    page:  "scanner.html",
+    added: "2026-06-12",
+  },
+  {
+    slug:      "report-shell-bp",
+    type:      "report",
+    title:     "Shell vs BP: What's Driving the Swings",
+    blurb:     "The two London oil giants pulled apart all year. A plain-English walk through what moved Shell against BP — takeovers, buybacks and an oil shock.",
+    page:      "report-shell-bp.html",
+    portfolio: "shell-bp",
+    added:     "2026-06-10",
   },
 ];
 
 export const CATEGORIES = [
   { key: "strategy",   label: "STRATEGIES",   blurb: "Trade ideas with historical evidence." },
+  { key: "signal",     label: "SCANNER",      blurb: "Every strategy checked across every market — the setups firing right now." },
   { key: "calculator", label: "CALCULATORS",  blurb: "Tools to size, value, or score a trade." },
   { key: "portfolio",  label: "PORTFOLIOS",   blurb: "Multi-leg positions tracked over time." },
+  { key: "report",     label: "REPORTS",      blurb: "Deep dives on what's been moving a market or a pair." },
 ];
 
 export const NEW_BADGE_DAYS = 14;

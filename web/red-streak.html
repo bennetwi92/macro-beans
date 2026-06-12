@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Macro Beans — Buy the Bounce</title>
+<title>Macro Beans — Red Streak</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -26,9 +26,9 @@
 
   <div class="strat">
     <div>
-      <h1>BUY THE BOUNCE</h1>
-      <div class="lede">When the market drops hard in a single day, does it tend to recover over the next few days? This page shows every time it happened — and what came next.</div>
-      <a class="strat-link" href="buy-the-bounce-league.html">COMPARE ACROSS ALL INSTRUMENTS →</a>
+      <h1>RED STREAK</h1>
+      <div class="lede">When a market closes down several days in a row, does it tend to bounce? This page finds every losing streak and shows what came next.</div>
+      <a class="strat-link" href="red-streak-league.html">COMPARE ACROSS ALL INSTRUMENTS →</a>
     </div>
   </div>
 
@@ -51,18 +51,18 @@
       <div class="ctl">
         <div class="clab">DIRECTION</div>
         <div class="seg" id="direction-seg">
-          <button type="button" class="opt on" data-value="down">Down day</button>
-          <button type="button" class="opt"    data-value="up">Up day</button>
+          <button type="button" class="opt on" data-value="down">Red streak</button>
+          <button type="button" class="opt"    data-value="up">Green streak</button>
         </div>
       </div>
 
       <div class="ctl">
-        <div class="clab">MOVE THRESHOLD</div>
+        <div class="clab">STREAK LENGTH</div>
         <div class="slider">
-          <div class="val" id="threshold-val">−2.0%</div>
-          <input type="range" class="range" id="threshold-range"
-                 min="1" max="6" step="0.1" value="2" aria-label="Move threshold (%)">
-          <div class="track-ends"><span id="track-low">−1%</span><span id="track-high">−6%</span></div>
+          <div class="val" id="streak-val">3 RED DAYS</div>
+          <input type="range" class="range" id="streak-range"
+                 min="2" max="6" step="1" value="3" aria-label="Streak length (days)">
+          <div class="track-ends"><span>2 days</span><span>6 days</span></div>
         </div>
       </div>
 
@@ -85,19 +85,11 @@
     </div>
   </section>
 
-  <!--
-  <section class="verdict" id="verdict" style="margin-top:26px;">
-    <div class="vlabel"><span class="pip"></span> THE VERDICT</div>
-    <div class="vtext" id="verdict-text">Loading…</div>
-    <div class="vmeta" id="verdict-meta"></div>
-  </section>
-  -->
-
   <section class="panel">
     <div class="sec-h"><span class="tick"></span><h2>SUMMARY</h2><span class="note">returns are cumulative from entry</span></div>
     <table class="score">
       <thead>
-        <tr><th>HOLDING PERIOD</th><th>DAY 1</th><th>DAY 2</th><th>DAY 3</th></tr>
+        <tr><th>HOLDING PERIOD</th><th>DAY 1</th><th>DAY 3</th><th>DAY 5</th></tr>
       </thead>
       <tbody id="score-body"></tbody>
     </table>
@@ -108,7 +100,7 @@
     <div class="logwrap">
       <table class="log">
         <thead>
-          <tr><th>DATE</th><th>TRIGGER MOVE</th><th>DAY 1</th><th>DAY 2</th><th>DAY 3</th></tr>
+          <tr><th>DATE</th><th>STREAK</th><th>DAY 1</th><th>DAY 3</th><th>DAY 5</th></tr>
         </thead>
         <tbody id="log-body"></tbody>
       </table>
@@ -122,6 +114,6 @@
 
 </div>
 
-<script type="module" src="js/buy-the-bounce.js"></script>
+<script type="module" src="js/red-streak.js"></script>
 </body>
 </html>

@@ -3,13 +3,44 @@
    hand-rolled SVG line chart plus four snapshot stats. */
 
 import { escapeHtml } from "./strategy-engine.js";
+import { CATALOG } from "./catalog.js";
 
 const DATA_BASE = "data";
 
+// Reports tied to a portfolio, keyed by portfolio slug. Sourced from the
+// publication catalog so there's one source of truth for what's published.
+const REPORTS_BY_PORTFOLIO = new Map(
+  CATALOG.filter(c => c.type === "report" && c.portfolio)
+         .map(c => [c.portfolio, c])
+);
+
 const state = {
   slug: null,
-  mode: "letf",   // 'letf' or 'under'
+  mode: "letf",   // slot key: 'letf' = column 2 (wrapper / net), 'under' = column 1 (gross / 1x)
+  window: "90d",  // chart window: '90d' | '1y' | '5y' | 'all'. Most readers only care about the recent run.
 };
+
+// Trailing-window lengths in calendar days. 'all' keeps the whole series.
+const WINDOW_DAYS = { "90d": 90, "1y": 365, "5y": 365 * 5, "all": null };
+
+// Per-kind labels for the two curves. The 'letf' slot is always column 2,
+// 'under' is always column 1 — only the wording changes between an LETF
+// index pair and a CFD single-share pair.
+const KIND_LABELS = {
+  letf: {
+    clab: "WRAPPER",
+    letf:  { chip: "LSE LETF wrap", label: "LETF WRAPPER", word: "LETF wrapper" },
+    under: { chip: "1x underlying", label: "1X UNDERLYING", word: "1x underlying" },
+  },
+  cfd: {
+    clab: "VIEW",
+    letf:  { chip: "Net of costs", label: "NET OF T212 COSTS", word: "net of T212 costs" },
+    under: { chip: "Gross spread", label: "GROSS SPREAD",      word: "gross spread, no costs" },
+  },
+};
+
+function kindOf(meta){ return meta && meta.kind === "cfd" ? "cfd" : "letf"; }
+function legDisp(leg){ return leg.letf || leg.ticker || leg.label; }
 
 let menu = [];
 const cache = new Map();
@@ -81,11 +112,51 @@ function computeSnapshot(bars, modeIdx){
   };
 }
 
+/* ---------- window slicing ---------- */
+
+// Trailing slice of the equity curve by calendar days from the last bar.
+// Falls back to the whole (or last two) bars if the window predates inception.
+function sliceWindow(bars, win){
+  const days = WINDOW_DAYS[win];
+  if(days == null) return bars;
+  const cutoff = Date.parse(bars[bars.length - 1][0]) - days * 86400000;
+  const sliced = bars.filter(b => Date.parse(b[0]) >= cutoff);
+  return sliced.length >= 2 ? sliced : bars.slice(-2);
+}
+
 /* ---------- SVG chart ---------- */
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// X-axis ticks adapt to the visible span: months for short windows (with the
+// year shown at each January boundary), calendar years for long ones. Returns
+// at most ~8 evenly-spaced labels.
+function buildXTicks(bars){
+  const spanDays = (Date.parse(bars[bars.length - 1][0]) - Date.parse(bars[0][0])) / 86400000;
+  const byMonth = spanDays <= 450;
+  const ticks = [];
+  let lastKey = "";
+  bars.forEach((b, i) => {
+    const key = byMonth ? b[0].slice(0, 7) : b[0].slice(0, 4);
+    if(key !== lastKey){
+      const label = byMonth
+        ? (b[0].slice(5, 7) === "01" ? b[0].slice(0, 4) : MONTHS[+b[0].slice(5, 7) - 1])
+        : key;
+      ticks.push({i, label});
+      lastKey = key;
+    }
+  });
+  const step = Math.ceil(ticks.length / 8);
+  return ticks.filter((_, k) => k % step === 0);
+}
+
 function renderChart(bars, modeIdx, label, color){
-  const W = 1000, H = 380;
-  const padL = 70, padR = 24, padT = 24, padB = 36;
+  // Narrower viewBox on phones so axis labels don't scale down into
+  // illegibility (the SVG always stretches to the container width, so a
+  // smaller viewBox means a larger effective font). See css mobile section.
+  const mobile = window.innerWidth <= 700;
+  const W = mobile ? 480 : 1000, H = mobile ? 340 : 380;
+  const padL = mobile ? 48 : 70, padR = mobile ? 14 : 24, padT = 24, padB = 36;
   const innerW = W - padL - padR;
   const innerH = H - padT - padB;
 
@@ -104,18 +175,8 @@ function renderChart(bars, modeIdx, label, color){
   // Polyline points
   const pts = bars.map((b, i) => `${xOf(i).toFixed(1)},${yOf(b[modeIdx]).toFixed(1)}`).join(" ");
 
-  // Year ticks: first bar of each year
-  const yearTicks = [];
-  let lastYear = "";
-  bars.forEach((b, i) => {
-    const y = b[0].slice(0, 4);
-    if(y !== lastYear){
-      yearTicks.push({i, year: y});
-      lastYear = y;
-    }
-  });
-  const yearStep = Math.ceil(yearTicks.length / 8);   // ~8 labels max
-  const yearLabels = yearTicks.filter((_, k) => k % yearStep === 0);
+  // X-axis ticks: months for short windows, years for long ones.
+  const xLabels = buildXTicks(bars);
 
   // Y axis labels (5 ticks)
   const yLabels = [];
@@ -138,9 +199,9 @@ function renderChart(bars, modeIdx, label, color){
       <text x="${padL-8}" y="${(y+4).toFixed(1)}" fill="var(--dim)" font-family="VT323, monospace" font-size="15" text-anchor="end">${v.toFixed(2)}</text>
     `).join("")}
 
-    ${yearLabels.map(({i, year}) => `
+    ${xLabels.map(({i, label}) => `
       <line x1="${xOf(i).toFixed(1)}" y1="${padT}" x2="${xOf(i).toFixed(1)}" y2="${padT+innerH}" stroke="var(--line)" stroke-width="0.6" opacity="0.4"/>
-      <text x="${xOf(i).toFixed(1)}" y="${padT+innerH+18}" fill="var(--dim)" font-family="VT323, monospace" font-size="15" text-anchor="middle">${year}</text>
+      <text x="${xOf(i).toFixed(1)}" y="${padT+innerH+18}" fill="var(--dim)" font-family="VT323, monospace" font-size="15" text-anchor="middle">${escapeHtml(label)}</text>
     `).join("")}
 
     ${breakEven}
@@ -174,31 +235,47 @@ function renderPortfolioMenu(){
 function renderPortfolioLabel(p){
   document.getElementById("portfolio-name").textContent = p.name;
   document.getElementById("portfolio-legs").textContent =
-    `${p.long.letf} + ${p.short.letf}`;
+    `${legDisp(p.long)} + ${legDisp(p.short)}`;
 }
 
-function renderModeChips(){
+function applyKindLabels(meta){
+  const cfg = KIND_LABELS[kindOf(meta)];
+  document.getElementById("mode-clab").textContent = cfg.clab;
   const seg = document.getElementById("mode-seg");
   for(const opt of seg.querySelectorAll(".opt")){
     opt.classList.toggle("on", opt.dataset.value === state.mode);
+    const slot = cfg[opt.dataset.value];
+    if(slot) opt.textContent = slot.chip;
   }
 }
 
 function renderBlurb(meta){
   document.getElementById("portfolio-blurb").textContent = meta.blurb;
   const beta = meta.beta_clip
-    ? `, beta clipped to [${meta.beta_clip[0]}, ${meta.beta_clip[1]}]`
+    ? `, hedge ratio clipped to [${meta.beta_clip[0]}, ${meta.beta_clip[1]}]`
     : "";
-  document.getElementById("portfolio-legs-line").innerHTML =
-    `Long leg: <b>${escapeHtml(meta.long.label)}</b> via ` +
-    `<b>${escapeHtml(meta.long.letf)}</b> (${meta.long.lev}x). ` +
-    `Short leg: <b>${escapeHtml(meta.short.label)}</b> via ` +
-    `<b>${escapeHtml(meta.short.letf)}</b> (${meta.short.lev}x short). ` +
-    `Hedge ratio recomputed daily from prior ${meta.lookback}-day window${beta}.`;
+  const legsEl = document.getElementById("portfolio-legs-line");
+  if(kindOf(meta) === "cfd"){
+    const markup = meta.markup_annual != null ? (meta.markup_annual * 100).toFixed(1) : "3.0";
+    legsEl.innerHTML =
+      `Long leg: <b>${escapeHtml(meta.long.label)}</b> (${escapeHtml(meta.long.ticker || "")}). ` +
+      `Short leg: <b>${escapeHtml(meta.short.label)}</b> (${escapeHtml(meta.short.ticker || "")}), held short. ` +
+      `Hedge ratio recomputed daily from the prior ${meta.lookback}-day window${beta}. ` +
+      `The net view applies Trading 212 CFD costs: zero commission, no FX fee (both legs are GBP-listed), ` +
+      `and overnight financing every night — the benchmark rate (≈ BoE Bank Rate) plus a ~${markup}% per-year markup on the long leg, ` +
+      `minus the same markup credited on the short. On a balanced pair the benchmark cancels and the running cost is roughly twice the markup.`;
+  } else {
+    legsEl.innerHTML =
+      `Long leg: <b>${escapeHtml(meta.long.label)}</b> via ` +
+      `<b>${escapeHtml(meta.long.letf)}</b> (${meta.long.lev}x). ` +
+      `Short leg: <b>${escapeHtml(meta.short.label)}</b> via ` +
+      `<b>${escapeHtml(meta.short.letf)}</b> (${meta.short.lev}x short). ` +
+      `Hedge ratio recomputed daily from prior ${meta.lookback}-day window${beta}.`;
+  }
 }
 
-function renderStats(snap, mode){
-  const modeWord = mode === "letf" ? "LETF wrapper" : "1x underlying";
+function renderStats(snap, mode, meta){
+  const modeWord = KIND_LABELS[kindOf(meta)][mode].word;
   const rows = [
     {
       label: "CURRENT VALUE",
@@ -242,6 +319,16 @@ function renderStats(snap, mode){
     `${modeWord} · ${snap.firstDate} → ${snap.lastDate}`;
 }
 
+// Show a deep-dive link when the selected portfolio has a published report.
+function renderReport(){
+  const panel = document.getElementById("report-panel");
+  const report = REPORTS_BY_PORTFOLIO.get(state.slug);
+  if(!report){ panel.hidden = true; return; }
+  document.getElementById("report-blurb").textContent = report.blurb;
+  document.getElementById("report-link").href = report.page;
+  panel.hidden = false;
+}
+
 function renderBuiltLine(){
   if(!builtAt) return;
   document.getElementById("built-line").textContent =
@@ -252,21 +339,27 @@ function renderBuiltLine(){
 
 async function update(){
   const payload = await loadPortfolio(state.slug);
+  const meta = payload.meta;
   const modeIdx = state.mode === "letf" ? 2 : 1;
   const color = state.mode === "letf" ? "var(--cyan)" : "var(--magenta)";
-  const label = state.mode === "letf" ? "LETF WRAPPER" : "1X UNDERLYING";
+  const label = KIND_LABELS[kindOf(meta)][state.mode].label;
 
-  renderPortfolioLabel(payload.meta);
-  renderModeChips();
-  renderBlurb(payload.meta);
+  renderPortfolioLabel(meta);
+  applyKindLabels(meta);
+  renderBlurb(meta);
+  renderReport();
 
   const snap = computeSnapshot(payload.bars, modeIdx);
-  renderStats(snap, state.mode);
+  renderStats(snap, state.mode, meta);
 
+  // The chart zooms to the chosen trailing window; the snapshot stats above
+  // stay all-time. Values are the running multiple of £1 from inception — the
+  // window only changes which slice of that curve we draw.
+  const view = sliceWindow(payload.bars, state.window);
   const wrap = document.getElementById("chart-wrap");
-  wrap.innerHTML = renderChart(payload.bars, modeIdx, label, color);
+  wrap.innerHTML = renderChart(view, modeIdx, label, color);
   document.getElementById("chart-note").textContent =
-    `£1 invested ${snap.firstDate} · ${payload.bars.length} trading days`;
+    `${view[0][0]} → ${view[view.length - 1][0]} · ${view.length} trading days`;
 }
 
 /* ---------- wiring ---------- */
@@ -281,6 +374,31 @@ function wireControls(){
     if(!btn) return;
     state.mode = btn.dataset.value;
     update();
+  });
+  document.getElementById("window-seg").addEventListener("click", e => {
+    const btn = e.target.closest(".opt");
+    if(!btn) return;
+    state.window = btn.dataset.value;
+    for(const opt of e.currentTarget.querySelectorAll(".opt")){
+      opt.classList.toggle("on", opt.dataset.value === state.window);
+    }
+    update();
+  });
+
+  // Re-render the chart when crossing the mobile/desktop breakpoint so the
+  // viewBox geometry (see renderChart) matches the viewport. Cheap — the
+  // portfolio payload is cached, so update() does no network work.
+  let lastMobile = window.innerWidth <= 700;
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const nowMobile = window.innerWidth <= 700;
+      if(nowMobile !== lastMobile){
+        lastMobile = nowMobile;
+        update();
+      }
+    }, 150);
   });
 }
 
