@@ -1,0 +1,35 @@
+name: CI
+
+# Fast regression guard for the shared browser engines. These are pure
+# functions (no DOM/fetch/network), so the job needs no data build and no
+# yfinance — it just runs the Node built-in test runner. The deploy workflow
+# additionally validates the freshly built JSON before publishing.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "web/js/**"
+      - "tests/web/**"
+      - "package.json"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "web/js/**"
+      - "tests/web/**"
+      - "package.json"
+      - ".github/workflows/ci.yml"
+
+jobs:
+  engine-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run engine unit tests
+        run: node --test "tests/web/**/*.test.js"

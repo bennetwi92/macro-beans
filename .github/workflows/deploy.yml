@@ -44,6 +44,13 @@ jobs:
       - name: Build portfolio data
         run: python scripts/site/build_portfolios.py
 
+      - name: Validate generated data
+        # Gate the deploy on data sanity: shape, finite/positive prices,
+        # strictly-increasing dates, and menu <-> file consistency. The JSON is
+        # built fresh in CI and never committed, so this is the only place it
+        # can be checked before it reaches readers' browsers.
+        run: python scripts/site/validate_data.py
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

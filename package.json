@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Dev tooling only — lets Node parse the web/js ES modules so the shared engines can be unit-tested. The site itself has no dependencies and no build step; do not add runtime deps here.",
+  "scripts": {
+    "test": "node --test \"tests/web/**/*.test.js\""
+  }
+}
