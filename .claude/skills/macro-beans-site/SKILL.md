@@ -420,7 +420,7 @@ or the build scripts:
 ```bash
 # Unit tests for the shared browser engines (pure functions — no browser, no
 # data build needed). Node's built-in runner; zero dependencies.
-node --test "tests/web/**/*.test.js"          # or: npm test
+node --test tests/web/*.test.js               # or: npm test
 
 # Schema + sanity check of the built JSON (run after the build scripts).
 /usr/local/bin/python3 scripts/site/validate_data.py
@@ -506,7 +506,7 @@ Repository **must be public** for free GitHub Pages. Don't change it back to pri
 | Change colors / fonts | `web/css/macro-beans.css` → `:root` |
 | Adjust mobile / responsive behaviour | `web/css/macro-beans.css` → `/* responsive / mobile */` (760px & 440px breakpoints) |
 | Change event-detection logic | `web/js/strategy-engine.js` (update `tests/web/*.test.js` too) |
-| Run engine unit tests | `node --test "tests/web/**/*.test.js"` (or `npm test`) |
+| Run engine unit tests | `node --test tests/web/*.test.js` (or `npm test`) |
 | Validate built JSON | `python scripts/site/validate_data.py` |
 | Add a strategy page | Copy `buy-the-bounce.html` + `.js` |
 | Add a comparison page | Copy `buy-the-bounce-league.html` + `.js` |

@@ -29,7 +29,9 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Run engine unit tests
-        run: node --test "tests/web/**/*.test.js"
+        # Single-level shell glob (the test files live directly in tests/web/),
+        # so this does not depend on Node's native --test glob support.
+        run: node --test tests/web/*.test.js
