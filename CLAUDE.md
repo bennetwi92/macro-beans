@@ -44,29 +44,56 @@ conda activate macro-beans
 Scripts, docs, and data are all organised by topic subdirectory:
 
 ```
+config/
+  instruments.toml  # Instrument registry (single source of truth)
+  portfolios.toml   # Pair-portfolio registry (web)
 scripts/
   mean_reversion/   # Scanner, walk-forward backtest, dashboard, training
   event_studies/    # Oil and copper event-study scripts
   vix_options/      # Streamlit calculator (pages/ subdir for multipage)
   storage_model/    # Gas storage dashboard
   site/             # Build scripts for the public web platform (see below)
-  tools/            # Generic market tools
+  tools/            # Generic market tools (incl. seed_duckdb.py migration)
   archive/          # Deprecated scripts
 src/
+  data/             # Unified data layer: paths, registry, MarketStore, refresh
   models/           # Mean-reversion model package
   storage_model/    # Gas storage valuation engine
   vix_analysis/     # VIX options analysis components
 docs/
   mean_reversion/   event_studies/   reference/   vix_options/
 data/
-  event_studies/    backtests/   stock_history/
+  event_studies/    backtests/        # CSV/PNG analysis outputs (committed)
+  market.duckdb                       # Price cache (gitignored, regenerable)
 web/                # Public static site (Macro Beans web platform)
 .github/workflows/  # CI/CD for the web platform (deploy.yml)
 ```
 
+### Data layer (`src/data/`)
+
+Market prices live in a single DuckDB file (`data/market.duckdb`), **not**
+per-symbol CSVs. It is gitignored and regenerable — there is no precious
+state. The instrument universe is defined once in `config/instruments.toml`.
+
+- **Read prices:** `from src.data.store import MarketStore` →
+  `MarketStore().get_prices("AAPL")` returns a Date-indexed OHLCV frame.
+  Read-only; safe to call from many processes.
+- **Write/refresh prices:** `python -m src.data.refresh [--full] [--tickers AAPL,MSFT]`
+  is the *only* writer (single-writer, ACID). Default is an incremental update
+  of the research universe from the registry.
+- **Paths:** `from src.data.paths import REPO_ROOT, DATA_DIR, CONFIG_DIR, DB_PATH`
+  instead of recomputing `Path(__file__).resolve().parents[2]`.
+- **Registry:** `from src.data.registry import load_instruments, load_portfolios`
+  (stdlib `tomllib` only — no duckdb, so the web build can use it). Add an
+  instrument = one `[[instrument]]` block in `config/instruments.toml`.
+- **First-time / fresh clone:** build the cache with
+  `python -m src.data.refresh --full`. (`scripts/tools/seed_duckdb.py` was the
+  one-off migration from the legacy CSVs.)
+
 When adding new analyses:
-- Drop the script into the matching topic subdir under `scripts/`. Use `Path(__file__).resolve().parents[2]` to resolve the repo root from inside any script.
-- Write outputs to the matching topic subdir under `data/`.
+- Drop the script into the matching topic subdir under `scripts/`. Use
+  `src.data.paths` for repo/data locations and `MarketStore` for prices.
+- Write CSV/PNG outputs to the matching topic subdir under `data/`.
 - If reusable, factor library code into `src/<topic>/`.
 - Document findings in the matching topic subdir under `docs/`.
 

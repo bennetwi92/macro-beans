@@ -1,0 +1,76 @@
+# Pair-portfolio registry for the public site (scripts/site/build_portfolios.py).
+#
+# Each [[portfolio]] is a beta-hedged long/short pair. The build script fetches
+# the two underlyings, computes a rolling beta hedge, and wraps the legs in
+# their LETFs. Loaded by src/data/registry.py (stdlib tomllib, no dependency).
+#
+# Adding a portfolio = add one block, then: python scripts/site/build_portfolios.py
+
+[[portfolio]]
+slug = "silver-gold"
+name = "Silver / Gold"
+blurb = "Long silver, short gold. Silver is the higher-beta industrial precious metal; gold is the safe-haven. Expresses a pro-cyclical, reflationary view — gains when growth expectations rise faster than risk-off demand."
+
+[portfolio.long]
+underlying = "SI=F"
+letf = "3SIL.L"
+label = "Silver"
+lev = 3
+
+[portfolio.short]
+underlying = "GC=F"
+letf = "3GOS.L"
+label = "Gold"
+lev = 3
+
+[[portfolio]]
+slug = "gold-treasuries"
+name = "Gold / 10Y Treasuries"
+blurb = "Long gold, short 10-year US Treasuries. Captures real-yield repricing and inflation surprises — gold rallies when real yields fall, but the bond leg drags when nominal yields move. Beta is clipped to [0.1, 2.0] because gold-vs-bond correlation flips between regimes."
+beta_clip = [0.1, 2.0]
+
+[portfolio.long]
+underlying = "GC=F"
+letf = "3GOL.L"
+label = "Gold"
+lev = 3
+
+[portfolio.short]
+underlying = "ZN=F"
+letf = "3TYS.L"
+label = "10Y UST"
+lev = 3
+
+[[portfolio]]
+slug = "ftse250-ftse100"
+name = "FTSE 250 / FTSE 100"
+blurb = "Long UK mid-caps (domestic-revenue heavy), short UK large-caps (international-revenue heavy, GBP-sensitive). Expresses a positive view on UK domestic activity / sterling. Note the asymmetric leverage: 2x long mid via 2MCL.L, 3x short large via 3UKS.L."
+
+[portfolio.long]
+underlying = "^FTMC"
+letf = "2MCL.L"
+label = "FTSE 250"
+lev = 2
+
+[portfolio.short]
+underlying = "^FTSE"
+letf = "3UKS.L"
+label = "FTSE 100"
+lev = 3
+
+[[portfolio]]
+slug = "ndx-spx"
+name = "Nasdaq 100 / S&P 500"
+blurb = "Long Nasdaq 100, short S&P 500. Both 3x. Expresses a positive view on the tech-vs-broad-market dispersion. Will outperform when mega-cap tech leads, underperform when leadership broadens to value/cyclicals."
+
+[portfolio.long]
+underlying = "^NDX"
+letf = "QQQ3.L"
+label = "Nasdaq 100"
+lev = 3
+
+[portfolio.short]
+underlying = "^GSPC"
+letf = "3USS.L"
+label = "S&P 500"
+lev = 3

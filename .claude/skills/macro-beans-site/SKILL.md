@@ -227,34 +227,52 @@ Page voice is direct, second-person where useful ("you'd be up 1.8%"), and short
 
 ## How to add a new instrument
 
-1. Edit `scripts/site/build_data.py`. Add a tuple to `INSTRUMENTS`:
-   ```python
-   ("slug", "YAHOO.L", "Display Name", "Sublabel"),
+Instruments live in the **shared registry** (`config/instruments.toml`), not in
+`build_data.py` — the build script reads `load_instruments("web")` from it.
+
+1. Add an `[[instrument]]` block to `config/instruments.toml` with
+   `surfaces = ["web"]`:
+   ```toml
+   [[instrument]]
+   slug = "slug"            # lowercase id; JSON filename + dropdown value
+   name = "Display Name"
+   category = "Equity"      # Equity | Bond | Commodity (free-form)
+   surfaces = ["web"]
+   web_ticker = "YAHOO.L"   # Yahoo Finance ticker
+   sublabel = "Sublabel"
    ```
-   - `slug`: lowercase identifier, used as the JSON filename and dropdown value
-   - `YAHOO.L`: Yahoo Finance ticker (use `yf.download("TICKER", period="5d")` first to verify it exists and has volume)
+   - `web_ticker`: verify with `yf.download("TICKER", period="5d")` first — it must exist and have volume
    - **Pick liquid LSE ETFs** for tradability. Check 60-day average notional turnover; aim for £100k/day+
    - For asset classes the existing 16 don't cover, look at iShares / Vanguard / Invesco LSE listings first — they're usually the most liquid
 2. Test locally: `/usr/local/bin/python3 scripts/site/build_data.py`
 3. Spot-check the JSON: dates, first/last bars look sane, no NaN
-4. Commit and push. CI redeploys; the new instrument appears in every dropdown and the league table with no other changes.
+4. Commit and push (`config/instruments.toml` is the only source edit). CI redeploys; the new instrument appears in every dropdown and the league table with no other changes.
 
 ## How to add a new portfolio
 
-1. Edit `scripts/site/build_portfolios.py`. Add a dict to `PORTFOLIOS`:
-   ```python
-   {
-     "slug":  "long-short",
-     "name":  "Long / Short",
-     "blurb": "Plain-English explanation of what the pair captures.",
-     "long":  {"underlying": "TICKER", "letf": "XXX.L", "label": "Long Leg",  "lev": 3},
-     "short": {"underlying": "TICKER", "letf": "YYY.L", "label": "Short Leg", "lev": 3},
-     "beta_clip": None,  # or [lo, hi] if beta is unstable (e.g. correlation flips sign)
-   },
+Portfolios live in the **shared registry** (`config/portfolios.toml`);
+`build_portfolios.py` reads `load_portfolios()` from it.
+
+1. Add a `[[portfolio]]` block to `config/portfolios.toml`:
+   ```toml
+   [[portfolio]]
+   slug = "long-short"
+   name = "Long / Short"
+   blurb = "Plain-English explanation of what the pair captures."
+   beta_clip = [0.1, 2.0]   # OMIT this line if beta is stable
+
+   [portfolio.long]
+   underlying = "TICKER"     # yfinance ticker for the raw index/future (^GSPC, GC=F) — NOT the ETF
+   letf = "XXX.L"            # LSE LETF ticker, display only
+   label = "Long Leg"
+   lev = 3                   # absolute leverage of the LETF wrapper (3 for 3SIL, 2 for 2MCL)
+
+   [portfolio.short]
+   underlying = "TICKER"
+   letf = "YYY.L"
+   label = "Short Leg"
+   lev = 3
    ```
-   - `underlying`: yfinance ticker for the raw index/future (e.g. `^GSPC`, `GC=F`) — **not** the ETF
-   - `letf`: LSE LETF ticker, for **display only** (the equity curve is computed from the underlying + leverage factor)
-   - `lev`: absolute leverage factor of the LETF wrapper (e.g. 3 for 3SIL, 2 for 2MCL)
 2. Test locally: `/usr/local/bin/python3 scripts/site/build_portfolios.py`
 3. Sanity-check the equity curve (last value, drawdown range). If the LETF curve hits absurd numbers (>100x) over a long history, that's mathematically correct daily-compound LETF behavior on a strongly trending pair — but warn the user when reviewing.
 4. Commit and push.

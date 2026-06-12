@@ -26,3 +26,12 @@ Thumbs.db
 web/data/*.json
 web/data/portfolios/*.json
 
+# Price cache — DuckDB store, regenerable via `python -m src.data.refresh`
+data/market.duckdb
+data/market.duckdb.wal
+data/market.duckdb.tmp
+
+# Legacy per-symbol CSV cache — superseded by the DuckDB store (seeded once
+# via scripts/tools/seed_duckdb.py, then untracked)
+data/stock_history/
+

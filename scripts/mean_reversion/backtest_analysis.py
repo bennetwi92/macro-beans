@@ -2,17 +2,21 @@
 Quick analysis to understand why the strategy is performing poorly
 """
 
+import sys
 import pandas as pd
 import numpy as np
-import os
 from datetime import datetime
+from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.data.store import MarketStore  # noqa: E402
+
+_STORE = MarketStore()
+
 def analyze_strategy_conditions():
     """Check how often entry conditions are actually met"""
-
-    data_dir = '/Users/williambennett/Github/macro-beans/data/stock_history'
 
     # Parameters
     RSI_THRESHOLD = 30
@@ -26,12 +30,9 @@ def analyze_strategy_conditions():
     test_symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META']
 
     for symbol in test_symbols:
-        filepath = os.path.join(data_dir, f'{symbol}.csv')
-        if not os.path.exists(filepath):
+        df = _STORE.get_prices(symbol)
+        if df.empty:
             continue
-
-        df = pd.read_csv(filepath, index_col=0)
-        df.index = pd.to_datetime(df.index, utc=True).tz_convert(None)
 
         # Only use recent 2 years
         df = df[df.index >= '2024-01-01']
@@ -138,8 +139,6 @@ def test_relaxed_parameters():
     print("TESTING RELAXED PARAMETERS")
     print("="*80)
 
-    data_dir = '/Users/williambennett/Github/macro-beans/data/stock_history'
-
     parameter_sets = [
         {'name': 'Original', 'rsi': 30, 'pullback_min': 3, 'pullback_max': 6, 'ma20_dist': 1.5},
         {'name': 'Relaxed RSI', 'rsi': 40, 'pullback_min': 3, 'pullback_max': 6, 'ma20_dist': 1.5},
@@ -156,12 +155,9 @@ def test_relaxed_parameters():
 
         # Test on a few stocks
         for symbol in ['AAPL', 'MSFT', 'GOOGL']:
-            filepath = os.path.join(data_dir, f'{symbol}.csv')
-            if not os.path.exists(filepath):
+            df = _STORE.get_prices(symbol)
+            if df.empty:
                 continue
-
-            df = pd.read_csv(filepath, index_col=0)
-            df.index = pd.to_datetime(df.index, utc=True).tz_convert(None)
             df = df[df.index >= '2024-01-01']
 
             if len(df) < 200:

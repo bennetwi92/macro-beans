@@ -17,32 +17,21 @@ payload small. Dates are trading days only (whatever yfinance returns).
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yfinance as yf
 
+# Make `src` importable so we can read the shared instrument registry.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.data.registry import load_instruments  # noqa: E402
+
+# Web instruments come from the unified registry (config/instruments.toml).
+# (slug, yahoo_ticker, name, sublabel) tuples, web surface only.
 INSTRUMENTS = [
-    # slug,       yahoo,     name,                  sublabel
-    # ---- equities ----
-    ("spx",       "VUSA.L",  "S&P 500",             "US Large Cap"),
-    ("ndx",       "EQQQ.L",  "Nasdaq 100",          "US Tech"),
-    ("ftse",      "ISF.L",   "FTSE 100",            "UK Large Cap"),
-    ("ftse250",   "MIDD.L",  "FTSE 250",            "UK Mid Cap"),
-    ("world",     "IWDA.L",  "MSCI World",          "Global Equity"),
-    ("em",        "EIMI.L",  "MSCI Emerging Mkts",  "Emerging Markets"),
-    ("japan",     "IJPA.L",  "MSCI Japan",          "Japan Equity"),
-    ("estoxx",    "CSX5.L",  "Euro Stoxx 50",       "Europe Equity"),
-    # ---- bonds ----
-    ("ustreas",   "IDTL.L",  "US Treasuries 20Y+",  "US Long Bonds"),
-    ("gilts",     "IGLT.L",  "UK Gilts",            "UK Government Bonds"),
-    # ---- commodities ----
-    ("gold",      "SGLN.L",  "Gold",                "Precious Metal"),
-    ("silver",    "SSLN.L",  "Silver",              "Precious Metal"),
-    ("copper",    "COPA.L",  "Copper",              "Industrial Metal"),
-    ("brent",     "BRNT.L",  "Brent Oil",           "Energy"),
-    ("wti",       "CRUD.L",  "WTI Crude",           "Energy"),
-    ("natgas",    "NGAS.L",  "Natural Gas",         "Energy"),
+    (i.slug, i.web_ticker, i.name, i.sublabel)
+    for i in load_instruments("web")
 ]
 
 START = "1990-01-01"

@@ -1,0 +1,528 @@
+# Instrument registry -- the single source of truth for every instrument.
+#
+# Each [[instrument]] is a logical exposure. `surfaces` controls where it
+# shows up:
+#   "research"  -> US-listed ticker, scanned/cached in the DuckDB price store
+#   "web"       -> LSE-listed ETF surfaced on the public site
+# An instrument may carry a research_ticker, a web_ticker, or both.
+#
+# Adding an instrument = add one block here. Then:
+#   research -> python -m src.data.refresh --full --tickers <TICKER>
+#   web      -> python scripts/site/build_data.py
+#
+# Loaded by src/data/registry.py with the stdlib tomllib (no dependency).
+
+# ============================================================================
+# Web surface -- LSE ETFs shown on the public site (scripts/site/build_data.py)
+# ============================================================================
+
+[[instrument]]
+slug = "spx"
+name = "S&P 500"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "VUSA.L"
+sublabel = "US Large Cap"
+
+[[instrument]]
+slug = "ndx"
+name = "Nasdaq 100"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "EQQQ.L"
+sublabel = "US Tech"
+
+[[instrument]]
+slug = "ftse"
+name = "FTSE 100"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "ISF.L"
+sublabel = "UK Large Cap"
+
+[[instrument]]
+slug = "ftse250"
+name = "FTSE 250"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "MIDD.L"
+sublabel = "UK Mid Cap"
+
+[[instrument]]
+slug = "world"
+name = "MSCI World"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "IWDA.L"
+sublabel = "Global Equity"
+
+[[instrument]]
+slug = "em"
+name = "MSCI Emerging Mkts"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "EIMI.L"
+sublabel = "Emerging Markets"
+
+[[instrument]]
+slug = "japan"
+name = "MSCI Japan"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "IJPA.L"
+sublabel = "Japan Equity"
+
+[[instrument]]
+slug = "estoxx"
+name = "Euro Stoxx 50"
+category = "Equity"
+surfaces = ["web"]
+web_ticker = "CSX5.L"
+sublabel = "Europe Equity"
+
+[[instrument]]
+slug = "ustreas"
+name = "US Treasuries 20Y+"
+category = "Bond"
+surfaces = ["web"]
+web_ticker = "IDTL.L"
+sublabel = "US Long Bonds"
+
+[[instrument]]
+slug = "gilts"
+name = "UK Gilts"
+category = "Bond"
+surfaces = ["web"]
+web_ticker = "IGLT.L"
+sublabel = "UK Government Bonds"
+
+[[instrument]]
+slug = "gold"
+name = "Gold"
+category = "Commodity"
+surfaces = ["web"]
+web_ticker = "SGLN.L"
+sublabel = "Precious Metal"
+
+[[instrument]]
+slug = "silver"
+name = "Silver"
+category = "Commodity"
+surfaces = ["web"]
+web_ticker = "SSLN.L"
+sublabel = "Precious Metal"
+
+[[instrument]]
+slug = "copper"
+name = "Copper"
+category = "Commodity"
+surfaces = ["web"]
+web_ticker = "COPA.L"
+sublabel = "Industrial Metal"
+
+[[instrument]]
+slug = "brent"
+name = "Brent Oil"
+category = "Commodity"
+surfaces = ["web"]
+web_ticker = "BRNT.L"
+sublabel = "Energy"
+
+[[instrument]]
+slug = "wti"
+name = "WTI Crude"
+category = "Commodity"
+surfaces = ["web"]
+web_ticker = "CRUD.L"
+sublabel = "Energy"
+
+[[instrument]]
+slug = "natgas"
+name = "Natural Gas"
+category = "Commodity"
+surfaces = ["web"]
+web_ticker = "NGAS.L"
+sublabel = "Energy"
+
+# ============================================================================
+# Research surface -- US-listed universe cached in DuckDB (mean-reversion
+# scanner, storage model, event studies). research_ticker is the yfinance id.
+# ============================================================================
+
+[[instrument]]
+slug = "aapl"
+name = "Apple"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "AAPL"
+
+[[instrument]]
+slug = "msft"
+name = "Microsoft"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "MSFT"
+
+[[instrument]]
+slug = "amzn"
+name = "Amazon"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "AMZN"
+
+[[instrument]]
+slug = "googl"
+name = "Alphabet"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "GOOGL"
+
+[[instrument]]
+slug = "meta"
+name = "Meta Platforms"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "META"
+
+[[instrument]]
+slug = "tsla"
+name = "Tesla"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "TSLA"
+
+[[instrument]]
+slug = "nvda"
+name = "NVIDIA"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "NVDA"
+
+[[instrument]]
+slug = "jpm"
+name = "JPMorgan Chase"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "JPM"
+
+[[instrument]]
+slug = "v"
+name = "Visa"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "V"
+
+[[instrument]]
+slug = "ma"
+name = "Mastercard"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "MA"
+
+[[instrument]]
+slug = "bac"
+name = "Bank of America"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "BAC"
+
+[[instrument]]
+slug = "wmt"
+name = "Walmart"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "WMT"
+
+[[instrument]]
+slug = "pg"
+name = "Procter & Gamble"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "PG"
+
+[[instrument]]
+slug = "hd"
+name = "Home Depot"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "HD"
+
+[[instrument]]
+slug = "dis"
+name = "Walt Disney"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "DIS"
+
+[[instrument]]
+slug = "adbe"
+name = "Adobe"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "ADBE"
+
+[[instrument]]
+slug = "crm"
+name = "Salesforce"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "CRM"
+
+[[instrument]]
+slug = "nflx"
+name = "Netflix"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "NFLX"
+
+[[instrument]]
+slug = "pypl"
+name = "PayPal"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "PYPL"
+
+[[instrument]]
+slug = "intc"
+name = "Intel"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "INTC"
+
+[[instrument]]
+slug = "csco"
+name = "Cisco"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "CSCO"
+
+[[instrument]]
+slug = "pfe"
+name = "Pfizer"
+category = "Healthcare"
+surfaces = ["research"]
+research_ticker = "PFE"
+
+[[instrument]]
+slug = "amd"
+name = "AMD"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "AMD"
+
+[[instrument]]
+slug = "orcl"
+name = "Oracle"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "ORCL"
+
+[[instrument]]
+slug = "qcom"
+name = "Qualcomm"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "QCOM"
+
+[[instrument]]
+slug = "txn"
+name = "Texas Instruments"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "TXN"
+
+[[instrument]]
+slug = "avgo"
+name = "Broadcom"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "AVGO"
+
+[[instrument]]
+slug = "cost"
+name = "Costco"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "COST"
+
+[[instrument]]
+slug = "nke"
+name = "Nike"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "NKE"
+
+[[instrument]]
+slug = "pltr"
+name = "Palantir"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "PLTR"
+
+[[instrument]]
+slug = "hood"
+name = "Robinhood"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "HOOD"
+
+[[instrument]]
+slug = "coin"
+name = "Coinbase"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "COIN"
+
+[[instrument]]
+slug = "shop"
+name = "Shopify"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "SHOP"
+
+[[instrument]]
+slug = "uber"
+name = "Uber"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "UBER"
+
+[[instrument]]
+slug = "abnb"
+name = "Airbnb"
+category = "Consumer"
+surfaces = ["research"]
+research_ticker = "ABNB"
+
+[[instrument]]
+slug = "snow"
+name = "Snowflake"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "SNOW"
+
+[[instrument]]
+slug = "sofi"
+name = "SoFi Technologies"
+category = "Financials"
+surfaces = ["research"]
+research_ticker = "SOFI"
+
+[[instrument]]
+slug = "rblx"
+name = "Roblox"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "RBLX"
+
+[[instrument]]
+slug = "net"
+name = "Cloudflare"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "NET"
+
+[[instrument]]
+slug = "ddog"
+name = "Datadog"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "DDOG"
+
+[[instrument]]
+slug = "crwd"
+name = "CrowdStrike"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "CRWD"
+
+[[instrument]]
+slug = "zs"
+name = "Zscaler"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "ZS"
+
+[[instrument]]
+slug = "mu"
+name = "Micron Technology"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "MU"
+
+[[instrument]]
+slug = "mrvl"
+name = "Marvell Technology"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "MRVL"
+
+[[instrument]]
+slug = "klac"
+name = "KLA Corporation"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "KLAC"
+
+[[instrument]]
+slug = "amat"
+name = "Applied Materials"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "AMAT"
+
+[[instrument]]
+slug = "lrcx"
+name = "Lam Research"
+category = "Technology"
+surfaces = ["research"]
+research_ticker = "LRCX"
+
+[[instrument]]
+slug = "cvx"
+name = "Chevron"
+category = "Energy"
+surfaces = ["research"]
+research_ticker = "CVX"
+
+[[instrument]]
+slug = "xom"
+name = "Exxon Mobil"
+category = "Energy"
+surfaces = ["research"]
+research_ticker = "XOM"
+
+[[instrument]]
+slug = "cop"
+name = "ConocoPhillips"
+category = "Energy"
+surfaces = ["research"]
+research_ticker = "COP"
+
+[[instrument]]
+slug = "slb"
+name = "Schlumberger"
+category = "Energy"
+surfaces = ["research"]
+research_ticker = "SLB"
+
+[[instrument]]
+slug = "mpc"
+name = "Marathon Petroleum"
+category = "Energy"
+surfaces = ["research"]
+research_ticker = "MPC"
+
+[[instrument]]
+slug = "gld"
+name = "SPDR Gold Shares"
+category = "Commodity ETF"
+surfaces = ["research"]
+research_ticker = "GLD"
+
+[[instrument]]
+slug = "corn"
+name = "Teucrium Corn Fund"
+category = "Commodity ETF"
+surfaces = ["research"]
+research_ticker = "CORN"

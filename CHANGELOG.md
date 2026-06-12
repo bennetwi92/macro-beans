@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-06-12 - Data Persistence Upgrade
+
+### Major Changes
+
+**Unified data layer (`src/data/`) with a single DuckDB price cache**
+- Prices moved from 54 per-symbol CSVs (`data/stock_history/`) to one
+  DuckDB file (`data/market.duckdb`) — gitignored and regenerable.
+- New `src/data/` package: `paths` (canonical locations), `registry`
+  (instrument/portfolio source of truth, stdlib `tomllib`), `store`
+  (`MarketStore` read API → pandas), `refresh` (the single ACID writer).
+- `config/instruments.toml` + `config/portfolios.toml` — one place to define
+  every instrument. The web build (`build_data.py` / `build_portfolios.py`)
+  and the research universe now read from the registry.
+
+### Why
+- Removes 3 duplicated price loaders, two hardcoded absolute paths, and
+  ~10 path-resolution boilerplate sites; collapses 4 scattered instrument
+  lists into one registry. Scales to many instruments with fewer failure
+  points (single writer, regenerable cache, no precious state).
+
+### Migration / usage
+- Fresh clone or CI: build the cache with `python -m src.data.refresh --full`.
+- `scripts/tools/seed_duckdb.py` performed the one-off CSV → DuckDB migration.
+- Added `duckdb>=1.0` to `environment.yml`. Web CI is unchanged (registry is
+  stdlib-only).
+
 ## 2024-12-15 - Multi-Page Reorganization
 
 ### Major Changes

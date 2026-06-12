@@ -25,6 +25,8 @@ Run locally:
 from __future__ import annotations
 
 import json
+import sys
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,43 +34,28 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+# Make `src` importable so we can read the shared portfolio registry.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.data.registry import load_portfolios  # noqa: E402
+
 LOOKBACK = 60
 START = "2000-01-01"
 
-PORTFOLIOS = [
-    {
-        "slug":  "silver-gold",
-        "name":  "Silver / Gold",
-        "blurb": "Long silver, short gold. Silver is the higher-beta industrial precious metal; gold is the safe-haven. Expresses a pro-cyclical, reflationary view — gains when growth expectations rise faster than risk-off demand.",
-        "long":  {"underlying": "SI=F", "letf": "3SIL.L", "label": "Silver",   "lev": 3},
-        "short": {"underlying": "GC=F", "letf": "3GOS.L", "label": "Gold",     "lev": 3},
-        "beta_clip": None,
-    },
-    {
-        "slug":  "gold-treasuries",
-        "name":  "Gold / 10Y Treasuries",
-        "blurb": "Long gold, short 10-year US Treasuries. Captures real-yield repricing and inflation surprises — gold rallies when real yields fall, but the bond leg drags when nominal yields move. Beta is clipped to [0.1, 2.0] because gold-vs-bond correlation flips between regimes.",
-        "long":  {"underlying": "GC=F", "letf": "3GOL.L", "label": "Gold",     "lev": 3},
-        "short": {"underlying": "ZN=F", "letf": "3TYS.L", "label": "10Y UST",  "lev": 3},
-        "beta_clip": [0.1, 2.0],
-    },
-    {
-        "slug":  "ftse250-ftse100",
-        "name":  "FTSE 250 / FTSE 100",
-        "blurb": "Long UK mid-caps (domestic-revenue heavy), short UK large-caps (international-revenue heavy, GBP-sensitive). Expresses a positive view on UK domestic activity / sterling. Note the asymmetric leverage: 2x long mid via 2MCL.L, 3x short large via 3UKS.L.",
-        "long":  {"underlying": "^FTMC", "letf": "2MCL.L", "label": "FTSE 250", "lev": 2},
-        "short": {"underlying": "^FTSE", "letf": "3UKS.L", "label": "FTSE 100", "lev": 3},
-        "beta_clip": None,
-    },
-    {
-        "slug":  "ndx-spx",
-        "name":  "Nasdaq 100 / S&P 500",
-        "blurb": "Long Nasdaq 100, short S&P 500. Both 3x. Expresses a positive view on the tech-vs-broad-market dispersion. Will outperform when mega-cap tech leads, underperform when leadership broadens to value/cyclicals.",
-        "long":  {"underlying": "^NDX",  "letf": "QQQ3.L", "label": "Nasdaq 100", "lev": 3},
-        "short": {"underlying": "^GSPC", "letf": "3USS.L", "label": "S&P 500",    "lev": 3},
-        "beta_clip": None,
-    },
-]
+
+def _portfolio_to_dict(p) -> dict:
+    """Registry Portfolio -> the dict shape this build script expects."""
+    return {
+        "slug": p.slug,
+        "name": p.name,
+        "blurb": p.blurb,
+        "long": asdict(p.long),
+        "short": asdict(p.short),
+        "beta_clip": list(p.beta_clip) if p.beta_clip else None,
+    }
+
+
+# Pair portfolios come from the unified registry (config/portfolios.toml).
+PORTFOLIOS = [_portfolio_to_dict(p) for p in load_portfolios()]
 
 
 def fetch_closes(ticker: str) -> pd.Series:
