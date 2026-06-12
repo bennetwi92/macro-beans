@@ -24,7 +24,6 @@ Run locally:
 
 from __future__ import annotations
 
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +35,10 @@ import yfinance as yf
 # Make `src` importable so we can read the shared portfolio registry.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from src.data.registry import load_portfolios  # noqa: E402
+
+# Shared build helpers (retry, compact-JSON writer, coverage gate).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import BuildTally, fetch_with_retry, write_json  # noqa: E402
 
 LOOKBACK = 60
 START = "2000-01-01"
@@ -218,16 +221,22 @@ def main() -> None:
 
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     menu = []
+    tally = BuildTally(len(PORTFOLIOS))
 
     for p in PORTFOLIOS:
         print(f"  building {p['name']:<28s} ...", end=" ", flush=True)
-        bars, meta = build_portfolio(p)
+        try:
+            bars, meta = fetch_with_retry(lambda: build_portfolio(p))
+        except Exception as exc:  # noqa: BLE001 — skip a bad pair, keep the rest
+            print(f"FAILED ({exc})")
+            tally.record_failure(p["name"], exc)
+            continue
         meta["built_at"] = built_at
         payload = {"meta": meta, "bars": bars}
         path = out_dir / f"{p['slug']}.json"
-        path.write_text(json.dumps(payload, separators=(",", ":")))
-        size_kb = path.stat().st_size / 1024
-        print(f"{len(bars):>5d} bars  ->  {path.name} ({size_kb:.0f} kB)")
+        n_bytes = write_json(path, payload)
+        print(f"{len(bars):>5d} bars  ->  {path.name} ({n_bytes / 1024:.0f} kB)")
+        tally.record_ok()
         menu.append({
             "slug":  p["slug"],
             "name":  p["name"],
@@ -241,11 +250,11 @@ def main() -> None:
         })
 
     menu_path = repo_root / "web" / "data" / "portfolios.json"
-    menu_path.write_text(json.dumps(
-        {"built_at": built_at, "portfolios": menu},
-        separators=(",", ":")))
+    write_json(menu_path, {"built_at": built_at, "portfolios": menu})
     print(f"\nMenu written -> {menu_path.name} ({len(menu)} entries)")
     print(f"Built at {built_at}")
+
+    sys.exit(tally.report_and_exit_code())
 
 
 if __name__ == "__main__":

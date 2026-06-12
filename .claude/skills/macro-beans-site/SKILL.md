@@ -412,6 +412,29 @@ open http://localhost:8765/buy-the-bounce.html
 
 You can iterate on HTML/CSS/JS without re-running the build scripts — just reload the page.
 
+### Tests & data validation
+
+Two safety nets guard the site. Run them before pushing changes to the engines
+or the build scripts:
+
+```bash
+# Unit tests for the shared browser engines (pure functions — no browser, no
+# data build needed). Node's built-in runner; zero dependencies.
+node --test tests/web/*.test.js               # or: npm test
+
+# Schema + sanity check of the built JSON (run after the build scripts).
+/usr/local/bin/python3 scripts/site/validate_data.py
+```
+
+- `tests/web/*.test.js` lock the user-facing numbers and event detection in
+  `web/js/strategy-engine.js` and `web/js/seasonality-engine.js`. If you change
+  a formula or formatter there, update the tests in the same commit.
+- `scripts/site/validate_data.py` rejects empty/NaN/zero-or-negative prices,
+  out-of-order dates, and menu↔file mismatches. The build scripts now also
+  **skip a flaky ticker** (retry, then drop it) instead of aborting the whole
+  refresh, and fail only if coverage drops below `MIN_OK_FRACTION` (see
+  `scripts/site/_common.py`).
+
 **Check mobile too.** Open the browser DevTools device toolbar (or just drag the
 window down to ~375px wide) and confirm each page you touched: the `<body>` has
 no horizontal scrollbar, control grids have collapsed, wide tables swipe inside
@@ -422,7 +445,8 @@ their bordered box, and nothing is clipped or overlapping. See
 
 - **Workflow**: `.github/workflows/deploy.yml`
 - **Triggers**: push to `main` (when web/, scripts/site/, or the workflow itself changes), manual dispatch, nightly cron at 22:30 UTC Mon-Fri (after US close)
-- **Steps**: checkout → set up Python 3.11 → install `yfinance` + `pandas` → run `build_data.py` → run `build_portfolios.py` → `actions/upload-pages-artifact` on `web/` → `actions/deploy-pages`
+- **Steps**: checkout → set up Python 3.11 → install `yfinance` + `pandas` → run `build_data.py` → run `build_portfolios.py` → **`validate_data.py`** (gates the deploy on data sanity) → `actions/upload-pages-artifact` on `web/` → `actions/deploy-pages`
+- **Engine tests** run separately in `.github/workflows/ci.yml` (Node built-in runner) on every push/PR that touches `web/js/`, `tests/web/`, or `package.json`.
 
 ### Common deploy commands
 
@@ -481,7 +505,9 @@ Repository **must be public** for free GitHub Pages. Don't change it back to pri
 | Add a pair portfolio | `config/portfolios.toml` → `[[portfolio]]` |
 | Change colors / fonts | `web/css/macro-beans.css` → `:root` |
 | Adjust mobile / responsive behaviour | `web/css/macro-beans.css` → `/* responsive / mobile */` (760px & 440px breakpoints) |
-| Change event-detection logic | `web/js/strategy-engine.js` |
+| Change event-detection logic | `web/js/strategy-engine.js` (update `tests/web/*.test.js` too) |
+| Run engine unit tests | `node --test tests/web/*.test.js` (or `npm test`) |
+| Validate built JSON | `python scripts/site/validate_data.py` |
 | Add a strategy page | Copy `buy-the-bounce.html` + `.js` |
 | Add a comparison page | Copy `buy-the-bounce-league.html` + `.js` |
 | Add a chart/calculator page | Copy `portfolios.html` + `.js` |
