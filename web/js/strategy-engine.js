@@ -107,6 +107,45 @@ export function findStreakEvents(bars, opts){
   return events;
 }
 
+/* ---------- live signals (scanner) ----------
+   These ask "is the setup firing on the most recent bar?" — the question
+   the scanner answers. They mirror the firing conditions in findEvents /
+   findStreakEvents exactly, but require no forward bars (the event finders
+   skip the last few bars because they need forward returns to score, so
+   they never report a signal on the latest bar). Reusing the same
+   comparisons keeps the scanner and the strategy pages in agreement. */
+
+/* liveBounce — does the single-day move on the most recent bar clear the
+   threshold in the chosen direction?
+   opts:{direction:'down'|'up', threshold:pct}
+   returns {triggered, move}   (move is the latest day's % change) */
+export function liveBounce(bars, opts){
+  if(!bars || bars.length < 2) return {triggered:false, move:NaN};
+  const thr  = opts.threshold / 100;
+  const last = bars[bars.length - 1][2];
+  const prev = bars[bars.length - 2][2];
+  const move = last / prev - 1;
+  const triggered = opts.direction === "down" ? move <= -thr : move >= thr;
+  return {triggered, move: move * 100};
+}
+
+/* liveStreak — does a run of at least N consecutive closes in the chosen
+   direction end on the most recent bar?
+   opts:{direction:'down'|'up', streak:N (>=2)}
+   returns {triggered, run}   (run = length of the current consecutive run) */
+export function liveStreak(bars, opts){
+  const N  = Math.max(2, Math.round(opts.streak));
+  const up = opts.direction === "up";
+  if(!bars || bars.length < 2) return {triggered:false, run:0};
+  const last = bars.length - 1;
+  let run = 0;
+  for(let k = 0; last - k - 1 >= 0; k++){
+    const c = bars[last - k][2], prev = bars[last - k - 1][2];
+    if(up ? c > prev : c < prev) run++; else break;
+  }
+  return {triggered: run >= N, run};
+}
+
 /* computeStats — returns [day1, day2, day3] each:
      {n, wins, rate, avg, med, worst, best}    rates as percent points. */
 export function computeStats(events){

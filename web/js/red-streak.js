@@ -35,6 +35,13 @@ async function loadInstruments(){
   builtAt = j.built_at;
 }
 
+// Preselect an instrument from ?instrument=<slug> (e.g. a scanner deep-link),
+// but only if it's a real instrument in the menu.
+function applyInstrumentParam(){
+  const slug = new URLSearchParams(location.search).get("instrument");
+  if(slug && instruments.some(i => i.slug === slug)) state.instrument = slug;
+}
+
 async function loadBars(slug){
   if(cache.has(slug)) return cache.get(slug);
   const res = await fetch(`${DATA_BASE}/${slug}.json`, {cache:"no-cache"});
@@ -176,6 +183,7 @@ function wireControls(){
 (async function init(){
   try{
     await loadInstruments();
+    applyInstrumentParam();
     renderInstrumentMenu();
     renderBuiltLine();
     wireControls();

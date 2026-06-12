@@ -71,6 +71,14 @@ export const CATALOG = [
     added: "2026-06-08",
   },
   {
+    slug:  "scanner",
+    type:  "signal",
+    title: "Scanner",
+    blurb: "One page that checks every strategy against every market and lists what's triggered as of the last close — so you only have to look here.",
+    page:  "scanner.html",
+    added: "2026-06-12",
+  },
+  {
     slug:      "report-shell-bp",
     type:      "report",
     title:     "Shell vs BP: What's Driving the Swings",
@@ -83,6 +91,7 @@ export const CATALOG = [
 
 export const CATEGORIES = [
   { key: "strategy",   label: "STRATEGIES",   blurb: "Trade ideas with historical evidence." },
+  { key: "signal",     label: "SCANNER",      blurb: "Every strategy checked across every market — the setups firing right now." },
   { key: "calculator", label: "CALCULATORS",  blurb: "Tools to size, value, or score a trade." },
   { key: "portfolio",  label: "PORTFOLIOS",   blurb: "Multi-leg positions tracked over time." },
   { key: "report",     label: "REPORTS",      blurb: "Deep dives on what's been moving a market or a pair." },
