@@ -53,6 +53,7 @@ web/
   js/
     strategy-engine.js         shared pure functions (findEvents, computeStats, formatters)
     catalog.js                 publication index — list of every published piece
+    strategy-nav.js            shared strategy switcher (sub-nav on strategy/league pages)
     home.js                    home page logic (renders cards from catalog.js)
     buy-the-bounce.js          strategy page logic
     buy-the-bounce-league.js   league page logic
@@ -114,18 +115,39 @@ These patterns are repeated across pages. New pages should reuse them rather tha
 #### Masthead + nav
 ```html
 <header class="mast">
-  <div class="logo">
+  <a class="logo" href="index.html">
     <span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span>
-  </div>
+  </a>
   <nav class="nav">
-    <a href="buy-the-bounce.html">STRATEGIES</a>
+    <a href="index.html#strategies">STRATEGIES</a>
+    <a href="scanner.html">SCANNER</a>
     <a href="portfolios.html">PORTFOLIOS</a>
+    <a href="index.html#reports">REPORTS</a>
+    <a href="reference-instruments.html">REFERENCE</a>
     <a href="glossary.html">GLOSSARY</a>
     <a href="about.html">ABOUT</a>
   </nav>
 </header>
 ```
-Add `class="on"` to the link matching the current page.
+The nav is hardcoded in every page (no shared include). **Nav rule:** a nav
+item points to its dedicated page if one exists (`portfolios.html`,
+`scanner.html`, `reference-instruments.html`, …), otherwise to its home-page
+section anchor (`index.html#strategies`, `index.html#reports` — there is no
+single strategies/reports page, so the home section is the hub). Add
+`class="on"` to exactly one link — the one matching the current page's
+section — so the active state is reliable from any page.
+
+#### Strategy switcher (strategy & league pages only)
+Strategy and league pages get a shared sub-nav injected after the `.strat`
+header by `js/strategy-nav.js`: a strip of chips to jump between strategies
+plus an individual ↔ league toggle, both driven by `STRATEGIES` in
+`catalog.js`. To add it to a page, include the module before the page's own
+module — no other wiring, and drop the old single `.strat-link` (the
+switcher's toggle replaces it; the module removes any leftover at runtime):
+```html
+<script type="module" src="js/strategy-nav.js"></script>
+<script type="module" src="js/your-page.js"></script>
+```
 
 #### Strategy header
 ```html
@@ -360,14 +382,23 @@ invisible to readers.
 ```js
 // web/js/catalog.js → CATALOG array
 {
-  slug:  "my-new-thing",
-  type:  "strategy",          // or "calculator" | "portfolio"
-  title: "My New Thing",
-  blurb: "One short sentence describing what it does.",
-  page:  "my-new-thing.html",
-  added: "YYYY-MM-DD",
+  slug:   "my-new-thing",
+  type:   "strategy",          // or "calculator" | "portfolio"
+  title:  "My New Thing",
+  blurb:  "One short sentence describing what it does.",
+  page:   "my-new-thing.html",
+  league: "my-new-thing-league.html", // strategies only, optional — see below
+  added:  "YYYY-MM-DD",
 },
 ```
+
+**A strategy's league table is not its own catalog entry.** Give the
+strategy a `league` field pointing at the league page. The home page then
+renders one card per strategy with a `LEAGUE TABLE →` secondary link, and
+the strategy switcher uses it for the individual ↔ league toggle. Omit
+`league` for strategies that have no league view (e.g. `cheap-or-dear`).
+The exported `STRATEGIES` helper (`CATALOG.filter(i => i.type ===
+"strategy")`) is the single list both the home page and switcher read.
 
 To introduce a brand-new category (beyond strategy/calculator/portfolio),
 append to the `CATEGORIES` array in the same file and add a corresponding
@@ -382,9 +413,10 @@ If the new strategy fits the "filter → events → summary" pattern:
 3. **Adjust the event-detection logic**:
    - If the new logic is a tweak of `findEvents`, add an option to it in `strategy-engine.js`
    - If it's a fundamentally different shape, write a new function (e.g. `findCrossoverEvents`) in `strategy-engine.js` and import from the new page
-4. **Update masthead nav** on all pages (`index.html`, `buy-the-bounce.html`, `-league.html`, `portfolios.html`, `glossary.html`, `about.html`) only if it deserves a new top-level nav slot. Most new pages don't — readers find them via the home page.
-5. **Add a CATALOG entry** in `web/js/catalog.js` (see above) so it shows on the home page.
-6. **Test locally — including at phone width** (see [Responsive / mobile](#responsive--mobile)): no horizontal page scroll, controls reachable, wide tables swipe. Then commit, push.
+4. **Wire the strategy switcher**: add `<script type="module" src="js/strategy-nav.js"></script>` before the page's own module script (in both the strategy page and its league page), and remove the old single `.strat-link` from the `.strat` header — the switcher's toggle replaces it.
+5. **Update masthead nav** on all pages only if it deserves a new top-level nav slot. Most new strategies don't — they appear in the switcher and on the home page automatically.
+6. **Add a CATALOG entry** in `web/js/catalog.js` (see above) — one `strategy` entry with a `league` field, **not** a separate entry for the league table.
+7. **Test locally — including at phone width** (see [Responsive / mobile](#responsive--mobile)): no horizontal page scroll, controls reachable, wide tables swipe, switcher strip swipes. Then commit, push.
 
 If the new page is an analysis/calculator/chart (not strategy-shaped), use `portfolios.html` as the template instead — that pattern covers picker + chart + stats + blurb.
 
@@ -395,6 +427,9 @@ Use `buy-the-bounce-league.html` + `buy-the-bounce-league.js` as the template. T
 - Load all instruments in parallel (`Promise.all`)
 - One row per instrument, sortable columns
 - Default sort by the most-decision-relevant column
+- Include `js/strategy-nav.js` and set `STRATEGIES` parent's `league` field
+  to this page — the league is reached via the switcher and the parent
+  strategy's home-page card, not its own catalog entry.
 
 ## Local testing
 

@@ -21,15 +21,21 @@ function typeLabel(type){
 function renderCard(item){
   const newBadge = isNew(item.added)
     ? `<span class="card-new">NEW</span>` : "";
-  return `<a class="card" href="${escapeHtml(item.page)}">
-    <div class="card-top">
-      <span class="card-type">${escapeHtml(typeLabel(item.type))}</span>
-      ${newBadge}
-    </div>
-    <div class="card-title">${escapeHtml(item.title)}</div>
-    <div class="card-blurb">${escapeHtml(item.blurb)}</div>
-    <div class="card-action">OPEN →</div>
-  </a>`;
+  // Strategies with a league table expose it as a secondary action.
+  const league = item.league
+    ? `<a class="card-league" href="${escapeHtml(item.league)}">LEAGUE TABLE →</a>` : "";
+  return `<div class="card">
+    <a class="card-main" href="${escapeHtml(item.page)}">
+      <div class="card-top">
+        <span class="card-type">${escapeHtml(typeLabel(item.type))}</span>
+        ${newBadge}
+      </div>
+      <div class="card-title">${escapeHtml(item.title)}</div>
+      <div class="card-blurb">${escapeHtml(item.blurb)}</div>
+      <div class="card-action">OPEN →</div>
+    </a>
+    ${league}
+  </div>`;
 }
 
 // Home section anchors are the plural of the category key (e.g. #portfolios,
