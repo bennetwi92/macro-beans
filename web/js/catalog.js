@@ -9,122 +9,78 @@
    blurb:    one short sentence (~20 words)
    page:     relative URL of the destination page
    added:    ISO date the piece was first published (controls NEW badge)
+   league (strategies only, optional): relative URL of the cross-instrument
+             league table for this strategy. The home page surfaces it as a
+             secondary link on the card; the strategy switcher uses it to
+             offer the individual ↔ league toggle. Omit for strategies with
+             no league view (e.g. cheap-or-dear).
    portfolio (reports only, optional): slug of the pair portfolio this report
              belongs to, so portfolios.html can surface a deep-dive link.
 */
 
 export const CATALOG = [
   {
-    slug:  "buy-the-bounce",
-    type:  "strategy",
-    title: "Buy the Bounce",
-    blurb: "When the market drops hard in a single day, does it tend to recover over the next few days? Every historical example, side by side.",
-    page:  "buy-the-bounce.html",
-    added: "2026-06-08",
+    slug:   "buy-the-bounce",
+    type:   "strategy",
+    title:  "Buy the Bounce",
+    blurb:  "When the market drops hard in a single day, does it tend to recover over the next few days? Every historical example, side by side.",
+    page:   "buy-the-bounce.html",
+    league: "buy-the-bounce-league.html",
+    added:  "2026-06-08",
   },
   {
-    slug:  "buy-the-bounce-league",
-    type:  "strategy",
-    title: "Buy the Bounce — League Table",
-    blurb: "The same bounce setup applied across every instrument in one sortable view. Spot which markets bounce hardest.",
-    page:  "buy-the-bounce-league.html",
-    added: "2026-06-08",
+    slug:   "red-streak",
+    type:   "strategy",
+    title:  "Red Streak",
+    blurb:  "When a market closes down several days in a row, does it bounce? Every losing streak in history and what came next.",
+    page:   "red-streak.html",
+    league: "red-streak-league.html",
+    added:  "2026-06-11",
   },
   {
-    slug:  "red-streak",
-    type:  "strategy",
-    title: "Red Streak",
-    blurb: "When a market closes down several days in a row, does it bounce? Every losing streak in history and what came next.",
-    page:  "red-streak.html",
-    added: "2026-06-11",
+    slug:   "best-months",
+    type:   "strategy",
+    title:  "Best Months",
+    blurb:  "Does the calendar matter? A colour-shaded year showing which months have historically been kind to a market — and which have not.",
+    page:   "best-months.html",
+    league: "best-months-league.html",
+    added:  "2026-06-11",
   },
   {
-    slug:  "red-streak-league",
-    type:  "strategy",
-    title: "Red Streak — League Table",
-    blurb: "The same losing-streak setup across every instrument in one sortable view. Spot which markets snap back hardest.",
-    page:  "red-streak-league.html",
-    added: "2026-06-11",
+    slug:   "multi-day-move",
+    type:   "strategy",
+    title:  "Multi-Day Move",
+    blurb:  "When a market has run a long way over several days, does it keep going or snap back? Every stretch, side by side.",
+    page:   "multi-day-move.html",
+    league: "multi-day-move-league.html",
+    added:  "2026-06-19",
   },
   {
-    slug:  "best-months",
-    type:  "strategy",
-    title: "Best Months",
-    blurb: "Does the calendar matter? A colour-shaded year showing which months have historically been kind to a market — and which have not.",
-    page:  "best-months.html",
-    added: "2026-06-11",
+    slug:   "breakout",
+    type:   "strategy",
+    title:  "Breakout",
+    blurb:  "When price breaks to a new high or low, does the move keep running? Every breakout in history and what followed.",
+    page:   "breakout.html",
+    league: "breakout-league.html",
+    added:  "2026-06-19",
   },
   {
-    slug:  "best-months-league",
-    type:  "strategy",
-    title: "Best Months — League Table",
-    blurb: "Every market's calendar footprint in one grid. Rank instruments by any month of the year.",
-    page:  "best-months-league.html",
-    added: "2026-06-11",
+    slug:   "tight-range",
+    type:   "strategy",
+    title:  "Tight Range",
+    blurb:  "When a market goes quiet and coils in a narrow band, what comes after the calm? Every tight stretch, measured.",
+    page:   "tight-range.html",
+    league: "tight-range-league.html",
+    added:  "2026-06-19",
   },
   {
-    slug:  "multi-day-move",
-    type:  "strategy",
-    title: "Multi-Day Move",
-    blurb: "When a market has run a long way over several days, does it keep going or snap back? Every stretch, side by side.",
-    page:  "multi-day-move.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "multi-day-move-league",
-    type:  "strategy",
-    title: "Multi-Day Move — League Table",
-    blurb: "The multi-day move setup across every market in one sortable view. Spot which markets trend and which fade.",
-    page:  "multi-day-move-league.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "breakout",
-    type:  "strategy",
-    title: "Breakout",
-    blurb: "When price breaks to a new high or low, does the move keep running? Every breakout in history and what followed.",
-    page:  "breakout.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "breakout-league",
-    type:  "strategy",
-    title: "Breakout — League Table",
-    blurb: "The same breakout test across every market in one sortable view. Spot which markets follow through.",
-    page:  "breakout-league.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "tight-range",
-    type:  "strategy",
-    title: "Tight Range",
-    blurb: "When a market goes quiet and coils in a narrow band, what comes after the calm? Every tight stretch, measured.",
-    page:  "tight-range.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "tight-range-league",
-    type:  "strategy",
-    title: "Tight Range — League Table",
-    blurb: "The tight-range setup across every market in one sortable view. Spot which markets break hardest out of the quiet.",
-    page:  "tight-range-league.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "ma-cross",
-    type:  "strategy",
-    title: "Moving-Average Cross",
-    blurb: "Every time price crossed its 200-day average — up or down — and what the following weeks looked like.",
-    page:  "ma-cross.html",
-    added: "2026-06-19",
-  },
-  {
-    slug:  "ma-cross-league",
-    type:  "strategy",
-    title: "Moving-Average Cross — League Table",
-    blurb: "The 200-day cross across every market in one sortable view. Spot which markets respect the line.",
-    page:  "ma-cross-league.html",
-    added: "2026-06-19",
+    slug:   "ma-cross",
+    type:   "strategy",
+    title:  "Moving-Average Cross",
+    blurb:  "Every time price crossed its 200-day average — up or down — and what the following weeks looked like.",
+    page:   "ma-cross.html",
+    league: "ma-cross-league.html",
+    added:  "2026-06-19",
   },
   {
     slug:  "cheap-or-dear",
@@ -196,3 +152,7 @@ export const CATEGORIES = [
 ];
 
 export const NEW_BADGE_DAYS = 14;
+
+// Strategy entries in catalog order. Used by the home page and the shared
+// strategy switcher (js/strategy-nav.js) so both read one source of truth.
+export const STRATEGIES = CATALOG.filter(i => i.type === "strategy");

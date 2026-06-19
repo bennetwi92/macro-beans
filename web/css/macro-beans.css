@@ -56,6 +56,7 @@ h1,h2,h3,.pixel{ font-family:var(--pixel); font-weight:400; }
 .logo:hover .rest{ color:var(--ink); }
 .nav{ display:flex; gap:24px; font-family:var(--pixel); font-size:10px; color:var(--dim); }
 .nav a{ color:var(--dim); text-decoration:none; }
+.nav a:hover{ color:var(--ink); }
 .nav a.on{ color:var(--cyan); }
 
 /* ---------- strategy header ---------- */
@@ -65,6 +66,20 @@ h1,h2,h3,.pixel{ font-family:var(--pixel); font-weight:400; }
 .strat .badge{ font-family:var(--pixel); font-size:9px; color:var(--gold); border:2px solid var(--line-2); padding:9px 11px; line-height:1.7; white-space:nowrap; }
 .strat-link{ display:inline-block; margin-top:14px; font-family:var(--pixel); font-size:10px; color:var(--cyan); text-decoration:none; letter-spacing:.5px; }
 .strat-link:hover{ color:var(--ink); }
+
+/* ---------- strategy switcher ----------
+   Shared sub-nav injected after the .strat header on strategy/league pages
+   (js/strategy-nav.js). A horizontally-scrollable strip of strategy chips
+   plus an individual ↔ league view toggle. */
+.switch{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:-6px 0 24px; }
+.sw-strip{ display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; flex:1; min-width:0; }
+.sw-chip{ font-family:var(--pixel); font-size:9px; line-height:1.6; letter-spacing:.5px; color:var(--dim); text-decoration:none; white-space:nowrap; padding:8px 10px; border:2px solid var(--line); background:var(--inset); }
+.sw-chip:hover{ color:var(--ink); border-color:var(--line-2); }
+.sw-chip.on{ color:var(--bg); background:var(--cyan); border-color:var(--cyan); }
+.sw-view{ display:flex; gap:6px; flex-shrink:0; }
+.sw-opt{ font-family:var(--pixel); font-size:9px; line-height:1.6; letter-spacing:.5px; color:var(--dim); text-decoration:none; white-space:nowrap; padding:8px 10px; border:2px solid var(--line); }
+.sw-opt:hover{ color:var(--ink); }
+.sw-opt.on{ color:var(--bg); background:var(--cyan); border-color:var(--cyan); }
 
 /* ---------- verdict (hero) ---------- */
 .verdict{ border:3px solid var(--gold); background:linear-gradient(180deg,#1d1a12,#16161f); box-shadow:0 4px 0 0 #00000055; padding:26px 28px; }
@@ -297,13 +312,11 @@ table{ width:100%; border-collapse:collapse; }
   .card-grid{ grid-template-columns:1fr; }
 }
 .card{
+  position:relative;
   display:flex;
   flex-direction:column;
   background:var(--inset);
   border:2px solid var(--line);
-  padding:18px 20px 16px;
-  text-decoration:none;
-  color:inherit;
   transition:border-color .15s, background .15s;
   min-height:200px;
 }
@@ -311,6 +324,30 @@ table{ width:100%; border-collapse:collapse; }
   border-color:var(--cyan);
   background:#1a1a26;
 }
+.card-main{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  padding:18px 20px 16px;
+  text-decoration:none;
+  color:inherit;
+}
+/* stretched link: a click anywhere on the card opens the strategy page,
+   except on the raised .card-league link below */
+.card-main::after{ content:""; position:absolute; inset:0; }
+/* secondary action: the cross-instrument league table, its own tap target */
+.card-league{
+  position:relative;
+  z-index:1;
+  font-family:var(--pixel);
+  font-size:9px;
+  letter-spacing:.5px;
+  color:var(--dim);
+  text-decoration:none;
+  padding:12px 20px;
+  border-top:2px solid var(--line);
+}
+.card-league:hover{ color:var(--cyan); }
 .card-top{
   display:flex;
   align-items:center;
@@ -546,6 +583,9 @@ table{ width:100%; border-collapse:collapse; }
   .strat{ margin-bottom:18px; gap:14px; }
   .strat h1{ font-size:20px; line-height:1.4; }
   .strat .lede{ font-size:19px; }
+
+  /* strategy switcher: chip strip swipes, view toggle wraps below it */
+  .switch{ margin:-2px 0 18px; }
 
   /* home hero */
   .hero{ padding:22px 18px; }
