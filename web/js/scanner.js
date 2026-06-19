@@ -10,12 +10,27 @@
 import {
   findEvents,
   findStreakEvents,
+  findMultiDayEvents,
+  findBreakoutEvents,
+  findRangeEvents,
+  findCrossEvents,
   liveBounce,
   liveStreak,
+  liveMultiDay,
+  liveBreakout,
+  liveRange,
+  liveCross,
   computeStats,
   fmt, fmtInt, cls,
   escapeHtml,
 } from "./strategy-engine.js";
+
+// Fixed, sensible defaults for the strategies the scanner can't give a slider
+// to (the control surface stays small). These mirror each page's defaults.
+const MD_MOVE    = { threshold: 8, window: 5 };   // multi-day move
+const BREAK_LOOK = 20;                            // breakout look-back
+const RANGE_SET  = { band: 3, window: 10 };       // tight range
+const CROSS_PER  = 200;                           // moving-average length
 
 const DATA_BASE = "data";
 
@@ -64,6 +79,71 @@ const STRATEGIES = [
         entry: "close", range: state.range,
       });
       return computeStats(ev)[2];   // 5-day horizon (STREAK_HORIZONS[2])
+    },
+  },
+  {
+    key:   "multiday",
+    label: "Multi-Day Move",
+    page:  "multi-day-move.html",
+    hold:  "10 days",
+    detect(bars){ return liveMultiDay(bars, { direction: state.direction, ...MD_MOVE }); },
+    signal(sig){ return `${fmt(sig.move)} / ${MD_MOVE.window}d`; },
+    signalCls(sig){ return cls(sig.move); },
+    stats(bars){
+      const ev = findMultiDayEvents(bars, {
+        direction: state.direction, threshold: MD_MOVE.threshold, window: MD_MOVE.window,
+        entry: "close", range: state.range,
+      });
+      return computeStats(ev)[2];   // 10-day horizon (MULTIDAY_HORIZONS[2])
+    },
+  },
+  {
+    key:   "breakout",
+    label: "Breakout",
+    page:  "breakout.html",
+    hold:  "10 days",
+    detect(bars){ return liveBreakout(bars, { direction: state.direction, lookback: BREAK_LOOK }); },
+    signal(){ return state.direction === "up" ? `${BREAK_LOOK}-day high` : `${BREAK_LOOK}-day low`; },
+    signalCls(){ return ""; },
+    stats(bars){
+      const ev = findBreakoutEvents(bars, {
+        direction: state.direction, lookback: BREAK_LOOK,
+        entry: "close", range: state.range,
+      });
+      return computeStats(ev)[2];   // 10-day horizon (BREAKOUT_HORIZONS[2])
+    },
+  },
+  {
+    // Tight Range has no direction — it shows in either scan mode.
+    key:   "range",
+    label: "Tight Range",
+    page:  "tight-range.html",
+    hold:  "10 days",
+    detect(bars){ return liveRange(bars, RANGE_SET); },
+    signal(sig){ return `${sig.spread.toFixed(1)}% range`; },
+    signalCls(){ return ""; },
+    stats(bars){
+      const ev = findRangeEvents(bars, {
+        band: RANGE_SET.band, window: RANGE_SET.window,
+        entry: "close", range: state.range,
+      });
+      return computeStats(ev)[2];   // 10-day horizon (RANGE_HORIZONS[2])
+    },
+  },
+  {
+    key:   "cross",
+    label: "Moving-Average Cross",
+    page:  "ma-cross.html",
+    hold:  "20 days",
+    detect(bars){ return liveCross(bars, { direction: state.direction, period: CROSS_PER }); },
+    signal(){ return state.direction === "up" ? `above ${CROSS_PER}-day` : `below ${CROSS_PER}-day`; },
+    signalCls(){ return ""; },
+    stats(bars){
+      const ev = findCrossEvents(bars, {
+        direction: state.direction, period: CROSS_PER,
+        entry: "close", range: state.range,
+      });
+      return computeStats(ev)[2];   // 20-day horizon (CROSS_HORIZONS[2])
     },
   },
 ];

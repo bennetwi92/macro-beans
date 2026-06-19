@@ -139,6 +139,8 @@ h1,h2,h3,.pixel{ font-family:var(--pixel); font-weight:400; }
 .slider{ margin-top:4px; }
 .slider .val{ font-size:30px; color:var(--loss); line-height:1; margin-bottom:12px; }
 .slider .val.up{ color:var(--win); }
+/* neutral (non-directional) slider value — a length/window, not a gain/loss */
+.slider .val.neutral{ color:var(--cyan); }
 .range{
   -webkit-appearance:none; appearance:none;
   width:100%; height:18px; background:transparent; padding:0; margin:0;
