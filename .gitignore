@@ -35,3 +35,6 @@ data/market.duckdb.tmp
 # via scripts/tools/seed_duckdb.py, then untracked)
 data/stock_history/
 
+
+# Node test dependencies (jsdom etc. for the web engine tests)
+node_modules/

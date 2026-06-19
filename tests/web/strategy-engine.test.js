@@ -13,10 +13,23 @@ import assert from "node:assert/strict";
 import {
   HORIZONS,
   STREAK_HORIZONS,
+  MULTIDAY_HORIZONS,
+  BREAKOUT_HORIZONS,
+  RANGE_HORIZONS,
+  CROSS_HORIZONS,
   findEvents,
   findStreakEvents,
+  findMultiDayEvents,
+  findBreakoutEvents,
+  findRangeEvents,
+  findCrossEvents,
   liveBounce,
   liveStreak,
+  liveMultiDay,
+  liveBreakout,
+  liveRange,
+  liveCross,
+  valueMetrics,
   computeStats,
   median,
   fmt,
@@ -262,4 +275,160 @@ test("escapeHtml: escapes the five HTML-sensitive characters", () => {
   assert.equal(escapeHtml('"'), "&quot;");
   assert.equal(escapeHtml("'"), "&#39;");
   assert.equal(escapeHtml("a<b>&c"), "a&lt;b&gt;&amp;c");
+});
+
+/* ---------- horizon constants ---------- */
+
+test("new horizon constants are the documented values", () => {
+  assert.deepEqual(MULTIDAY_HORIZONS, [1, 5, 10]);
+  assert.deepEqual(BREAKOUT_HORIZONS, [1, 5, 10]);
+  assert.deepEqual(RANGE_HORIZONS, [1, 5, 10]);
+  assert.deepEqual(CROSS_HORIZONS, [5, 10, 20]);
+});
+
+/* ---------- findMultiDayEvents ---------- */
+
+test("findMultiDayEvents: fires on a trailing N-day move past the threshold", () => {
+  // index 4 closes 10% below index 1 (the close N=3 days earlier), then flat.
+  const closes = [100, 100, 100, 100, 90, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+  const bars = fromCloses(closes);
+  const ev = findMultiDayEvents(bars, { direction: "down", threshold: 5, window: 3, entry: "close", range: "all" });
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].date, "2020-01-05"); // index 4
+  approx(ev[0].trig, -10, 1e-9);          // 90 / 100 - 1
+  approx(ev[0].d1, (100 / 90 - 1) * 100, 1e-9);
+});
+
+test("findMultiDayEvents: 'up' fires on a multi-day rally, not a fall", () => {
+  const closes = [100, 100, 100, 100, 110, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100];
+  const bars = fromCloses(closes);
+  const up = findMultiDayEvents(bars, { direction: "up", threshold: 5, window: 3, entry: "close", range: "all" });
+  const down = findMultiDayEvents(bars, { direction: "down", threshold: 5, window: 3, entry: "close", range: "all" });
+  assert.equal(up.length, 1);
+  approx(up[0].trig, 10, 1e-9);
+  assert.equal(down.length, 0);
+});
+
+/* ---------- findBreakoutEvents ---------- */
+
+test("findBreakoutEvents: 'up' fires when the close clears the prior N-day high", () => {
+  // flat at 10, then a jump to 20 that tops the prior 3-day high of 10.
+  const closes = [10, 10, 10, 10, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20];
+  const bars = fromCloses(closes);
+  const ev = findBreakoutEvents(bars, { direction: "up", lookback: 3, entry: "close", range: "all" });
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].date, "2020-01-05"); // index 4
+  approx(ev[0].trig, 100, 1e-9);          // 20 / 10 - 1 beyond the broken high
+  approx(ev[0].d1, 0, 1e-9);              // flat afterwards
+});
+
+test("findBreakoutEvents: 'down' fires on a fresh N-day low", () => {
+  const closes = [10, 10, 10, 10, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5];
+  const bars = fromCloses(closes);
+  const up = findBreakoutEvents(bars, { direction: "up", lookback: 3, entry: "close", range: "all" });
+  const down = findBreakoutEvents(bars, { direction: "down", lookback: 3, entry: "close", range: "all" });
+  assert.equal(down.length, 1);
+  approx(down[0].trig, -50, 1e-9);        // 5 / 10 - 1
+  assert.equal(up.length, 0);
+});
+
+/* ---------- findRangeEvents ---------- */
+
+test("findRangeEvents: fires once when a fresh tight range completes", () => {
+  // a noisy ramp, then four flat closes at 100 (a +-2% range), then a ramp up.
+  const closes = [50, 60, 70, 80, 100, 100, 100, 100, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155];
+  const bars = fromCloses(closes);
+  const ev = findRangeEvents(bars, { band: 2, window: 4, entry: "close", range: "all" });
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].date, "2020-01-08"); // index 7 — last of the four flat closes
+  approx(ev[0].trig, 0, 1e-9);            // zero spread
+  approx(ev[0].d1, 10, 1e-9);            // 110 / 100 - 1
+});
+
+/* ---------- findCrossEvents ---------- */
+
+test("findCrossEvents: 'up' fires when the close crosses above its N-day average", () => {
+  const closes = [10, 10, 10, 9, 8, ...Array(25).fill(12)]; // dips below, then jumps above
+  const bars = fromCloses(closes);
+  const ev = findCrossEvents(bars, { direction: "up", period: 3, entry: "close", range: "all" });
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].date, "2020-01-06"); // index 5 — first close above the 3-day MA
+  approx(ev[0].trig, (12 / (29 / 3) - 1) * 100, 1e-9); // 12 vs MA of (9+8+12)/3
+  approx(ev[0].d1, 0, 1e-9);             // flat at 12 afterwards
+});
+
+test("findCrossEvents: up- and down-crosses never share a bar", () => {
+  const closes = [10, 10, 10, 9, 8, ...Array(25).fill(12)];
+  const bars = fromCloses(closes);
+  const up = findCrossEvents(bars, { direction: "up", period: 3, entry: "close", range: "all" });
+  const down = findCrossEvents(bars, { direction: "down", period: 3, entry: "close", range: "all" });
+  // the dip below the MA is a down-cross (index 3); the recovery is an up-cross
+  // (index 5). Each bar is at most one kind of cross — the dates must be disjoint.
+  assert.equal(down.length, 1);
+  assert.equal(down[0].date, "2020-01-04"); // index 3
+  assert.equal(up.length, 1);
+  const overlap = up.filter(e => down.some(d => d.date === e.date));
+  assert.equal(overlap.length, 0);
+});
+
+/* ---------- live signals: new strategies ---------- */
+
+test("liveMultiDay: fires on the trailing window move of the latest bar", () => {
+  const bars = fromCloses([100, 100, 100, 100, 90]); // -10% over 3 days at the end
+  const r = liveMultiDay(bars, { direction: "down", threshold: 5, window: 3 });
+  assert.equal(r.triggered, true);
+  approx(r.move, -10, 1e-9);
+  assert.equal(liveMultiDay(bars, { direction: "up", threshold: 5, window: 3 }).triggered, false);
+});
+
+test("liveBreakout: fires when the latest close is a fresh N-day extreme", () => {
+  const up = fromCloses([10, 10, 10, 10, 20]);
+  assert.equal(liveBreakout(up, { direction: "up", lookback: 3 }).triggered, true);
+  approx(liveBreakout(up, { direction: "up", lookback: 3 }).beyond, 100, 1e-9);
+  assert.equal(liveBreakout(up, { direction: "down", lookback: 3 }).triggered, false);
+});
+
+test("liveRange: fires when the latest window sits inside the band", () => {
+  const tight = fromCloses([50, 60, 70, 100, 100, 100, 100]);
+  assert.equal(liveRange(tight, { band: 2, window: 4 }).triggered, true);
+  const wide = fromCloses([50, 60, 70, 80, 90, 100, 110]);
+  assert.equal(liveRange(wide, { band: 2, window: 4 }).triggered, false);
+});
+
+test("liveCross: fires when the latest bar crosses its N-day average", () => {
+  const bars = fromCloses([10, 10, 10, 9, 8, 12]); // crosses up on the last bar
+  assert.equal(liveCross(bars, { direction: "up", period: 3 }).triggered, true);
+  assert.equal(liveCross(bars, { direction: "down", period: 3 }).triggered, false);
+});
+
+/* ---------- valueMetrics ---------- */
+
+test("valueMetrics: rich/cheap snapshots are correct on a short series", () => {
+  const rich = valueMetrics(fromCloses([10, 20, 30, 40, 50])); // at its high
+  approx(rich.offHigh52, 0, 1e-9);
+  approx(rich.vsSma200, (50 / 30 - 1) * 100, 1e-9);
+  approx(rich.rangePos5y, 100, 1e-9);
+  assert.equal(rich.nCheap, 0); // too short for the forward-return evidence
+
+  const cheap = valueMetrics(fromCloses([50, 40, 30, 20, 10])); // at its low
+  approx(cheap.offHigh52, -80, 1e-9);
+  approx(cheap.vsSma200, (10 / 30 - 1) * 100, 1e-9);
+  approx(cheap.rangePos5y, 0, 1e-9);
+});
+
+test("valueMetrics: fwdWhenCheap is a median, robust to a price-spike outlier", () => {
+  // 200 flat closes at 100, then 30 at 90 (a step below the 200-day average so
+  // those days count as 'cheap'). One forward close is spiked to 900 — the kind
+  // of tiny-base ratio blow-up that wrecks a mean. The median must shrug it off.
+  const closes = [...Array(200).fill(100), ...Array(30).fill(90)];
+  closes[221] = 900; // 21 days ahead of the first cheap day (index 200)
+  const v = valueMetrics(closes.map((c, i) => [`d${i}`, c, c]));
+  assert.equal(v.nCheap, 9);            // cheap days at indices 200..208
+  approx(v.fwdWhenCheap, 0, 1e-9);      // median forward return is 0, not ~100%
+});
+
+test("valueMetrics: empty series yields a NaN snapshot", () => {
+  const v = valueMetrics([]);
+  assert.ok(Number.isNaN(v.last));
+  assert.equal(v.nCheap, 0);
 });

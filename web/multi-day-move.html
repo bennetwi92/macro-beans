@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Beans — Multi-Day Move</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/macro-beans.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <a class="logo" href="index.html"><span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span></a>
+    <nav class="nav">
+      <a href="index.html#strategies" class="on">STRATEGIES</a>
+      <a href="scanner.html">SCANNER</a>
+      <a href="index.html#portfolios">PORTFOLIOS</a>
+      <a href="index.html#reports">REPORTS</a>
+      <a href="glossary.html">GLOSSARY</a>
+      <a href="about.html">ABOUT</a>
+    </nav>
+  </header>
+
+  <div class="strat">
+    <div>
+      <h1>MULTI-DAY MOVE</h1>
+      <div class="lede">When a market has run a long way over several days — up or down — does it keep going or snap back? This finds every stretch that moved more than your threshold and shows what came next.</div>
+      <a class="strat-link" href="multi-day-move-league.html">COMPARE ACROSS ALL INSTRUMENTS →</a>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>SETTINGS</h2><span class="note">change anything to re-run the analysis</span></div>
+    <div class="ctl-grid ctl-grid-3">
+
+      <div class="ctl">
+        <div class="clab">INSTRUMENT</div>
+        <label class="pick">
+          <span class="pick-text">
+            <span id="instrument-name">—</span>
+            <span id="instrument-ticker"></span>
+          </span>
+          <span class="car">▾</span>
+          <select id="instrument-select" aria-label="Instrument"></select>
+        </label>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">DIRECTION</div>
+        <div class="seg" id="direction-seg">
+          <button type="button" class="opt on" data-value="down">Sell-off</button>
+          <button type="button" class="opt"    data-value="up">Run-up</button>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">MOVE THRESHOLD</div>
+        <div class="slider">
+          <div class="val" id="threshold-val">−5.0%</div>
+          <input type="range" class="range" id="threshold-range"
+                 min="2" max="20" step="0.5" value="5" aria-label="Move threshold (%)">
+          <div class="track-ends"><span id="track-low">−2%</span><span id="track-high">−20%</span></div>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">OVER HOW MANY DAYS</div>
+        <div class="slider">
+          <div class="val neutral" id="window-val">5 DAYS</div>
+          <input type="range" class="range" id="window-range"
+                 min="2" max="20" step="1" value="5" aria-label="Look-back window (days)">
+          <div class="track-ends"><span>2 days</span><span>20 days</span></div>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">ENTRY TIMING</div>
+        <div class="seg" id="entry-seg">
+          <button type="button" class="opt on" data-value="close">At close</button>
+          <button type="button" class="opt"    data-value="open">Next open</button>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <div class="clab">DATE RANGE</div>
+        <div class="seg" id="range-seg">
+          <button type="button" class="opt on" data-value="5y">Last 5 yrs</button>
+          <button type="button" class="opt"    data-value="all">All time</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>SUMMARY</h2><span class="note">returns are cumulative from entry</span></div>
+    <table class="score">
+      <thead>
+        <tr><th>HOLDING PERIOD</th><th>DAY 1</th><th>DAY 5</th><th>DAY 10</th></tr>
+      </thead>
+      <tbody id="score-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>EVENT LOG</h2><span class="note" id="log-count"></span></div>
+    <div class="logwrap">
+      <table class="log">
+        <thead>
+          <tr><th>DATE</th><th>MOVE</th><th>DAY 1</th><th>DAY 5</th><th>DAY 10</th></tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="warn-line">⚠ PAST RESULTS ARE NOT A PROMISE OF FUTURE RETURNS · NOT FINANCIAL ADVICE</div>
+    <div class="built" id="built-line">MACRO BEANS</div>
+  </div>
+
+</div>
+
+<script type="module" src="js/multi-day-move.js"></script>
+</body>
+</html>

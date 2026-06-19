@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Beans — Cheap or Dear</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/macro-beans.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <a class="logo" href="index.html"><span class="bean">MACRO</span><span class="dot"></span><span class="rest">BEANS</span></a>
+    <nav class="nav">
+      <a href="index.html#strategies" class="on">STRATEGIES</a>
+      <a href="scanner.html">SCANNER</a>
+      <a href="index.html#portfolios">PORTFOLIOS</a>
+      <a href="index.html#reports">REPORTS</a>
+      <a href="glossary.html">GLOSSARY</a>
+      <a href="about.html">ABOUT</a>
+    </nav>
+  </header>
+
+  <div class="strat">
+    <div>
+      <h1>CHEAP OR DEAR</h1>
+      <div class="lede">Which markets look cheap right now — and which look stretched? This ranks every instrument by how its price sits versus its own recent history, then shows what buying it cheap did next.</div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>HOW TO READ THIS</h2></div>
+    <p class="cat-blurb">
+      Cheap here means cheap <b>versus the market's own past</b> — not cheap against earnings or book value.
+      A market well below its 1-year high and below its 200-day average is in its own bargain bin; one near the
+      top of its 5-year range is dear. The last column is the only piece of history: it shows the typical (middle)
+      move over the following month across every past day this market closed below its 200-day average. A market that drifts ever
+      higher will look "never cheap" — that is the screen working, not a fault.
+    </p>
+  </section>
+
+  <section class="panel">
+    <div class="sec-h"><span class="tick"></span><h2>THE SCREEN</h2><span class="note" id="screen-note">loading…</span></div>
+    <div class="logwrap">
+      <table class="league">
+        <thead>
+          <tr id="screen-head">
+            <th class="sort-able" data-key="name"       data-default-dir="asc">INSTRUMENT</th>
+            <th class="sort-able" data-key="offHigh52"  data-default-dir="asc">OFF 1-YR HIGH</th>
+            <th class="sort-able" data-key="vsSma200"   data-default-dir="asc">VS 200-DAY AVG</th>
+            <th class="sort-able" data-key="rangePos5y" data-default-dir="asc">5-YR RANGE</th>
+            <th class="sort-able" data-key="fwdWhenCheap" data-default-dir="desc">NEXT MONTH WHEN CHEAP</th>
+          </tr>
+        </thead>
+        <tbody id="screen-body">
+          <tr><td colspan="5" class="empty">loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cat-blurb" id="screen-legend">
+      OFF 1-YR HIGH and VS 200-DAY AVG are how far the last price sits below (or above) those levels. 5-YR RANGE is
+      where the price sits between its 5-year low (0%) and high (100%). NEXT MONTH WHEN CHEAP is history, not a
+      forecast — and a market that is rarely below its average (greyed out) has too few past examples to lean on.
+    </p>
+  </section>
+
+  <div class="foot">
+    <div class="warn-line">⚠ PAST RESULTS ARE NOT A PROMISE OF FUTURE RETURNS · NOT FINANCIAL ADVICE</div>
+    <div class="built" id="built-line">MACRO BEANS</div>
+  </div>
+
+</div>
+
+<script type="module" src="js/cheap-or-dear.js"></script>
+</body>
+</html>
