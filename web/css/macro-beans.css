@@ -486,6 +486,41 @@ table{ width:100%; border-collapse:collapse; }
 .heat-league .hl-cell.thin{ color:var(--dim); background:var(--inset); }
 .heat-league .empty{ text-align:center; color:var(--dim); padding:40px 14px; }
 
+/* ---------- reference tables (instruments / symbols) ----------
+   Reuse the .league table styling; these just add nowrap cells, status pills,
+   and the two filter controls (a text find box + a native select). */
+.reftable td{ white-space:nowrap; }
+
+/* filter find box + select. Font >=16px so iOS Safari doesn't zoom on focus. */
+.filter-input, .filter-select{
+  width:100%;
+  font-family:var(--term);
+  font-size:18px;
+  color:var(--ink);
+  background:var(--bg);
+  border:2px solid var(--line);
+  padding:6px 8px;
+  margin-top:4px;
+}
+.filter-input::placeholder{ color:var(--dim); }
+.filter-input:focus, .filter-select:focus{ outline:none; border-color:var(--cyan); }
+.filter-select{ cursor:pointer; }
+
+/* small status pills used inside reference cells (surface / venue) */
+.pill{
+  font-family:var(--pixel);
+  font-size:8px;
+  letter-spacing:.4px;
+  padding:4px 7px;
+  border:2px solid var(--line-2);
+  color:var(--dim);
+  white-space:nowrap;
+  display:inline-block;
+}
+.pill.web{ color:var(--cyan); border-color:var(--cyan); }
+.pill.research{ color:var(--gold); border-color:var(--gold); }
+.pill.both{ color:var(--lime); border-color:var(--lime); }
+
 /* ---------- responsive / mobile ----------
    Single source of truth for the site's mobile behaviour. Two breakpoints:
    760px (phones + small tablets) and 440px (narrow phones). Patterns:
@@ -528,6 +563,7 @@ table{ width:100%; border-collapse:collapse; }
   /* dense tables scroll horizontally instead of crushing */
   .log{ min-width:520px; }
   .league{ min-width:610px; }
+  .reftable{ min-width:720px; }
   .log td, .league td{ font-size:18px; padding:9px 11px; }
   .log td:first-child{ font-size:17px; }
   .log thead th, .league thead th{ padding:11px 11px; }

@@ -1,0 +1,30 @@
+# Strategy registry -- the published strategies and what each one needs to run.
+#
+# A strategy "covers" an instrument iff that instrument carries the symbol the
+# strategy consumes. `requires_surface` names that symbol: today every web
+# strategy reads the web daily-bars surface (web_ticker), so requires_surface =
+# "web" for all of them. This file is the seam that lets a future research-only
+# strategy declare otherwise without touching code.
+#
+# List the BASE strategies only -- the "-league" pages are the same strategy
+# viewed across instruments, not separate strategies.
+#
+# Loaded by src/data/registry.py with the stdlib tomllib (no dependency).
+
+[[strategy]]
+slug = "buy-the-bounce"
+name = "Buy the Bounce"
+requires_surface = "web"
+page = "buy-the-bounce.html"
+
+[[strategy]]
+slug = "red-streak"
+name = "Red Streak"
+requires_surface = "web"
+page = "red-streak.html"
+
+[[strategy]]
+slug = "best-months"
+name = "Best Months"
+requires_surface = "web"
+page = "best-months.html"
