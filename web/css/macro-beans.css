@@ -185,6 +185,19 @@ h1,h2,h3,.pixel{ font-family:var(--pixel); font-weight:400; }
 }
 .track-ends{ display:flex; justify-content:space-between; font-size:15px; color:var(--dim); margin-top:7px; }
 
+/* ---------- date field (scanner as-of / rewind) ---------- */
+.datefield{ display:block; margin-top:4px; }
+.datefield input[type="date"]{
+  width:100%; box-sizing:border-box;
+  background:var(--bg); border:2px solid var(--line); color:var(--ink);
+  font-family:var(--term);
+  font-size:22px;          /* >=16px keeps iOS Safari from zooming on focus */
+  line-height:1; padding:7px 9px; cursor:pointer;
+}
+.datefield input[type="date"]:focus{ outline:none; border-color:var(--cyan); }
+/* The native calendar/spin icon is dark on a dark field — brighten it. */
+.datefield input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(1); cursor:pointer; }
+
 /* ---------- section titles ---------- */
 .sec-h{ display:flex; align-items:center; gap:12px; margin:0 0 18px; }
 .sec-h h2{ font-size:13px; color:var(--ink); margin:0; }
@@ -258,6 +271,8 @@ table{ width:100%; border-collapse:collapse; }
 .heat-league td.ix a:hover .ix-name{ color:var(--cyan); }
 .scanner td a.strat-cell{ color:inherit; text-decoration:none; border-bottom:1px dotted var(--line-2); }
 .scanner td a.strat-cell:hover{ color:var(--cyan); border-bottom-color:var(--cyan); }
+/* The OUTCOME column only applies once rewound; hide it in live mode. */
+.scanner.hide-outcome .col-outcome{ display:none; }
 
 /* ---------- home: hero ---------- */
 .hero{
@@ -603,6 +618,8 @@ table{ width:100%; border-collapse:collapse; }
   /* dense tables scroll horizontally instead of crushing */
   .log{ min-width:520px; }
   .league{ min-width:610px; }
+  /* the scanner's league table carries an extra OUTCOME column when rewound */
+  .scanner{ min-width:700px; }
   .reftable{ min-width:720px; }
   .log td, .league td{ font-size:18px; padding:9px 11px; }
   .log td:first-child{ font-size:17px; }

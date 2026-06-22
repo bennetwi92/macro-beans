@@ -31,6 +31,8 @@ import {
   liveCross,
   valueMetrics,
   computeStats,
+  indexAsOf,
+  forwardReturn,
   median,
   fmt,
   fmtInt,
@@ -431,4 +433,54 @@ test("valueMetrics: empty series yields a NaN snapshot", () => {
   const v = valueMetrics([]);
   assert.ok(Number.isNaN(v.last));
   assert.equal(v.nCheap, 0);
+});
+
+/* ---------- indexAsOf (scanner rewind) ---------- */
+
+const dateBars = (...dates) => dates.map(d => [d, 1, 1]);
+
+test("indexAsOf: exact date match returns that index", () => {
+  const bars = dateBars("2020-01-01", "2020-01-02", "2020-01-03");
+  assert.equal(indexAsOf(bars, "2020-01-02"), 1);
+});
+
+test("indexAsOf: a date between bars returns the earlier (on-or-before) index", () => {
+  // no bar on the 4th (weekend/holiday) — snap back to the 3rd
+  const bars = dateBars("2020-01-01", "2020-01-03", "2020-01-06");
+  assert.equal(indexAsOf(bars, "2020-01-04"), 1);
+  assert.equal(indexAsOf(bars, "2020-01-05"), 1);
+});
+
+test("indexAsOf: a date before the first bar returns -1", () => {
+  const bars = dateBars("2020-01-02", "2020-01-03");
+  assert.equal(indexAsOf(bars, "2020-01-01"), -1);
+});
+
+test("indexAsOf: a date at or after the last bar returns the last index", () => {
+  const bars = dateBars("2020-01-01", "2020-01-02", "2020-01-03");
+  assert.equal(indexAsOf(bars, "2020-01-03"), 2);
+  assert.equal(indexAsOf(bars, "2020-06-01"), 2);
+});
+
+test("indexAsOf: an empty series returns -1", () => {
+  assert.equal(indexAsOf([], "2020-01-01"), -1);
+});
+
+/* ---------- forwardReturn (scanner outcome) ---------- */
+
+test("forwardReturn: known forward close-to-close return, in percent", () => {
+  // enter at close 100 (index 0), exit two bars later at 110 -> +10%
+  const bars = [["d0", 1, 100], ["d1", 1, 105], ["d2", 1, 110]];
+  approx(forwardReturn(bars, 0, 2), 10, 1e-9);
+});
+
+test("forwardReturn: exit beyond the series is NaN (window not elapsed)", () => {
+  const bars = [["d0", 1, 100], ["d1", 1, 105]];
+  assert.ok(Number.isNaN(forwardReturn(bars, 1, 3)));
+  assert.ok(Number.isNaN(forwardReturn(bars, 0, 2)));   // exit index == length
+});
+
+test("forwardReturn: an invalid (negative) index is NaN", () => {
+  const bars = [["d0", 1, 100], ["d1", 1, 105]];
+  assert.ok(Number.isNaN(forwardReturn(bars, -1, 1)));
 });
