@@ -472,6 +472,37 @@ export function valueMetrics(bars){
   return out;
 }
 
+/* ---------- as-of / outcome helpers (scanner rewind) ----------
+   These let the scanner replay itself as it would have looked on a past date.
+   Both are pure and operate on the [date_iso, open, close] bar series. */
+
+/* indexAsOf — index of the last bar whose date is on or before `isoDate`
+   (a binary search over the chronologically sorted dates). Returns -1 when the
+   series is empty or `isoDate` precedes the first bar. Lexicographic string
+   comparison is correct for zero-padded ISO dates. */
+export function indexAsOf(bars, isoDate){
+  if(!bars || bars.length === 0) return -1;
+  let lo = 0, hi = bars.length - 1, ans = -1;
+  while(lo <= hi){
+    const mid = (lo + hi) >> 1;
+    if(bars[mid][0] <= isoDate){ ans = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  return ans;
+}
+
+/* forwardReturn — the actual % return of entering at the close of bar `idx` and
+   exiting at the close `horizon` trading days later. NaN when `idx` is invalid
+   or the exit bar lies beyond the series (the outcome window hasn't elapsed
+   yet). This is the realised outcome the scanner shows in rewind mode, measured
+   the same way as the AVG RETURN track record (close-to-close, cumulative). */
+export function forwardReturn(bars, idx, horizon){
+  if(idx < 0) return NaN;
+  const exit = idx + horizon;
+  if(exit >= bars.length) return NaN;
+  return (bars[exit][2] / bars[idx][2] - 1) * 100;
+}
+
 /* computeStats — returns [day1, day2, day3] each:
      {n, wins, rate, avg, med, worst, best}    rates as percent points. */
 export function computeStats(events){

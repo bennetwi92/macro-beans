@@ -21,6 +21,14 @@ import {
   liveRange,
   liveCross,
   computeStats,
+  indexAsOf,
+  forwardReturn,
+  HORIZONS,
+  STREAK_HORIZONS,
+  MULTIDAY_HORIZONS,
+  BREAKOUT_HORIZONS,
+  RANGE_HORIZONS,
+  CROSS_HORIZONS,
   fmt, fmtInt, cls,
   escapeHtml,
 } from "./strategy-engine.js";
@@ -39,6 +47,7 @@ const state = {
   threshold: 2.0,    // bounce: single-day move, absolute %
   streak:    3,      // red/green streak: consecutive closes
   range:     "5y",   // track-record window
+  asOf:      null,   // rewind date (ISO); null = live, as of the last close
   sortKey:   "avg",
   sortDir:   "desc",
 };
@@ -51,6 +60,7 @@ const STRATEGIES = [
     label: "Buy the Bounce",
     page:  "buy-the-bounce.html",
     hold:  "3 days",
+    horizons: HORIZONS,                // outcome held to the last horizon (3 days)
     detect(bars){ return liveBounce(bars, state); },
     signal(sig){ return fmt(sig.move) + " day"; },
     signalCls(sig){ return cls(sig.move); },
@@ -67,6 +77,7 @@ const STRATEGIES = [
     label: "Red Streak",
     page:  "red-streak.html",
     hold:  "5 days",
+    horizons: STREAK_HORIZONS,         // 5 days
     detect(bars){ return liveStreak(bars, state); },
     signal(sig){
       const colour = state.direction === "down" ? "red" : "green";
@@ -86,6 +97,7 @@ const STRATEGIES = [
     label: "Multi-Day Move",
     page:  "multi-day-move.html",
     hold:  "10 days",
+    horizons: MULTIDAY_HORIZONS,       // 10 days
     detect(bars){ return liveMultiDay(bars, { direction: state.direction, ...MD_MOVE }); },
     signal(sig){ return `${fmt(sig.move)} / ${MD_MOVE.window}d`; },
     signalCls(sig){ return cls(sig.move); },
@@ -102,6 +114,7 @@ const STRATEGIES = [
     label: "Breakout",
     page:  "breakout.html",
     hold:  "10 days",
+    horizons: BREAKOUT_HORIZONS,       // 10 days
     detect(bars){ return liveBreakout(bars, { direction: state.direction, lookback: BREAK_LOOK }); },
     signal(){ return state.direction === "up" ? `${BREAK_LOOK}-day high` : `${BREAK_LOOK}-day low`; },
     signalCls(){ return ""; },
@@ -119,6 +132,7 @@ const STRATEGIES = [
     label: "Tight Range",
     page:  "tight-range.html",
     hold:  "10 days",
+    horizons: RANGE_HORIZONS,          // 10 days
     detect(bars){ return liveRange(bars, RANGE_SET); },
     signal(sig){ return `${sig.spread.toFixed(1)}% range`; },
     signalCls(){ return ""; },
@@ -135,6 +149,7 @@ const STRATEGIES = [
     label: "Moving-Average Cross",
     page:  "ma-cross.html",
     hold:  "20 days",
+    horizons: CROSS_HORIZONS,          // 20 days
     detect(bars){ return liveCross(bars, { direction: state.direction, period: CROSS_PER }); },
     signal(){ return state.direction === "up" ? `above ${CROSS_PER}-day` : `below ${CROSS_PER}-day`; },
     signalCls(){ return ""; },
@@ -170,17 +185,40 @@ async function loadAll(){
 
 /* ---------- signal scan ---------- */
 
-// Build one row per (instrument × strategy) that is firing on the latest bar.
+// The date the scan is framed on — the user's rewind date, or the latest close.
+function effectiveDate(){
+  return state.asOf || globalLatest();
+}
+
+// True when we've rewound far enough that there is future to score against.
+function isHistory(){
+  return Boolean(state.asOf) && state.asOf < globalLatest();
+}
+
+// Build one row per (instrument × strategy) firing on the bar as of effectiveDate().
+// In rewind mode each row also carries the realised OUTCOME: the actual return
+// over the setup's hold window, read from the bars that came after the entry.
 function scanRows(){
+  const asOf = effectiveDate();
+  const history = isHistory();
   const rows = [];
   for(const inst of instruments){
     const payload = cache.get(inst.slug);
-    if(!payload || !payload.bars || payload.bars.length < 2) continue;
+    if(!payload || !payload.bars) continue;
     const bars = payload.bars;
+    // Truncate to the bar as of the rewind date: every detector and the track
+    // record then see only what was knowable then (no look-ahead).
+    const idx = indexAsOf(bars, asOf);
+    if(idx < 2) continue;                       // too little history to score
+    // In live mode idx is the last bar, so the full series is already the view —
+    // only allocate a truncated copy when actually rewound.
+    const view = (idx === bars.length - 1) ? bars : bars.slice(0, idx + 1);
     for(const strat of STRATEGIES){
-      const sig = strat.detect(bars);
+      const sig = strat.detect(view);
       if(!sig.triggered) continue;
-      const st = strat.stats(bars);
+      const st = strat.stats(view);
+      const hold = strat.horizons.at(-1);
+      const outcome = history ? forwardReturn(bars, idx, hold) : NaN;
       rows.push({
         slug:        inst.slug,
         name:        inst.name,
@@ -193,14 +231,16 @@ function scanRows(){
         rate:        st.rate,
         avg:         st.avg,
         n:           st.n,
+        outcome,                                // realised return over the hold window
+        pending:     history && !Number.isFinite(outcome),  // window not elapsed yet
       });
     }
   }
   return rows;
 }
 
-// Latest bar date across all loaded instruments — the session the scan is "as of".
-function asOfDate(){
+// Latest bar date across all loaded instruments — the most recent session.
+function globalLatest(){
   let latest = "";
   for(const payload of cache.values()){
     const bars = payload && payload.bars;
@@ -210,6 +250,19 @@ function asOfDate(){
     }
   }
   return latest;
+}
+
+// Earliest bar date across all loaded instruments — the rewind floor.
+function globalEarliest(){
+  let earliest = "";
+  for(const payload of cache.values()){
+    const bars = payload && payload.bars;
+    if(bars && bars.length){
+      const d = bars[0][0];
+      if(!earliest || d < earliest) earliest = d;
+    }
+  }
+  return earliest;
 }
 
 /* ---------- sorting ---------- */
@@ -243,6 +296,12 @@ function renderControlsState(){
   const colour = state.direction === "down" ? "RED" : "GREEN";
   document.getElementById("streak-val").textContent = `${state.streak} ${colour} DAYS`;
   document.getElementById("streak-range").value = state.streak;
+
+  // Reflect the as-of state, but only write when it actually differs so a
+  // slider drag (which also runs this) never disturbs the date field.
+  const asof = document.getElementById("asof-date");
+  const want = state.asOf || globalLatest();
+  if(asof.value !== want) asof.value = want;
 }
 
 function setSegActive(segId, value){
@@ -263,11 +322,17 @@ function renderHeadIndicators(){
 function renderTable(){
   const rows = sortRows(scanRows());
   const body = document.getElementById("scan-body");
-  const asOf = asOfDate();
+  const asOf = effectiveDate();
+  const history = isHistory();
+
+  // The OUTCOME column only makes sense once there's a past to look back from.
+  document.getElementById("scan-table").classList.toggle("hide-outcome", !history);
+  // The header must not claim "now" when we've rewound to a past close.
+  document.getElementById("scan-title").textContent = history ? "TRIGGERED THEN" : "TRIGGERED NOW";
 
   if(rows.length === 0){
     body.innerHTML =
-      `<tr><td colspan="7" class="empty">No setups triggered as of ${escapeHtml(asOf) || "the last close"} — markets quiet. Loosen the settings above to widen the net.</td></tr>`;
+      `<tr><td colspan="8" class="empty">No setups triggered as of ${escapeHtml(asOf) || "the last close"} — markets quiet. Loosen the settings above to widen the net.</td></tr>`;
     document.getElementById("scan-note").textContent =
       asOf ? `nothing triggered · as of ${asOf}` : "nothing triggered";
     renderHeadIndicators();
@@ -277,11 +342,15 @@ function renderTable(){
   body.innerHTML = rows.map(r => {
     const small   = r.n < 10;
     const rateCls = (r.n === 0) ? "" : (r.rate >= 50 ? "cell-pos" : "cell-neg");
+    const outcome = r.pending
+      ? `<td class="col-outcome dim">pending</td>`
+      : `<td class="col-outcome ${cls(r.outcome)}">${fmt(r.outcome)}</td>`;
     return `<tr>
       <td class="ix"><a href="instrument.html?instrument=${encodeURIComponent(r.slug)}"><span class="ix-name">${escapeHtml(r.name)}</span><span class="ix-ticker">${escapeHtml(r.ticker)}</span></a></td>
       <td><a class="strat-cell" href="${escapeHtml(r.page)}?instrument=${encodeURIComponent(r.slug)}">${escapeHtml(r.strategy)}</a></td>
       <td class="${r.signalCls}">${escapeHtml(r.signal)}</td>
       <td class="dim">${escapeHtml(r.hold)}</td>
+      ${outcome}
       <td class="${rateCls}">${r.n === 0 ? "—" : fmtInt(r.rate) + "%"}</td>
       <td class="${cls(r.avg)}">${fmt(r.avg)}</td>
       <td class="${small ? "dim" : ""}">${fmtInt(r.n)}${small ? " ⚠" : ""}</td>
@@ -289,8 +358,9 @@ function renderTable(){
   }).join("");
 
   const insts = new Set(rows.map(r => r.slug)).size;
+  const frame = history ? `rewound to ${asOf}` : (asOf ? `as of ${asOf}` : "");
   document.getElementById("scan-note").textContent =
-    `${rows.length} signal${rows.length === 1 ? "" : "s"} across ${insts} market${insts === 1 ? "" : "s"}${asOf ? ` · as of ${asOf}` : ""}`;
+    `${rows.length} signal${rows.length === 1 ? "" : "s"} across ${insts} market${insts === 1 ? "" : "s"}${frame ? ` · ${frame}` : ""}`;
   renderHeadIndicators();
 }
 
@@ -328,6 +398,36 @@ function wireControls(){
     renderControlsState();
   });
   document.getElementById("streak-range").addEventListener("change", update);
+
+  document.getElementById("asof-date").addEventListener("change", e => {
+    setAsOf(e.target.value);
+    syncUrl();
+    update();
+  });
+}
+
+// Set the rewind date. An empty field or any date at/after the latest close
+// means "live" (state.asOf = null); anything earlier rewinds.
+function setAsOf(value){
+  state.asOf = (value && value < globalLatest()) ? value : null;
+}
+
+// Bound the date field to the available history and seed it from the URL.
+function setupDateControl(){
+  const input = document.getElementById("asof-date");
+  input.min = globalEarliest();
+  input.max = globalLatest();
+  const url = new URLSearchParams(location.search).get("asof");
+  if(url) setAsOf(url);
+}
+
+// Reflect the rewind date in the URL (?asof=…) so a view is shareable; live
+// mode drops the param entirely.
+function syncUrl(){
+  const url = new URL(location.href);
+  if(state.asOf) url.searchParams.set("asof", state.asOf);
+  else url.searchParams.delete("asof");
+  history.replaceState(null, "", url);
 }
 
 function wireSort(){
@@ -351,6 +451,7 @@ function wireSort(){
   try{
     await loadAll();
     renderBuiltLine();
+    setupDateControl();
     wireControls();
     wireSort();
     update();

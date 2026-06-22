@@ -28,13 +28,21 @@
   <div class="strat">
     <div>
       <h1>SCANNER</h1>
-      <div class="lede">Every strategy checked against every market in one place. This is the list of setups that fired as of the last close — so you only have to look here.</div>
+      <div class="lede">Every strategy checked against every market in one place — the setups that fired as of the last close, so you only have to look here. Rewind the AS OF date to any past close and the OUTCOME column shows what each setup actually went on to do, so you can see what taking the trade would have done.</div>
     </div>
   </div>
 
   <section class="panel">
     <div class="sec-h"><span class="tick"></span><h2>SETTINGS</h2><span class="note">tune how sensitive the scan is</span></div>
-    <div class="ctl-grid ctl-grid-4">
+    <div class="ctl-grid">
+
+      <div class="ctl">
+        <div class="clab">AS OF</div>
+        <label class="datefield">
+          <input type="date" id="asof-date" aria-label="Scan as of date">
+        </label>
+        <div class="track-ends"><span>rewind to a past close</span></div>
+      </div>
 
       <div class="ctl">
         <div class="clab">DIRECTION</div>
@@ -76,28 +84,31 @@
   </section>
 
   <section class="panel">
-    <div class="sec-h"><span class="tick"></span><h2>TRIGGERED NOW</h2><span class="note" id="scan-note">loading…</span></div>
+    <div class="sec-h"><span class="tick"></span><h2 id="scan-title">TRIGGERED NOW</h2><span class="note" id="scan-note">loading…</span></div>
     <div class="logwrap">
-      <table class="league scanner">
+      <table class="league scanner hide-outcome" id="scan-table">
         <thead>
           <tr id="scan-head">
             <th class="sort-able" data-key="name"     data-default-dir="asc">INSTRUMENT</th>
             <th class="sort-able" data-key="strategy" data-default-dir="asc">STRATEGY</th>
             <th>SIGNAL</th>
             <th>HOLD</th>
+            <th class="col-outcome sort-able" data-key="outcome" data-default-dir="desc">OUTCOME</th>
             <th class="sort-able" data-key="rate"     data-default-dir="desc">WIN RATE</th>
             <th class="sort-able" data-key="avg"      data-default-dir="desc">AVG RETURN</th>
             <th class="sort-able" data-key="n"        data-default-dir="desc">EVENTS</th>
           </tr>
         </thead>
         <tbody id="scan-body">
-          <tr><td colspan="7" class="empty">loading…</td></tr>
+          <tr><td colspan="8" class="empty">loading…</td></tr>
         </tbody>
       </table>
     </div>
     <p class="cat-blurb" id="scan-legend">
-      WIN RATE and AVG RETURN show how this exact setup has played out on this market in the past, over the
-      hold window shown. They are history, not a forecast — and a handful of past examples (greyed out) is noise, not an edge.
+      WIN RATE and AVG RETURN show how this exact setup had played out on this market up to the AS OF date — only
+      what you'd have known then, never the future. They are history, not a forecast, and a handful of past examples
+      (greyed out) is noise, not an edge. When you rewind, OUTCOME is the one thing that did happen next: the actual
+      return over the hold window. "pending" means the window hasn't fully run yet.
     </p>
   </section>
 
