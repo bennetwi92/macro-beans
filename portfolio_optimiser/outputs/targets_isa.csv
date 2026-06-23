@@ -1,0 +1,10 @@
+key,ticker,name,sleeve,weight,pie_pct
+IGLS,IGLS.L,iShares UK Gilts 0-5yr,ballast,0.3,30.0
+ERNS,ERNS.L,iShares GBP Ultrashort Bond,ballast,0.2187,21.9
+AVSG,AVSG.L,Avantis Global Small Cap Value,equity,0.1297,13.0
+JMFP,JMFP.L,JPM Managed Futures (GBP-hedged),diversifier,0.0873,8.7
+GLIN,INFR.L,iShares Global Infrastructure,real_asset,0.0745,7.4
+EMIM,EMIM.L,iShares Core MSCI EM IMI,equity,0.0672,6.7
+SGLN,SGLN.L,iShares Physical Gold ETC,real_asset,0.043,4.3
+URNM,URNP.L,Sprott Uranium Miners (HANetf),theme,0.0423,4.2
+XDEW,XDEW.L,Xtrackers S&P 500 Equal Weight,equity,0.0373,3.7

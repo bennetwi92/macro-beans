@@ -1,0 +1,291 @@
+# ============================================================================
+# Instrument universe for the ISA + SIPP allocation optimiser.
+# ============================================================================
+#
+# Single source of truth for the investable instruments. Every downstream
+# module (data fetch, CMA build, covariance, optimiser, rebalancer, report)
+# reads from here. Edit this file to add/remove an instrument or update a TER.
+#
+# Each [[instrument]] block:
+#   key            stable internal id used everywhere (config keys, output rows)
+#   ticker         GBP LSE trading line, yfinance form ("XDEW.L")
+#   name           human label
+#   isin           ISIN (verify before relying on it)
+#   ter            ongoing charge, decimal (0.0015 = 0.15%)
+#   accumulating   true if an Acc share class (preferred)
+#   sleeve         logical sleeve for reporting / sleeve-level caps
+#   role           one-line description of why it is here
+#   isa_eligible   may be held in the ISA (Portfolio A)
+#   sipp_eligible  may be held in the Trading 212 SIPP (Portfolio B).
+#                  ETCs (e.g. SGLN) and some liquid-alts need checking -- see
+#                  the "VERIFY" notes; fall back to `*_fallback` if excluded.
+#   proxy          longer-history series for covariance estimation when the
+#                  fund itself is young (see [proxy.*] tables below).
+#
+# TERs / ISINs / eligibility flags below are the candidate-brief values and
+# MUST be reconciled against the verification table in
+# report/UNIVERSE_VERIFICATION.md before the weights are trusted.
+# ============================================================================
+
+# ---- Equity core / engine ----------------------------------------------------
+
+[[instrument]]
+key = "AVWC"
+ticker = "AVCG.L"              # VERIFIED: GBP LSE line is AVCG (AVWC = EUR Xetra line)
+name = "Avantis Global Equity (value/profitability)"
+isin = "IE000RJECXS5"          # VERIFIED (justETF); inception 2024-09-25
+ter = 0.0022
+accumulating = true
+sleeve = "equity"
+role = "Value/profitability-tilted global equity core"
+isa_eligible = false
+sipp_eligible = true
+proxy = "AVWC"
+
+[[instrument]]
+key = "AVSG"
+ticker = "AVSG.L"
+name = "Avantis Global Small Cap Value"
+isin = "IE0003R87OG3"
+ter = 0.0039
+accumulating = true
+sleeve = "equity"
+role = "Size x value x profitability -- top expected factor premium"
+isa_eligible = true
+sipp_eligible = true
+proxy = "AVSG"
+
+[[instrument]]
+key = "XDEW"
+ticker = "XDEW.L"
+name = "Xtrackers S&P 500 Equal Weight"
+isin = "IE00BLNMYC90"
+ter = 0.0015
+accumulating = true
+sleeve = "equity"
+role = "De-concentrated US -- mega-cap-tech concentration removed"
+isa_eligible = true
+sipp_eligible = true
+proxy = "XDEW"
+
+[[instrument]]
+key = "EMIM"
+ticker = "EMIM.L"
+name = "iShares Core MSCI EM IMI"
+isin = "IE00BKM4GZ66"
+ter = 0.0018
+accumulating = true
+sleeve = "equity"
+role = "Emerging markets -- diversification from US/tech"
+isa_eligible = true
+sipp_eligible = true
+proxy = "EMIM"
+
+[[instrument]]
+key = "IWQU"
+ticker = "IWQU.L"
+name = "iShares Edge MSCI World Quality"
+isin = "IE00BP3QZ601"          # VERIFIED (justETF)
+ter = 0.0025
+accumulating = true
+sleeve = "equity"
+role = "Durable compounders -- smooths the value sleeve"
+isa_eligible = true
+sipp_eligible = true
+proxy = "IWQU"
+
+[[instrument]]
+key = "MVOL"
+ticker = "MVOL.L"
+name = "iShares Edge MSCI World Min Volatility"
+isin = "IE00B8FHGS14"          # VERIFIED: ticker is MVOL (not MINV)
+ter = 0.0030
+accumulating = true
+sleeve = "equity_defensive"
+role = "Defensive equity factor"
+isa_eligible = true
+sipp_eligible = true
+proxy = "MVOL"
+
+# ---- Diversifiers ------------------------------------------------------------
+
+[[instrument]]
+key = "JMFP"
+ticker = "JMFP.L"
+name = "JPM Managed Futures (GBP-hedged)"
+isin = "IE00BF2SYT35"
+ter = 0.0057
+accumulating = true
+sleeve = "diversifier"
+role = "Trend/CTA -- crisis alpha + rebalancing-bonus engine"
+isa_eligible = true
+sipp_eligible = true           # UNCONFIRMED inside T212 SIPP -- it IS a UCITS ETF
+                               # (clears the ETN exclusion) but the derivatives-based
+                               # strategy may hit the "risk appetite" catch-all.
+                               # Confirm with T212; fallback = broad-commodity ETF.
+proxy = "JMFP"
+
+[[instrument]]
+key = "SGLN"
+ticker = "SGLN.L"
+name = "iShares Physical Gold ETC"
+isin = "IE00B4ND3602"
+ter = 0.0012
+accumulating = true            # ETC, no distribution
+sleeve = "real_asset"
+role = "Risk-off hedge / inflation-regime hedge"
+isa_eligible = true
+sipp_eligible = true           # LIKELY: T212 excludes ETNs (not ETCs) by name and
+                               # SGLN is tradable on-platform; physically-backed gold
+                               # ETCs are broadly SIPP-permissible. Not explicitly
+                               # documented -- confirm. Fallback = gold-miners equity ETF.
+proxy = "SGLN"
+
+# ---- Ballast (short-duration, ISA liquidity floor) ---------------------------
+
+[[instrument]]
+key = "IGLS"
+ticker = "IGLS.L"
+name = "iShares UK Gilts 0-5yr"
+isin = "IE00B4WXJK79"
+ter = 0.0007
+accumulating = false           # dist; total-return via adjusted close
+sleeve = "ballast"
+role = "Low-volatility sell-without-pain bucket"
+isa_eligible = true
+sipp_eligible = true
+proxy = "IGLS"
+
+[[instrument]]
+key = "ERNS"
+ticker = "ERNS.L"
+name = "iShares GBP Ultrashort Bond"
+isin = "IE00BCRY6441"          # CORRECTED: GBP line (IE00BCRY6557 is the EUR/ERNE line)
+ter = 0.0009
+accumulating = false
+sleeve = "ballast"
+role = "Cash-like"
+isa_eligible = true
+sipp_eligible = true
+proxy = "ERNS"
+
+# ---- Themes (non-AI) / real assets ------------------------------------------
+
+[[instrument]]
+key = "DFND_EU"
+ticker = "NAVY.L"              # VERIFIED: GBP line is NAVY (ARMY = USD, 8RMY = EUR)
+name = "HANetf Future of European Defence (Screened, ex-US)"
+isin = "IE000I7E6HL0"          # VERIFIED (justETF/HANetf); launched 2025-04
+ter = 0.0039
+accumulating = true
+sleeve = "theme"
+role = "Rearmament theme, low AI/tech overlap"
+isa_eligible = true
+sipp_eligible = true
+proxy = "DFND_EU"
+
+[[instrument]]
+key = "URNM"
+ticker = "URNP.L"              # VERIFIED: GBP line is URNP (URNM = USD, U3O8 = EUR)
+name = "Sprott Uranium Miners (HANetf)"
+isin = "IE0005YK6564"          # VERIFIED (justETF); launched 2022-05
+ter = 0.0085
+accumulating = true
+sleeve = "theme"
+role = "Nuclear / energy-security theme"
+isa_eligible = true
+sipp_eligible = true
+proxy = "URNM"
+
+[[instrument]]
+key = "GLIN"
+ticker = "INFR.L"             # VERIFIED: GBP line is INFR (Dist). No GBP Acc line
+                              # exists -- the Acc class (CBUX) is USD-only. In a
+                              # tax-sheltered ISA/SIPP the distribution is harmless.
+name = "iShares Global Infrastructure"
+isin = "IE00B1FZS467"          # VERIFIED (justETF)
+ter = 0.0065
+accumulating = false           # VERIFIED: GBP line is Dist only
+sleeve = "real_asset"
+role = "Real-asset, inflation-resilient cashflows"
+isa_eligible = true
+sipp_eligible = true
+proxy = "GLIN"
+
+# ============================================================================
+# Proxy series for covariance estimation.
+# ----------------------------------------------------------------------------
+# The bespoke / factor / young funds above have only a few years of GBP
+# history. For a stable shrinkage covariance we splice each fund onto a
+# longer-history proxy: we use the fund's own GBP returns where available and
+# the proxy (converted to GBP if USD-denominated) for the earlier window.
+#
+#   source   yfinance ticker for the long-history series
+#   ccy      "GBP" (use as-is) or "USD" (convert via GBPUSD=X)
+#   note     what the proxy represents and any caveat
+# ============================================================================
+
+[proxy.AVWC]
+source = "ACWI"
+ccy = "USD"
+note = "MSCI ACWI -- global-equity beta; understates the value/profitability tilt"
+
+[proxy.AVSG]
+source = "VBR"
+ccy = "USD"
+note = "US small-cap value (Vanguard); proxy for global small-cap value beta"
+
+[proxy.XDEW]
+source = "RSP"
+ccy = "USD"
+note = "Invesco S&P 500 Equal Weight (since 2003) -- direct equal-weight analogue"
+
+[proxy.EMIM]
+source = "EEM"
+ccy = "USD"
+note = "iShares MSCI EM -- EM-equity beta (IMI adds small caps)"
+
+[proxy.IWQU]
+source = "QUAL"
+ccy = "USD"
+note = "iShares MSCI USA Quality Factor -- quality-factor beta (US, since 2013)"
+
+[proxy.MVOL]
+source = "ACWV"
+ccy = "USD"
+note = "iShares MSCI ACWI Min Vol (since 2011) -- global min-vol analogue"
+
+[proxy.JMFP]
+source = "WTMF"
+ccy = "GBP"
+note = "WisdomTree Managed Futures (since 2011) -- trend/CTA beta. JMFP is GBP-HEDGED, so we use the USD proxy WITHOUT FX conversion (the hedge strips currency risk); converting would inject ~9% phantom FX vol."
+
+[proxy.SGLN]
+source = "GLD"
+ccy = "USD"
+note = "SPDR Gold (since 2004) -- gold price in GBP after FX conversion"
+
+[proxy.IGLS]
+source = "IGLS.L"
+ccy = "GBP"
+note = "Own GBP history (since 2009); short-duration gilts, low vol"
+
+[proxy.ERNS]
+source = "ERNS.L"
+ccy = "GBP"
+note = "Own GBP history; near-cash, minimal covariance contribution"
+
+[proxy.DFND_EU]
+source = "ITA"
+ccy = "USD"
+note = "US aerospace & defence -- defence-sector beta; OVERSTATES tech/US overlap (conservative for a crash-averse portfolio)"
+
+[proxy.URNM]
+source = "URA"
+ccy = "USD"
+note = "Global X Uranium (since 2010) -- uranium-miner beta"
+
+[proxy.GLIN]
+source = "IGF"
+ccy = "USD"
+note = "iShares Global Infrastructure (US line, since 2007)"
