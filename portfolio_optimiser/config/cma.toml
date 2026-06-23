@@ -1,0 +1,84 @@
+# ============================================================================
+# Capital Market Assumptions (CMAs)
+# ============================================================================
+#
+# FORWARD-LOOKING, long-horizon (~25y) expected returns. These are the single
+# most important -- and most uncertain -- input. They are deliberately
+# expressed as building blocks so an annual reviewer can update one number
+# (e.g. the cash rate) and have it propagate, rather than hand-tuning 13
+# correlated point estimates.
+#
+# All figures are NOMINAL, GBP, ARITHMETIC annual returns unless stated.
+# The optimiser converts arithmetic -> geometric internally using the
+# covariance-implied variance (geo ~= arith - sigma^2 / 2).
+#
+# These are NOT a forecast. They are a defensible, transparent prior. The
+# investor should challenge them; the sensitivity analysis (report/) shows
+# exactly which weights hinge on which assumption.
+# ============================================================================
+
+[meta]
+inflation = 0.025            # assumed long-run UK CPI, for reference/real conversions
+horizon_years = 25
+# Source posture: blended long-run premia consistent with a "building-block"
+# CMA (cash + ERP + factor premia), in the spirit of mainstream 2025/26
+# capital-market assumptions (e.g. asset-manager 10-15y CMAs) extended to 25y.
+
+# ---- Building blocks (edit these; per-instrument returns derive from them) ---
+[blocks]
+cash               = 0.035   # GBP cash / ultrashort expected return
+gilt_short_premium = 0.005   # term premium for 0-5y gilts over cash
+equity_dev         = 0.070   # developed-market cap-weight nominal arithmetic
+em_premium         = 0.015   # EM over developed
+value_premium      = 0.020   # value tilt (long-run, haircut from historical)
+size_value_premium = 0.030   # combined small x value x profitability (AVSG)
+profitability_q    = 0.005   # quality/profitability tilt
+equalweight_tilt   = 0.005   # S&P 500 equal-weight size/value lean vs cap-weight
+minvol_drag        = -0.010  # min-vol gives up some expected return for lower beta
+gold_real          = 0.010   # gold long-run real return (~ inflation + small)
+mf_premium         = 0.010   # managed-futures expected over cash (ex rebal bonus)
+infra_premium      = 0.005   # listed infrastructure over dev equity-risk-free mix
+defence_theme      = 0.005   # thematic premium (speculative) over dev equity
+uranium_theme      = 0.010   # thematic premium (speculative, high vol) over dev equity
+
+# ---- Per-instrument expected ARITHMETIC nominal GBP return -------------------
+# Either give an explicit `mu`, or a `formula` referencing blocks (evaluated by
+# optimiser/cma.py). Explicit mu always wins if present. Keep formulas simple.
+[instrument.AVWC]
+formula = "equity_dev + value_premium + profitability_q"
+
+[instrument.AVSG]
+formula = "equity_dev + size_value_premium"
+
+[instrument.XDEW]
+formula = "equity_dev + equalweight_tilt"
+
+[instrument.EMIM]
+formula = "equity_dev + em_premium"
+
+[instrument.IWQU]
+formula = "equity_dev + profitability_q"
+
+[instrument.MVOL]
+formula = "equity_dev + minvol_drag"
+
+[instrument.JMFP]
+formula = "cash + mf_premium"
+
+[instrument.SGLN]
+formula = "cash + gold_real - 0.005"   # nominal ~ inflation + small real, fee aside
+
+[instrument.IGLS]
+formula = "cash + gilt_short_premium"
+
+[instrument.ERNS]
+formula = "cash"
+
+[instrument.DFND_EU]
+formula = "equity_dev + defence_theme"
+
+[instrument.URNM]
+formula = "equity_dev + uranium_theme"
+
+[instrument.GLIN]
+formula = "equity_dev + infra_premium - 0.010"

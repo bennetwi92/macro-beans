@@ -1,0 +1,95 @@
+# ============================================================================
+# Portfolio constraints and investor parameters
+# ============================================================================
+#
+# The three investor-supplied parameters (confirmed 2026-06):
+#   * ISA 1-year withdrawal need (liquidity floor)  : ~GBP 10,000
+#   * SIPP funding for 2026/27 tax year             : ~GBP 20,000
+#   * ISA tail limit (max drawdown / 95% CVaR)      : ~20%
+#
+# NOTE (2026-06): Trading 212 SIPP no longer carries the Gaudi operator fee.
+# `fixed_fee_gbp` is therefore 0, but the knob is retained so the drag can be
+# re-introduced if the fee schedule ever changes.
+# ============================================================================
+
+[data]
+# History window and frequency for the covariance estimate.
+start = "2009-01-01"
+frequency = "monthly"        # "monthly" or "weekly"
+trading_periods = 12         # periods per year for annualisation (monthly -> 12)
+
+[optimiser]
+# Estimation-error controls shared by both portfolios.
+resample_draws = 250         # Michaud resampled-frontier draws
+random_seed = 20260623       # reproducibility
+min_holding = 0.03           # post-optimisation: weights below this -> 0, renormalise
+shrinkage = "ledoit_wolf"    # covariance estimator
+
+# ---------------------------------------------------------------------------
+# Portfolio B -- SIPP. Objective: maximise expected GEOMETRIC growth.
+# ---------------------------------------------------------------------------
+[sipp]
+value_gbp = 20000            # this tax year's funding (investor-supplied)
+fixed_fee_gbp = 0            # no operator fee on T212 SIPP (2026)
+objective = "max_geometric"
+# Per-holding band (long-only, fully invested).
+weight_min = 0.0             # 0 = may be excluded; min_holding cleans up dust
+weight_max = 0.30
+# Universe is the sipp_eligible instruments by default; restrict here if wanted.
+universe = ["AVWC", "AVSG", "EMIM", "XDEW", "IWQU", "JMFP", "SGLN", "GLIN"]
+# Optional sleeve caps (sum of weights in a sleeve <= cap).
+[sipp.sleeve_caps]
+diversifier = 0.15
+real_asset = 0.15
+# Sleeve floors encode the design intent that a pure max-return objective skips:
+# keep a managed-futures rebalancing-bonus engine and a real-asset hedge. Set to
+# 0 to let the optimiser decide freely.
+[sipp.sleeve_floors]
+diversifier = 0.05   # JMFP -- rebalancing-bonus engine
+real_asset = 0.08    # SGLN gold + INFR infrastructure
+
+# ---------------------------------------------------------------------------
+# Portfolio A -- ISA. Objective: risk-adjusted geometric growth subject to
+# a hard liquidity floor and a tail (CVaR / drawdown) constraint.
+# ---------------------------------------------------------------------------
+[isa]
+value_gbp = 20000            # ~GBP 20k seed transfer
+objective = "max_geometric_cvar_constrained"
+weight_min = 0.0
+weight_max = 0.30
+# Hard liquidity floor: ballast sleeve must cover this GBP amount.
+# At a 20k seed, 10k => 50% ballast. Modelled as an ABSOLUTE GBP floor, so the
+# ballast % falls as the ISA grows via contributions (see report glidepath).
+liquidity_floor_gbp = 10000
+ballast_sleeve = "ballast"   # sleeve whose weight must satisfy the floor
+# Tail constraint: cap the 1-year 95% CVaR (expected shortfall) at this loss.
+cvar_alpha = 0.95
+cvar_limit = 0.20            # max acceptable 95% expected-shortfall loss
+# Also report (not a hard constraint) the modelled max drawdown.
+universe = ["AVSG", "XDEW", "EMIM", "MVOL", "JMFP", "SGLN", "IGLS", "ERNS", "DFND_EU", "URNM", "GLIN"]
+[isa.sleeve_caps]
+theme = 0.15                 # cap speculative themes combined
+diversifier = 0.15
+real_asset = 0.15
+# Barbell intent: the ISA explicitly wants crash diversifiers (trend + gold) that
+# a return objective underweights given a heavy bond floor. Guarantee them.
+[isa.sleeve_floors]
+diversifier = 0.08          # JMFP -- profits from sustained AI-crash downtrends
+real_asset = 0.10           # SGLN gold + INFR -- risk-off / inflation hedge
+
+# ---------------------------------------------------------------------------
+# Rebalancer (monthly, contribution-driven).
+# ---------------------------------------------------------------------------
+[rebalance]
+drift_abs_pts = 0.05         # flag if |actual - target| exceeds 5 abs pts ...
+drift_rel = 0.25             # ... or 25% relative, and contributions can't fix it
+
+# ---------------------------------------------------------------------------
+# Validation (Monte Carlo).
+# ---------------------------------------------------------------------------
+[validation]
+mc_paths = 20000
+benchmark = "VWRP"           # global tracker to beat (uses proxy ACWI history)
+benchmark_proxy = "ACWI"
+benchmark_proxy_ccy = "USD"
+sensitivity_shift = 0.01     # +/- 1.0 ppt shift per CMA building block
