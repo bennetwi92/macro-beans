@@ -6,6 +6,7 @@
 
 import "./nav.js";
 import { db, esc, fmtGBP, fmtNum, requireAuth, mountAccountBar } from "./neon.js";
+import { positionMetrics } from "./book.js";
 
 const root = document.getElementById("pos-root");
 const optbar = document.getElementById("optbar");
@@ -32,33 +33,9 @@ async function loadAll() {
   render();
 }
 
-/* ---------- average-cost accounting ---------- */
+/* ---------- accounting (shared) ---------- */
 
-const byDate = (x, y) =>
-  x.traded_at < y.traded_at ? -1 : x.traded_at > y.traded_at ? 1 : x.created_at < y.created_at ? -1 : 1;
-
-function computePosition(pos) {
-  const ts = trades.filter((t) => t.position_id === pos.id).sort(byDate);
-  let qty = 0, avg = 0, realized = 0;
-  for (const t of ts) {
-    const q = +t.quantity, pr = +t.price, fee = +t.fees || 0;
-    if (t.side === "sell") {
-      realized += pr * q - fee - avg * q; // sell proceeds (net of fees) minus cost
-      qty -= q;
-      if (qty < 1e-9) qty = 0;
-    } else {
-      const cost = avg * qty + pr * q + fee; // buy fees fold into the cost basis
-      qty += q;
-      avg = qty > 0 ? cost / qty : 0;
-    }
-  }
-  const mark = pos.mark != null && pos.mark !== "" ? +pos.mark : null;
-  const open = qty > 1e-9;
-  const costBasis = open ? qty * avg : 0;
-  const mktVal = open && mark != null ? qty * mark : null;
-  const unreal = open && mark != null ? (mark - avg) * qty : null;
-  return { qty, avg, realized, mark, open, costBasis, mktVal, unreal, total: realized + (unreal || 0), nTrades: ts.length };
-}
+const computePosition = (pos) => positionMetrics(trades.filter((t) => t.position_id === pos.id), pos.mark);
 
 function rollup(metrics) {
   let realized = 0, unreal = 0, mktVal = 0, cost = 0, open = false, hasMark = true;
