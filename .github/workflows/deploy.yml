@@ -77,7 +77,10 @@ jobs:
         # The single yfinance reader. With a restored cache this only pulls the
         # last few days per ticker; on a cold cache (first run / eviction) it
         # seeds full history once. Per-ticker fetch errors are skipped, not fatal.
-        run: python -m src.data.refresh --surface web
+        # web = public ETFs; cockpit = v2-only leveraged/inverse ETFs.
+        run: |
+          python -m src.data.refresh --surface web
+          python -m src.data.refresh --surface cockpit
 
       - name: Build price sheet
         # Reads bars from the cache via MarketStore (no network) and writes

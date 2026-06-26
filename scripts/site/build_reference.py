@@ -68,7 +68,9 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    instruments = load_instruments()
+    # v1 reference page: public surfaces only — keep cockpit (leveraged/inverse)
+    # instruments off the beginner site.
+    instruments = [i for i in load_instruments() if not i.on("cockpit")]
     strategies = load_strategies()
     fresh = _web_freshness(out_dir)
     n_strategies = len(strategies)

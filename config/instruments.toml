@@ -767,3 +767,307 @@ name = "Teucrium Corn Fund"
 category = "Commodity ETF"
 surfaces = ["research"]
 research_ticker = "CORN"
+
+# ============================================================================
+# Cockpit surface -- leveraged & inverse LSE ETFs. v2-only (price sheet / chart
+# / scanner); deliberately NOT on the public beginner site (surfaces=["cockpit"]).
+# Long-only expression of geared / bearish views. Sourced from
+# docs/reference/lse_inverse_leveraged_etf_universe.md.
+# ============================================================================
+
+[[instrument]]
+slug = "xsps"
+name = "S&P 500 -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "XSPS.L"
+sublabel = "S&P 500"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3uss"
+name = "S&P 500 -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3USS.L"
+sublabel = "S&P 500"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "qqqs"
+name = "Nasdaq 100 -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "QQQS.L"
+sublabel = "Nasdaq 100"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "suk1"
+name = "FTSE 100 -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SUK1.L"
+sublabel = "FTSE 100"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3uks"
+name = "FTSE 100 -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3UKS.L"
+sublabel = "FTSE 100"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "1mcs"
+name = "FTSE 250 -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "1MCS.L"
+sublabel = "FTSE 250"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "soil"
+name = "WTI crude -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SOIL.L"
+sublabel = "WTI crude"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3ois"
+name = "WTI crude -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3OIS.L"
+sublabel = "WTI crude"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "sbrt"
+name = "Brent crude -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SBRT.L"
+sublabel = "Brent crude"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3brs"
+name = "Brent crude -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3BRS.L"
+sublabel = "Brent crude"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "snga"
+name = "Nat gas -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SNGA.L"
+sublabel = "Nat gas"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3ngs"
+name = "Nat gas -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3NGS.L"
+sublabel = "Nat gas"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "sbul"
+name = "Gold -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SBUL.L"
+sublabel = "Gold"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3gos"
+name = "Gold -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3GOS.L"
+sublabel = "Gold"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "ssil"
+name = "Silver -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SSIL.L"
+sublabel = "Silver"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3sis"
+name = "Silver -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3SIS.L"
+sublabel = "Silver"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "scop"
+name = "Copper -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "SCOP.L"
+sublabel = "Copper"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3hcs"
+name = "Copper -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3HCS.L"
+sublabel = "Copper"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "1gis"
+name = "Gilts -1x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "1GIS.L"
+sublabel = "Gilts"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3gis"
+name = "Gilts -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3GIS.L"
+sublabel = "Gilts"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3tys"
+name = "UST 10Y -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3TYS.L"
+sublabel = "UST 10Y"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "ul3s"
+name = "UST 30Y -3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "UL3S.L"
+sublabel = "UST 30Y"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3usl"
+name = "S&P 500 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3USL.L"
+sublabel = "S&P 500"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "qqq3"
+name = "Nasdaq 100 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "QQQ3.L"
+sublabel = "Nasdaq 100"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3ukl"
+name = "FTSE 100 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3UKL.L"
+sublabel = "FTSE 100"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "2mcl"
+name = "FTSE 250 2x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "2MCL.L"
+sublabel = "FTSE 250"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3les"
+name = "Euro Stoxx 50 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3LES.L"
+sublabel = "Euro Stoxx 50"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3oil"
+name = "WTI crude 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3OIL.L"
+sublabel = "WTI crude"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3brl"
+name = "Brent crude 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3BRL.L"
+sublabel = "Brent crude"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3ngl"
+name = "Nat gas 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3NGL.L"
+sublabel = "Nat gas"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3gol"
+name = "Gold 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3GOL.L"
+sublabel = "Gold"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3sil"
+name = "Silver 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3SIL.L"
+sublabel = "Silver"
+group = "Leveraged & Inverse"
+
+[[instrument]]
+slug = "3hcl"
+name = "Copper 3x"
+category = "Leveraged & Inverse"
+surfaces = ["cockpit"]
+web_ticker = "3HCL.L"
+sublabel = "Copper"
+group = "Leveraged & Inverse"

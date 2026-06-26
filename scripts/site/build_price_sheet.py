@@ -35,7 +35,7 @@ from pathlib import Path
 
 # Make `src` importable for the shared registry + price store.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.data.registry import load_instruments  # noqa: E402
+from src.data.registry import load_instruments_multi  # noqa: E402
 from src.data.store import MarketStore  # noqa: E402
 
 # Shared build helpers (compact-JSON writer, coverage gate).
@@ -59,7 +59,7 @@ def main() -> None:
     out_dir = repo_root / "web" / "v2" / "data"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    instruments = load_instruments("web")
+    instruments = load_instruments_multi("web", "cockpit")
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     tally = BuildTally(len(instruments))
     out = []

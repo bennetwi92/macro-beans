@@ -196,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--full", action="store_true", help="re-fetch full history")
     ap.add_argument(
         "--surface",
-        choices=["research", "web", "all"],
+        choices=["research", "web", "cockpit", "all"],
         default="research",
         help="which registry surface to refresh (ignored if --tickers given)",
     )
@@ -212,7 +212,9 @@ def main(argv: list[str] | None = None) -> int:
         tickers = [t.strip() for t in args.tickers.split(",") if t.strip()]
     elif args.surface == "all":
         # union of every surface, dedup preserving order
-        tickers = list(dict.fromkeys(surface_tickers("research") + surface_tickers("web")))
+        tickers = list(dict.fromkeys(
+            surface_tickers("research") + surface_tickers("web") + surface_tickers("cockpit")
+        ))
     else:
         tickers = surface_tickers(args.surface)
 

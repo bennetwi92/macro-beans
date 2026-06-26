@@ -79,8 +79,12 @@ class Instrument:
         is live.
         """
         out: list[Symbol] = []
-        if self.web_ticker and self.on("web"):
-            out.append(Symbol(self.web_ticker, "web", _venue_of(self.web_ticker), "web_ticker"))
+        # The LSE ticker (web_ticker) serves both the public "web" surface and
+        # the private "cockpit" surface (v2-only instruments, e.g. leveraged /
+        # inverse ETFs that should not appear on the beginner site).
+        for surf in ("web", "cockpit"):
+            if self.web_ticker and self.on(surf):
+                out.append(Symbol(self.web_ticker, surf, _venue_of(self.web_ticker), "web_ticker"))
         if self.research_ticker and self.on("research"):
             out.append(
                 Symbol(self.research_ticker, "research", _venue_of(self.research_ticker), "research_ticker")
@@ -196,6 +200,24 @@ def surface_tickers(surface: str) -> list[str]:
     return out
 
 
+def load_instruments_multi(*surfaces: str) -> list[Instrument]:
+    """Instruments on any of ``surfaces``, de-duplicated by slug (first wins).
+
+    The v2 cockpit shows the union of the public ``web`` instruments and the
+    private ``cockpit`` ones (leveraged / inverse ETFs), so its build scripts
+    call ``load_instruments_multi("web", "cockpit")``.
+    """
+    seen: set[str] = set()
+    out: list[Instrument] = []
+    for surface in surfaces:
+        for inst in load_instruments(surface):
+            if inst.slug in seen:
+                continue
+            seen.add(inst.slug)
+            out.append(inst)
+    return out
+
+
 def research_tickers() -> list[str]:
     """The yfinance tickers that make up the research/scanner universe."""
     return surface_tickers("research")
@@ -257,6 +279,7 @@ __all__ = [
     "instrument_covers",
     "load_instruments",
     "load_portfolios",
+    "load_instruments_multi",
     "load_strategies",
     "research_tickers",
     "surface_tickers",

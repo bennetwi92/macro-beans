@@ -288,8 +288,9 @@ def validate_reference() -> None:
         if declared != actual:
             err(f"reference.json: instrument {e.get('slug')!r} symbol_count={declared} != {actual} symbol rows")
 
-    # Soft cross-check against the registry (all surfaces).
-    registry_slugs = {i.slug for i in load_instruments()}
+    # Soft cross-check against the registry (public surfaces; cockpit-only
+    # leveraged/inverse instruments are not part of the v1 reference page).
+    registry_slugs = {i.slug for i in load_instruments() if not i.on("cockpit")}
     for missing in sorted(registry_slugs - inst_slugs):
         warn(f"reference: instrument {missing!r} is in the registry but not in reference.json")
     for extra in sorted(inst_slugs - registry_slugs):
