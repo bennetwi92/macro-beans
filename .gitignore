@@ -26,6 +26,7 @@ Thumbs.db
 web/data/*.json
 web/data/portfolios/*.json
 web/v2/data/*.json
+web/v2/data/charts/*.json
 
 # Price cache — DuckDB store, regenerable via `python -m src.data.refresh`
 data/market.duckdb

@@ -84,6 +84,11 @@ jobs:
         # web/v2/data/price-sheet.json.
         run: python scripts/site/build_price_sheet.py
 
+      - name: Build charts
+        # Per-instrument full-history files + the instrument menu for the chart
+        # page. Also reads only from the cache (no network).
+        run: python scripts/site/build_charts.py
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

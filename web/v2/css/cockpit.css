@@ -128,6 +128,27 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 .opt-input::-webkit-calendar-picker-indicator{ opacity:.55; cursor:pointer; }
 .opt-input::-webkit-calendar-picker-indicator:hover{ opacity:1; }
 
+/* segmented control (e.g. chart zoom) */
+.opt-seg{ display:inline-flex; align-items:center; }
+.opt-seg-btn{
+  background:transparent;
+  border:1px solid var(--line);
+  border-right-width:0;
+  color:var(--dim);
+  font-family:var(--mono);
+  font-size:11px;
+  line-height:1;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  padding:3px 9px;
+  cursor:pointer;
+}
+.opt-seg-btn:last-child{ border-right-width:1px; }
+.opt-seg-btn:hover{ color:var(--ink); }
+.opt-seg-btn.on{ color:var(--bg); background:var(--cyan); border-color:var(--cyan); }
+
+.opt-search{ min-width:210px; }
+
 .opt-expand{
   margin-left:auto;
   flex:0 0 auto;
@@ -161,6 +182,38 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
   color:var(--dim);
   font-size:11px;
 }
+
+/* ---------- chart (full-bleed SVG line chart) ---------- */
+#chart{
+  position:relative;
+  height:calc(100vh - 52px);   /* fill below app bar (26) + options bar (26) */
+  overflow:hidden;
+}
+#chart svg{ display:block; width:100%; height:100%; }
+.chart-line{ fill:none; stroke:var(--cyan); stroke-width:1.5; }
+.chart-dot{ fill:var(--cyan); }
+.chart-grid{ stroke:var(--line); stroke-width:1; }
+.chart-axis{ fill:var(--dim); font-family:var(--mono); font-size:11px; }
+.chart-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  color:var(--dim);
+  font-size:13px;
+}
+.chart-head{
+  position:absolute;
+  top:8px;
+  left:14px;
+  z-index:2;
+  font-size:13px;
+  pointer-events:none;
+}
+.chart-head .chart-name{ color:var(--ink); font-weight:600; }
+.chart-head .chart-tkr{ color:var(--dim); margin-left:5px; }
+.chart-head .chart-sep{ color:var(--line-2); margin:0 7px; }
+.chart-head .chart-last{ color:var(--ink); }
 
 /* ---------- price-sheet grid (Tabulator, compact terminal theme) ---------- */
 #ps-grid{

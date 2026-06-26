@@ -13,31 +13,55 @@
 //
 // Returns { el, fields } where `fields` maps id -> the input element.
 
-function buildField(f) {
-  const wrap = document.createElement("label");
-  wrap.className = "opt-field";
+function buildField(f, emit) {
+  const isSeg = f.type === "seg";
+  const wrap = document.createElement(isSeg ? "div" : "label");
+  wrap.className = "opt-field" + (isSeg ? " opt-field-seg" : "");
 
-  const label = document.createElement("span");
-  label.className = "opt-label";
-  label.textContent = f.label ?? "";
-  wrap.appendChild(label);
-
-  let input;
-  switch (f.type) {
-    case "date":
-      input = document.createElement("input");
-      input.type = "date";
-      break;
-    default: // 'text' and unknown types fall back to a text input
-      input = document.createElement("input");
-      input.type = "text";
+  if (f.label) {
+    const label = document.createElement("span");
+    label.className = "opt-label";
+    label.textContent = f.label;
+    wrap.appendChild(label);
   }
-  input.className = "opt-input";
+
+  // Segmented control: a row of buttons, exactly one active.
+  if (isSeg) {
+    const seg = document.createElement("div");
+    seg.className = "opt-seg";
+    if (f.id) seg.id = f.id;
+    let current = f.value;
+    for (const o of f.options || []) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt-seg-btn" + (o.value === f.value ? " on" : "");
+      b.dataset.value = o.value;
+      b.textContent = o.label;
+      b.addEventListener("click", () => {
+        if (current === o.value) return;
+        current = o.value;
+        seg.querySelectorAll(".opt-seg-btn").forEach((x) =>
+          x.classList.toggle("on", x.dataset.value === current)
+        );
+        emit(f.id, current);
+      });
+      seg.appendChild(b);
+    }
+    wrap.appendChild(seg);
+    return { wrap, input: seg };
+  }
+
+  // Inputs: date / search / text. ('search' is a text input the page wires a
+  // datalist onto for type-ahead.)
+  const input = document.createElement("input");
+  input.type = f.type === "date" ? "date" : "text";
+  input.className = "opt-input" + (f.type === "search" ? " opt-search" : "");
+  if (f.type === "search") input.setAttribute("autocomplete", "off");
   if (f.id) input.id = f.id;
   if (f.value != null) input.value = f.value;
   if (f.placeholder) input.placeholder = f.placeholder;
+  input.addEventListener("change", () => emit(f.id, input.value));
   wrap.appendChild(input);
-
   return { wrap, input };
 }
 
@@ -48,11 +72,11 @@ export function createOptionsBar(mount, { primary = [], extra = [], onChange } =
   el.classList.add("optbar");
   el.innerHTML = "";
   const fields = {};
+  const emit = (id, value) => onChange?.(id, value, fields);
 
   const addField = (f, row) => {
-    const { wrap, input } = buildField(f);
+    const { wrap, input } = buildField(f, emit);
     if (f.id) fields[f.id] = input;
-    input.addEventListener("change", () => onChange?.(f.id, input.value, fields));
     row.appendChild(wrap);
   };
 
