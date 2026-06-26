@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports · Macro Beans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/macro-beans.css">
+<link rel="stylesheet" href="css/cockpit.css">
+</head>
+<body>
+
+<header id="appbar" class="appbar"></header>
+<div id="optbar"></div>
+
+<!-- screen 1: the library list -->
+<section id="report-list">
+  <div id="report-index" class="report-index"></div>
+</section>
+
+<!-- screen 2: the reader -->
+<section id="report-reader" hidden>
+  <div class="reader-bar">
+    <button id="report-back" class="report-back" type="button">← Reports</button>
+    <span id="reader-title" class="reader-title"></span>
+  </div>
+  <div id="report-view" class="report-view"></div>
+</section>
+
+<script type="module" src="js/reports.js"></script>
+</body>
+</html>
