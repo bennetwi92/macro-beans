@@ -1,0 +1,101 @@
+/* ============================================================
+   Macro Beans — v2 cockpit
+   App-like shell layered on top of the shared theme.
+   Reuses tokens + fonts from ../css/macro-beans.css; only adds
+   the top application bar and a page shell. Keep v2-specific
+   styles here so the public v1 site is never affected.
+   ============================================================ */
+
+/* v2 theme: monospace, dense, high-contrast — a professional trading
+   terminal (Bloomberg/Reuters), not the arcade pixel look. These overrides
+   apply to v2 only; the public v1 site never loads this file. */
+:root{
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --pixel: var(--mono);
+  --term:  var(--mono);
+
+  /* higher-contrast palette */
+  --bg:     #050509;   /* near-pure black */
+  --panel:  #0e0e16;
+  --inset:  #07070d;
+  --ink:    #f6f8ff;   /* crisp white text */
+  --dim:    #b7bdd2;   /* readable secondary (was muted grey) */
+  --line:   #33334a;   /* crisper dividers */
+  --line-2: #45455f;
+  --cyan:   #4fe3ef;   /* punchier active accent */
+  --win:    #2fd07a;   /* vivid up */
+  --loss:   #ff5666;   /* vivid down */
+}
+
+/* app-like: zero page chrome, dense base size */
+body{ padding:0; font-family:var(--mono); font-size:12px; }
+
+/* ---------- application bar (macOS-menu-bar style) ---------- */
+.appbar{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  height:26px;
+  padding:0 9px;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+  position:sticky;
+  top:0;
+  z-index:50;
+  overflow-x:auto;          /* narrow screens swipe horizontally */
+  white-space:nowrap;
+}
+.appbar::-webkit-scrollbar{ height:0; }   /* hide scrollbar, keep swipe */
+
+.appbar-logo{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--mono);
+  font-weight:600;
+  font-size:12px;
+  letter-spacing:.4px;
+  text-decoration:none;
+}
+.appbar-logo .bean{ color:var(--lime); }
+.appbar-logo .rest{ color:var(--magenta); }
+.appbar-logo .dot{ width:7px; height:7px; background:var(--gold); display:inline-block; }
+.appbar-logo:hover .bean,
+.appbar-logo:hover .rest{ color:var(--ink); }
+
+.appbar-menu{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex:0 0 auto;
+}
+.appbar-menu a{
+  font-family:var(--mono);
+  font-size:11px;
+  line-height:1;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  color:var(--dim);
+  text-decoration:none;
+}
+.appbar-menu a:hover{ color:var(--ink); }
+.appbar-menu a.on{ color:var(--cyan); }
+
+/* ---------- page shell ---------- */
+.page{
+  margin:0;
+  padding:8px 10px 36px;
+}
+.page-h{
+  font-family:var(--mono);
+  font-weight:600;
+  font-size:12px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin:0 0 3px;
+}
+.page-sub{
+  color:var(--dim);
+  font-size:11px;
+}
