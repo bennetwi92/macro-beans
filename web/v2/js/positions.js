@@ -6,7 +6,8 @@
 
 import "./nav.js";
 import { db, esc, fmtGBP, fmtNum, requireAuth, mountAccountBar } from "./neon.js";
-import { positionMetrics } from "./book.js";
+import { gbpPositionMetrics } from "./book.js";
+import { loadPrices } from "./prices.js";
 
 const root = document.getElementById("pos-root");
 const optbar = document.getElementById("optbar");
@@ -16,6 +17,7 @@ let accounts = [], groups = [], positions = [], trades = [];
 (async function boot() {
   const session = await requireAuth(root);
   mountAccountBar(optbar, session);
+  await loadPrices();
   loadAll();
 })();
 
@@ -35,7 +37,7 @@ async function loadAll() {
 
 /* ---------- accounting (shared) ---------- */
 
-const computePosition = (pos) => positionMetrics(trades.filter((t) => t.position_id === pos.id), pos.mark);
+const computePosition = (pos) => gbpPositionMetrics(pos, trades.filter((t) => t.position_id === pos.id));
 
 function rollup(metrics) {
   let realized = 0, unreal = 0, mktVal = 0, cost = 0, open = false, hasMark = true;
@@ -109,12 +111,12 @@ function tableHtml(posList, accountId) {
 function rowHtml(pos, accGroups) {
   const m = pos._m;
   const markCell = m.open
-    ? `<td class="r"><input class="mark-in" type="number" step="any" data-id="${pos.id}" value="${pos.mark ?? ""}" placeholder="—"></td>`
+    ? `<td class="r mark-cell"><input class="mark-in" type="number" step="any" data-id="${pos.id}" value="${m.manualMark ?? ""}" placeholder="${m.markGBP != null ? m.markGBP.toFixed(4) : "£"}">${m.markAuto ? `<span class="mk-auto" title="auto from latest cockpit close">auto</span>` : ""}</td>`
     : `<td class="r dim-note">—</td>`;
   const grpOpts = `<option value="">— none —</option>` + accGroups.map((g) => `<option value="${g.id}"${pos.group_id === g.id ? " selected" : ""}>${esc(g.name)}</option>`).join("");
   return (
     `<tr>` +
-    `<td>${esc(pos.instrument)}${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
+    `<td>${esc(pos.instrument)} <span class="dim-note">${m.cur}</span>${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
     `<td class="r">${m.open ? fmtNum(m.qty) : `<span class="dim-note">—</span>`}</td>` +
     `<td class="r">${m.open ? fmtGBP(m.avg) : `<span class="dim-note">—</span>`}</td>` +
     markCell +

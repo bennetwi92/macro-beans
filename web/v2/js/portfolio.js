@@ -4,7 +4,8 @@
 
 import "./nav.js";
 import { db, esc, fmtGBP, requireAuth, mountAccountBar } from "./neon.js";
-import { positionMetrics, tradeCash } from "./book.js";
+import { gbpPositionMetrics, tradeCashGBP } from "./book.js";
+import { loadPrices } from "./prices.js";
 
 const root = document.getElementById("pf-root");
 const optbar = document.getElementById("optbar");
@@ -15,6 +16,7 @@ let accounts = [], positions = [], trades = [], cash = [];
 (async function boot() {
   const session = await requireAuth(root);
   mountAccountBar(optbar, session);
+  await loadPrices();
   loadAll();
 })();
 
@@ -33,18 +35,18 @@ async function loadAll() {
 
 /* ---------- compute ---------- */
 
-function accountMetrics(acc) {
+function accountMetrics(acc, posById) {
   const accPos = positions.filter((p) => p.account_id === acc.id);
   const posIds = new Set(accPos.map((p) => p.id));
   let realized = 0, unreal = 0, mktVal = 0, openCount = 0, unmarked = 0;
   for (const p of accPos) {
-    const m = positionMetrics(trades.filter((t) => t.position_id === p.id), p.mark);
+    const m = gbpPositionMetrics(p, trades.filter((t) => t.position_id === p.id));
     realized += m.realized;
-    if (m.open) { openCount += 1; if (m.mark != null) { mktVal += m.mktVal; unreal += m.unreal; } else unmarked += 1; }
+    if (m.open) { openCount += 1; if (m.markGBP != null) { mktVal += m.mktVal; unreal += m.unreal; } else unmarked += 1; }
   }
   let cashBal = 0;
   for (const cf of cash) if (cf.account_id === acc.id) cashBal += +cf.amount;
-  for (const t of trades) if (posIds.has(t.position_id)) cashBal += tradeCash(t);
+  for (const t of trades) { const p = posById[t.position_id]; if (p && posIds.has(t.position_id)) cashBal += tradeCashGBP(t, p.currency || "GBP"); }
   return { realized, unreal, mktVal, cashBal, totalValue: cashBal + mktVal, totalPnL: realized + unreal, openCount, unmarked };
 }
 
@@ -58,7 +60,8 @@ function render() {
     root.innerHTML = `<div class="np-wrap"><div class="req-msg">No accounts yet — add one and log trades on the <a href="trades.html">Trades</a> page.</div></div>`;
     return;
   }
-  const ms = accounts.map((a) => ({ acc: a, m: accountMetrics(a) }));
+  const posById = Object.fromEntries(positions.map((p) => [p.id, p]));
+  const ms = accounts.map((a) => ({ acc: a, m: accountMetrics(a, posById) }));
   const tot = ms.reduce((s, x) => ({
     totalValue: s.totalValue + x.m.totalValue, cashBal: s.cashBal + x.m.cashBal, mktVal: s.mktVal + x.m.mktVal,
     realized: s.realized + x.m.realized, unreal: s.unreal + x.m.unreal, totalPnL: s.totalPnL + x.m.totalPnL,

@@ -5,6 +5,7 @@
 
 import "./nav.js";
 import { db, esc, fmtGBP, fmtNum, todayISO, requireAuth, mountAccountBar } from "./neon.js";
+import { loadPrices, guessCurrency, toGBP, CURRENCIES } from "./prices.js";
 
 const root = document.getElementById("trade-root");
 const optbar = document.getElementById("optbar");
@@ -16,6 +17,7 @@ let trades = [];
 (async function boot() {
   const session = await requireAuth(root);
   mountAccountBar(optbar, session);
+  await loadPrices();
   loadAll();
 })();
 
@@ -24,7 +26,7 @@ async function loadAll() {
   const [a, p, t] = await Promise.all([
     db.from("accounts").select("*").order("name"),
     db.from("positions").select("*").order("created_at"),
-    db.from("trades").select("*,positions(instrument,name,account_id,accounts(name))").order("traded_at", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("trades").select("*,positions(instrument,name,account_id,currency,accounts(name))").order("traded_at", { ascending: false }).order("created_at", { ascending: false }),
   ]);
   if (a.error) { root.innerHTML = `<div class="req-msg">Could not load (${esc(a.error.message)})</div>`; return; }
   accounts = a.data || [];
@@ -65,6 +67,7 @@ function tradeFormSection() {
     field("Account", `<select id="tf-acct" class="req-in">${accounts.map((a) => `<option value="${a.id}">${esc(a.name)}</option>`).join("")}</select>`) +
     field("Position", `<select id="tf-pos" class="req-in"></select>`) +
     `<label class="ff tf-new" hidden><span>Instrument</span><input id="tf-instr" class="req-in" placeholder="ticker e.g. 3UKS.L"></label>` +
+    `<label class="ff tf-new" hidden><span>Currency</span><select id="tf-ccy" class="req-in">${CURRENCIES.map((c) => `<option>${c}</option>`).join("")}</select></label>` +
     `<label class="ff tf-new" hidden><span>Label (optional)</span><input id="tf-name" class="req-in" placeholder="e.g. FTSE short"></label>` +
     field("Side", `<select id="tf-side" class="req-in"><option value="buy">Buy</option><option value="sell">Sell</option></select>`) +
     field("Quantity", `<input id="tf-qty" class="req-in" type="number" step="any" min="0">`) +
@@ -87,7 +90,7 @@ function tradesSection() {
   return (
     `<section class="np-sec"><div class="np-h">TRADES <span class="dim-note">${trades.length}</span></div>` +
     `<div class="logwrap"><table class="np-tbl">` +
-    `<thead><tr><th>Date</th><th>Account</th><th>Instrument</th><th>Side</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Fees</th><th class="r">Value</th><th></th></tr></thead>` +
+    `<thead><tr><th>Date</th><th>Account</th><th>Instrument</th><th>Side</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Fees £</th><th class="r">Value £</th><th></th></tr></thead>` +
     `<tbody class="trade-tbody">${rows}</tbody></table></div></section>`
   );
 }
@@ -95,7 +98,8 @@ function tradesSection() {
 function tradeRow(t) {
   const pos = t.positions || {};
   const acc = pos.accounts || {};
-  const value = Number(t.quantity) * Number(t.price);
+  const valGBP = toGBP(Number(t.price), pos.currency);
+  const value = valGBP != null ? valGBP * Number(t.quantity) : null;
   return (
     `<tr>` +
     `<td>${esc(t.traded_at)}</td>` +
@@ -103,9 +107,9 @@ function tradeRow(t) {
     `<td>${esc(pos.instrument || "")}${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
     `<td class="${t.side === "sell" ? "down" : "up"}">${esc(t.side)}</td>` +
     `<td class="r">${fmtNum(t.quantity)}</td>` +
-    `<td class="r">${fmtGBP(t.price)}</td>` +
+    `<td class="r">${fmtNum(t.price)} <span class="dim-note">${esc(pos.currency || "")}</span></td>` +
     `<td class="r">${Number(t.fees) ? fmtGBP(t.fees) : "—"}</td>` +
-    `<td class="r">${fmtGBP(value)}</td>` +
+    `<td class="r">${value != null ? fmtGBP(value) : `<span class="dim-note">—</span>`}</td>` +
     `<td class="r"><button class="req-ic" data-del="${t.id}" title="Delete trade">✕</button></td>` +
     `</tr>`
   );
@@ -145,6 +149,8 @@ function wireTradeForm() {
   populatePositions();
   document.getElementById("tf-pos").onchange = toggleNewPosition;
   document.getElementById("tf-add").onclick = addTrade;
+  const instr = document.getElementById("tf-instr");
+  if (instr) instr.addEventListener("input", () => { document.getElementById("tf-ccy").value = guessCurrency(instr.value); });
 }
 
 function populatePositions() {
@@ -187,8 +193,9 @@ async function addTrade() {
   if (posVal === "__new__") {
     const instrument = document.getElementById("tf-instr").value.trim().toUpperCase();
     const name = document.getElementById("tf-name").value.trim() || null;
+    const currency = document.getElementById("tf-ccy").value || guessCurrency(instrument);
     if (!instrument) return tradeErr("Enter the instrument ticker for the new position.");
-    const pr = await db.from("positions").insert({ account_id: accountId, instrument, name }).select();
+    const pr = await db.from("positions").insert({ account_id: accountId, instrument, name, currency }).select();
     if (pr.error) return tradeErr("Create position failed: " + pr.error.message);
     position_id = pr.data[0].id;
   }

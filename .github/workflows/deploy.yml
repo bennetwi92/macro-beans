@@ -88,9 +88,13 @@ jobs:
         run: python scripts/site/build_price_sheet.py
 
       - name: Build charts
-        # Per-instrument full-history files + the instrument menu for the chart
-        # page. Also reads only from the cache (no network).
+        # Per-instrument full-history files + the instrument menu (with currency
+        # + latest close) for the chart / book pages. Reads only from the cache.
         run: python scripts/site/build_charts.py
+
+      - name: Build FX rates
+        # Daily GBP FX rates (2 yfinance calls) used to value non-GBP holdings.
+        run: python scripts/site/build_fx.py
 
       - name: Build reports
         # Renders docs/ markdown research notes to HTML fragments + an index for

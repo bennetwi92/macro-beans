@@ -23,6 +23,7 @@ Bars carry open as well as close so the scanner can model next-open entry
 
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -59,6 +60,10 @@ def main() -> None:
     charts_dir.mkdir(parents=True, exist_ok=True)
 
     instruments = load_instruments_multi("web", "cockpit")
+    # Per-instrument quote currency (GBp/GBP/USD/EUR), fetched once into the
+    # registry-adjacent config. Lets the cockpit value/convert to GBP.
+    ccy_path = repo_root / "config" / "instrument_currency.json"
+    currencies = json.loads(ccy_path.read_text()) if ccy_path.exists() else {}
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     tally = BuildTally(len(instruments))
     menu = []
@@ -80,10 +85,12 @@ def main() -> None:
             tally.record_failure(label, RuntimeError("absent from price cache"))
             continue
         bars = bars_all(df)
+        currency = currencies.get(ticker) or ("GBp" if ticker.endswith(".L") else "GBP")
         write_json(charts_dir / f"{ticker}.json",
                    {"ticker": ticker, "name": inst.name, "theme": theme, "bars": bars})
         menu.append({"ticker": ticker, "name": inst.name, "theme": theme,
-                     "lev": inst.category == "Leveraged & Inverse"})
+                     "lev": inst.category == "Leveraged & Inverse",
+                     "currency": currency, "last": bars[-1][2]})
         tally.record_ok()
         print(f"{len(bars):>5d} bars  ({bars[0][0]} .. {bars[-1][0]})")
 
