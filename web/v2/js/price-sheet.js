@@ -86,21 +86,21 @@ const grid = new Tabulator("#ps-grid", {
   placeholder: "Loading…",
   initialSort: [{ column: "d1", dir: "desc" }],
   columns: [
-    { title: "INSTRUMENT", field: "name", frozen: true, width: 168, formatter: nameFmt },
-    { title: "THEME", field: "theme", width: 142, cssClass: "ps-theme" },
+    { title: "INSTRUMENT", field: "name", frozen: true, minWidth: 168, formatter: nameFmt },
+    { title: "THEME", field: "theme", minWidth: 142, cssClass: "ps-theme" },
     // LAST / OPEN / GAP are hidden for now: the data is pulled overnight (EOD),
     // so there is no live last price, session open, or intraday gap to show.
     // CLOSE is the latest settled close. (The metrics still compute internally.)
-    { title: "CLOSE", field: "last", width: 74, hozAlign: R, formatter: num2 },
-    { title: "1D%", field: "d1", width: 62, hozAlign: R, formatter: pct1 },
-    { title: "1W%", field: "w1", width: 62, hozAlign: R, formatter: pct1 },
-    { title: "1M%", field: "m1", width: 64, hozAlign: R, formatter: pct1 },
-    { title: "1Y%", field: "y1", width: 66, hozAlign: R, formatter: pct1 },
-    { title: "RSI", field: "rsi", width: 54, hozAlign: R, formatter: rsiFmt },
-    { title: "PX/200D", field: "px200", width: 76, hozAlign: R, formatter: ratio200 },
-    { title: "VOL45", field: "vol45", width: 64, hozAlign: R, formatter: num1 },
-    { title: "V45/V1Y", field: "volr", width: 78, hozAlign: R, formatter: volrFmt },
-    { title: "", field: "chart", width: 36, hozAlign: "center", headerSort: false, formatter: chartFmt },
+    { title: "CLOSE", field: "last", minWidth: 74, hozAlign: R, formatter: num2 },
+    { title: "1D%", field: "d1", minWidth: 62, hozAlign: R, formatter: pct1 },
+    { title: "1W%", field: "w1", minWidth: 62, hozAlign: R, formatter: pct1 },
+    { title: "1M%", field: "m1", minWidth: 64, hozAlign: R, formatter: pct1 },
+    { title: "1Y%", field: "y1", minWidth: 66, hozAlign: R, formatter: pct1 },
+    { title: "RSI", field: "rsi", minWidth: 54, hozAlign: R, formatter: rsiFmt },
+    { title: "PX/200D", field: "px200", minWidth: 76, hozAlign: R, formatter: ratio200 },
+    { title: "VOL45", field: "vol45", minWidth: 64, hozAlign: R, formatter: num1 },
+    { title: "V45/V1Y", field: "volr", minWidth: 78, hozAlign: R, formatter: volrFmt },
+    { title: "", field: "chart", minWidth: 36, hozAlign: "center", headerSort: false, formatter: chartFmt },
   ],
 });
 
