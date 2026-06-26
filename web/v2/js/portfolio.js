@@ -55,9 +55,19 @@ function accountMetrics(acc, posById) {
 const pnl = (v) => (v == null ? `<span class="dim-note">—</span>` : `<span class="${v > 0 ? "up" : v < 0 ? "down" : ""}">${fmtGBP(v)}</span>`);
 const metric = (label, value) => `<div class="pf-metric"><div class="pf-ml">${label}</div><div class="pf-mv">${value}</div></div>`;
 
+function addAccountSection() {
+  return (
+    `<section class="np-sec"><div class="np-h">ADD ACCOUNT</div><div class="acct-add">` +
+    `<input id="acct-name" class="req-in" placeholder="Account name (e.g. SIPP)">` +
+    `<select id="acct-type" class="req-in"><option value="">type…</option><option>ISA</option><option>SIPP</option><option>GIA</option><option>CFD</option><option>Other</option></select>` +
+    `<button id="acct-add" class="req-btn">Add account</button></div></section>`
+  );
+}
+
 function render() {
   if (!accounts.length) {
-    root.innerHTML = `<div class="np-wrap"><div class="req-msg">No accounts yet — add one and log trades on the <a href="trades.html">Trades</a> page.</div></div>`;
+    root.innerHTML = `<div class="np-wrap"><div class="req-msg">No accounts yet — add one below, then log trades on the Trades page.</div>${addAccountSection()}</div>`;
+    wireAccounts();
     return;
   }
   const posById = Object.fromEntries(positions.map((p) => [p.id, p]));
@@ -72,8 +82,10 @@ function render() {
     `<div class="np-wrap">` +
     overallCard(tot) +
     ms.map(({ acc, m }) => accountCard(acc, m)).join("") +
+    addAccountSection() +
     `</div>`;
   wire();
+  wireAccounts();
 }
 
 function overallCard(t) {
@@ -97,7 +109,7 @@ function accountCard(acc, m) {
   const flows = cash.filter((cf) => cf.account_id === acc.id);
   return (
     `<section class="np-sec pf-card">` +
-    `<div class="pf-card-h"><div class="np-h">${esc(acc.name)}${acc.type ? ` · ${esc(acc.type)}` : ""}</div><div class="pf-card-total">${fmtGBP(m.totalValue)}</div></div>` +
+    `<div class="pf-card-h"><div class="np-h">${esc(acc.name)}${acc.type ? ` · ${esc(acc.type)}` : ""}</div><div class="pf-card-r"><span class="pf-card-total">${fmtGBP(m.totalValue)}</span><button class="req-ic pf-del-acct" data-delacct="${acc.id}" title="Delete account and ALL its data">✕</button></div></div>` +
     `<div class="pf-metrics">` +
     metric("Cash", fmtGBP(m.cashBal)) +
     metric("Market value", fmtGBP(m.mktVal)) +
@@ -138,7 +150,30 @@ function wire() {
     const t = e.target;
     if (t.classList.contains("cf-add")) addCash(t.dataset.acct);
     else if (t.dataset.delcash) delCash(t.dataset.delcash);
+    else if (t.dataset.delacct) delAccount(t.dataset.delacct);
   });
+}
+
+function wireAccounts() {
+  const btn = document.getElementById("acct-add");
+  if (btn) btn.onclick = addAccount;
+}
+
+async function addAccount() {
+  const name = document.getElementById("acct-name").value.trim();
+  const type = document.getElementById("acct-type").value || null;
+  if (!name) return;
+  const { error } = await db.from("accounts").insert({ name, type }).select();
+  if (error) return alert("Add account failed: " + error.message);
+  loadAll();
+}
+
+async function delAccount(id) {
+  const acc = accounts.find((a) => a.id === id);
+  if (!confirm(`Delete account "${acc?.name}" and ALL its positions, trades and cash flows? This cannot be undone.`)) return;
+  const { error } = await db.from("accounts").delete().eq("id", id);
+  if (error) return alert("Delete failed: " + error.message);
+  loadAll();
 }
 
 async function addCash(accountId) {

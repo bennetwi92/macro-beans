@@ -1,7 +1,8 @@
-// Trades page — manual trade entry + the accounts that hold them.
-// Step 1 of the trading book: create accounts, log trades against positions
-// (single-instrument; positions get their own PnL view on the Positions page).
-// All amounts in GBP. Backed by Neon (RLS-scoped to the signed-in user).
+// Trades page — compact, inline-editable trade log for daily entry.
+// "+ Add trade" drops a blank editable row at the top; fill the cells and save.
+// Click any row to edit it inline. Accounts are managed on the Portfolio page.
+// Prices are entered in the instrument's native currency (auto-deduced); the
+// Value column and all PnL are GBP.
 
 import "./nav.js";
 import { db, esc, fmtGBP, fmtNum, todayISO, requireAuth, mountAccountBar } from "./neon.js";
@@ -10,9 +11,8 @@ import { loadPrices, guessCurrency, toGBP, CURRENCIES } from "./prices.js";
 const root = document.getElementById("trade-root");
 const optbar = document.getElementById("optbar");
 
-let accounts = [];
-let positions = [];
-let trades = [];
+let accounts = [], positions = [], trades = [];
+let editing = null; // trade id being edited, or "__new__", or null
 
 (async function boot() {
   const session = await requireAuth(root);
@@ -29,79 +29,41 @@ async function loadAll() {
     db.from("trades").select("*,positions(instrument,name,account_id,currency,accounts(name))").order("traded_at", { ascending: false }).order("created_at", { ascending: false }),
   ]);
   if (a.error) { root.innerHTML = `<div class="req-msg">Could not load (${esc(a.error.message)})</div>`; return; }
-  accounts = a.data || [];
-  positions = p.data || [];
-  trades = t.data || [];
+  accounts = a.data || []; positions = p.data || []; trades = t.data || [];
   render();
 }
 
 /* ---------- render ---------- */
 
 function render() {
-  root.innerHTML = `<div class="np-wrap">${accountsSection()}${tradeFormSection()}${tradesSection()}</div>`;
-  wireAccounts();
-  wireTradeForm();
-  root.querySelector(".trade-tbody")?.addEventListener("click", onTradeClick);
+  if (!accounts.length) {
+    root.innerHTML = `<div class="np-wrap"><div class="req-msg">No accounts yet — create one on the <a href="portfolio.html">Portfolio</a> page first.</div></div>`;
+    return;
+  }
+  root.innerHTML =
+    `<div class="np-wrap">` +
+    `<div class="tr-head"><div class="np-h">TRADES <span class="dim-note">${trades.length}</span></div>` +
+    `<button id="tr-add" class="req-btn"${editing ? " disabled" : ""}>＋ Add trade</button></div>` +
+    `<div class="logwrap"><table class="np-tbl trade-tbl">` +
+    `<thead><tr><th>Date</th><th>Account</th><th>Instrument</th><th>Side</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Fees £</th><th class="r">Value £</th><th>Note</th><th></th></tr></thead>` +
+    `<tbody id="tr-body">${bodyRows()}</tbody></table></div></div>`;
+  wire();
 }
 
-function accountsSection() {
-  const chips = accounts.length
-    ? accounts.map((a) => `<span class="acct-chip">${esc(a.name)}${a.type ? ` <em>${esc(a.type)}</em>` : ""}<button class="acct-del" data-id="${a.id}" title="Delete account and ALL its positions/trades">✕</button></span>`).join("")
-    : `<span class="dim-note">No accounts yet — add one to start logging trades.</span>`;
-  return (
-    `<section class="np-sec"><div class="np-h">ACCOUNTS</div>` +
-    `<div class="acct-list">${chips}</div>` +
-    `<div class="acct-add">` +
-    `<input id="acct-name" class="req-in" placeholder="Account name (e.g. SIPP)">` +
-    `<select id="acct-type" class="req-in"><option value="">type…</option><option>ISA</option><option>SIPP</option><option>GIA</option><option>CFD</option><option>Other</option></select>` +
-    `<button id="acct-add" class="req-btn">Add account</button>` +
-    `</div></section>`
-  );
+function bodyRows() {
+  let html = "";
+  if (editing === "__new__") html += editRow(null);
+  for (const t of trades) html += t.id === editing ? editRow(t) : displayRow(t);
+  if (!trades.length && editing !== "__new__") html += `<tr><td colspan="10" class="dim-note">No trades yet — ＋ Add trade.</td></tr>`;
+  return html;
 }
 
-function tradeFormSection() {
-  if (!accounts.length) return "";
-  return (
-    `<section class="np-sec"><div class="np-h">ADD TRADE</div>` +
-    `<div class="trade-form">` +
-    field("Account", `<select id="tf-acct" class="req-in">${accounts.map((a) => `<option value="${a.id}">${esc(a.name)}</option>`).join("")}</select>`) +
-    field("Position", `<select id="tf-pos" class="req-in"></select>`) +
-    `<label class="ff tf-new" hidden><span>Instrument</span><input id="tf-instr" class="req-in" placeholder="ticker e.g. 3UKS.L"></label>` +
-    `<label class="ff tf-new" hidden><span>Currency</span><select id="tf-ccy" class="req-in">${CURRENCIES.map((c) => `<option>${c}</option>`).join("")}</select></label>` +
-    `<label class="ff tf-new" hidden><span>Label (optional)</span><input id="tf-name" class="req-in" placeholder="e.g. FTSE short"></label>` +
-    field("Side", `<select id="tf-side" class="req-in"><option value="buy">Buy</option><option value="sell">Sell</option></select>`) +
-    field("Quantity", `<input id="tf-qty" class="req-in" type="number" step="any" min="0">`) +
-    field("Price £", `<input id="tf-price" class="req-in" type="number" step="any" min="0">`) +
-    field("Fees £", `<input id="tf-fees" class="req-in" type="number" step="any" min="0" value="0">`) +
-    field("Date", `<input id="tf-date" class="req-in" type="date" value="${todayISO()}">`) +
-    `<label class="ff ff-wide"><span>Note (optional)</span><input id="tf-note" class="req-in"></label>` +
-    `<button id="tf-add" class="req-btn">Add trade</button>` +
-    `<div id="tf-err" class="auth-err" hidden></div>` +
-    `</div></section>`
-  );
-}
-
-const field = (label, control) => `<label class="ff"><span>${label}</span>${control}</label>`;
-
-function tradesSection() {
-  const rows = trades.length
-    ? trades.map(tradeRow).join("")
-    : `<tr><td colspan="9" class="dim-note">No trades yet.</td></tr>`;
-  return (
-    `<section class="np-sec"><div class="np-h">TRADES <span class="dim-note">${trades.length}</span></div>` +
-    `<div class="logwrap"><table class="np-tbl">` +
-    `<thead><tr><th>Date</th><th>Account</th><th>Instrument</th><th>Side</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Fees £</th><th class="r">Value £</th><th></th></tr></thead>` +
-    `<tbody class="trade-tbody">${rows}</tbody></table></div></section>`
-  );
-}
-
-function tradeRow(t) {
-  const pos = t.positions || {};
-  const acc = pos.accounts || {};
+function displayRow(t) {
+  const pos = t.positions || {}, acc = pos.accounts || {};
   const valGBP = toGBP(Number(t.price), pos.currency);
   const value = valGBP != null ? valGBP * Number(t.quantity) : null;
   return (
-    `<tr>` +
+    `<tr class="tr-row" data-id="${t.id}">` +
     `<td>${esc(t.traded_at)}</td>` +
     `<td>${esc(acc.name || "")}</td>` +
     `<td>${esc(pos.instrument || "")}${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
@@ -110,105 +72,109 @@ function tradeRow(t) {
     `<td class="r">${fmtNum(t.price)} <span class="dim-note">${esc(pos.currency || "")}</span></td>` +
     `<td class="r">${Number(t.fees) ? fmtGBP(t.fees) : "—"}</td>` +
     `<td class="r">${value != null ? fmtGBP(value) : `<span class="dim-note">—</span>`}</td>` +
-    `<td class="r"><button class="req-ic" data-del="${t.id}" title="Delete trade">✕</button></td>` +
+    `<td class="tr-note">${esc(t.note || "")}</td>` +
+    `<td class="r te-actions"><button class="req-ic" data-edit="${t.id}" title="Edit">✎</button><button class="req-ic" data-del="${t.id}" title="Delete">✕</button></td>` +
     `</tr>`
   );
 }
 
-/* ---------- accounts ---------- */
-
-function wireAccounts() {
-  const addBtn = document.getElementById("acct-add");
-  if (addBtn) addBtn.onclick = addAccount;
-  root.querySelectorAll(".acct-del").forEach((b) => { b.onclick = () => delAccount(b.dataset.id); });
+function editRow(t) {
+  const id = t ? t.id : "__new__";
+  const accId = (t && t.positions && t.positions.account_id) || accounts[0].id;
+  const ccyOpts = CURRENCIES.map((c) => `<option>${c}</option>`).join("");
+  return (
+    `<tr class="tr-edit" data-id="${id}">` +
+    `<td><input class="te-date req-in" type="date" value="${t ? t.traded_at : todayISO()}"></td>` +
+    `<td><select class="te-acct req-in">${accounts.map((a) => `<option value="${a.id}"${a.id === accId ? " selected" : ""}>${esc(a.name)}</option>`).join("")}</select></td>` +
+    `<td class="te-poscell"><select class="te-pos req-in"></select><div class="te-new" hidden><input class="te-instr req-in" placeholder="ticker"><select class="te-ccy req-in">${ccyOpts}</select></div></td>` +
+    `<td><select class="te-side req-in"><option value="buy"${t && t.side === "buy" ? " selected" : ""}>buy</option><option value="sell"${t && t.side === "sell" ? " selected" : ""}>sell</option></select></td>` +
+    `<td><input class="te-qty req-in" type="number" step="any" min="0" value="${t ? t.quantity : ""}"></td>` +
+    `<td><input class="te-price req-in" type="number" step="any" min="0" value="${t ? t.price : ""}"></td>` +
+    `<td><input class="te-fees req-in" type="number" step="any" min="0" value="${t ? t.fees : "0"}"></td>` +
+    `<td class="r dim-note">—</td>` +
+    `<td><input class="te-note req-in" value="${t ? esc(t.note || "") : ""}"></td>` +
+    `<td class="r te-actions"><button class="req-ic save" data-saverow="${id}" title="Save">✓</button><button class="req-ic" data-cancel="1" title="Cancel">✕</button></td>` +
+    `</tr>`
+  );
 }
 
-async function addAccount() {
-  const name = document.getElementById("acct-name").value.trim();
-  const type = document.getElementById("acct-type").value || null;
-  if (!name) return;
-  const { error } = await db.from("accounts").insert({ name, type }).select();
-  if (error) return alert("Add account failed: " + error.message);
-  loadAll();
+/* ---------- wiring ---------- */
+
+function wire() {
+  document.getElementById("tr-add").onclick = () => { if (!editing) { editing = "__new__"; render(); } };
+  const body = document.getElementById("tr-body");
+  body.addEventListener("click", onBodyClick);
+
+  const er = body.querySelector(".tr-edit");
+  if (er) wireEditRow(er);
 }
 
-async function delAccount(id) {
-  const acc = accounts.find((a) => a.id === id);
-  if (!confirm(`Delete account "${acc?.name}" and ALL its positions and trades? This cannot be undone.`)) return;
-  const { error } = await db.from("accounts").delete().eq("id", id);
-  if (error) return alert("Delete failed: " + error.message);
-  loadAll();
+function onBodyClick(e) {
+  const t = e.target;
+  if (t.dataset.edit) { editing = t.dataset.edit; render(); }
+  else if (t.dataset.del) delTrade(t.dataset.del);
+  else if (t.dataset.cancel) { editing = null; render(); }
+  else if (t.dataset.saverow) saveRow(t.dataset.saverow, t.closest(".tr-edit"));
 }
 
-/* ---------- trade form ---------- */
-
-function wireTradeForm() {
-  const acctSel = document.getElementById("tf-acct");
-  if (!acctSel) return;
-  acctSel.onchange = populatePositions;
-  populatePositions();
-  document.getElementById("tf-pos").onchange = toggleNewPosition;
-  document.getElementById("tf-add").onclick = addTrade;
-  const instr = document.getElementById("tf-instr");
-  if (instr) instr.addEventListener("input", () => { document.getElementById("tf-ccy").value = guessCurrency(instr.value); });
+function wireEditRow(er) {
+  const selectedPos = editing !== "__new__" ? findTrade(editing)?.position_id : null;
+  const acctSel = er.querySelector(".te-acct");
+  populatePos(er, acctSel.value, selectedPos);
+  acctSel.onchange = () => populatePos(er, acctSel.value, null);
+  er.querySelector(".te-pos").onchange = () => toggleNew(er);
+  er.querySelector(".te-instr").addEventListener("input", (ev) => { er.querySelector(".te-ccy").value = guessCurrency(ev.target.value); });
 }
 
-function populatePositions() {
-  const accountId = document.getElementById("tf-acct").value;
-  const posSel = document.getElementById("tf-pos");
+function populatePos(er, accountId, selectedPosId) {
+  const sel = er.querySelector(".te-pos");
   const inAcct = positions.filter((p) => p.account_id === accountId);
-  posSel.innerHTML =
-    inAcct.map((p) => `<option value="${p.id}">${esc(p.instrument)}${p.name ? ` · ${esc(p.name)}` : ""}</option>`).join("") +
-    `<option value="__new__">➕ New position…</option>`;
-  toggleNewPosition();
+  sel.innerHTML =
+    inAcct.map((p) => `<option value="${p.id}"${p.id === selectedPosId ? " selected" : ""}>${esc(p.instrument)}${p.name ? ` · ${esc(p.name)}` : ""}</option>`).join("") +
+    `<option value="__new__">＋ new position…</option>`;
+  if (!selectedPosId && !inAcct.length) sel.value = "__new__";
+  toggleNew(er);
 }
 
-function toggleNewPosition() {
-  const isNew = document.getElementById("tf-pos").value === "__new__";
-  root.querySelectorAll(".tf-new").forEach((el) => { el.hidden = !isNew; });
+function toggleNew(er) {
+  er.querySelector(".te-new").hidden = er.querySelector(".te-pos").value !== "__new__";
 }
 
-function tradeErr(msg) {
-  const el = document.getElementById("tf-err");
-  if (!el) return;
-  el.textContent = msg || "";
-  el.hidden = !msg;
-}
+const findTrade = (id) => trades.find((t) => t.id === id);
 
-async function addTrade() {
-  tradeErr("");
-  const accountId = document.getElementById("tf-acct").value;
-  const posVal = document.getElementById("tf-pos").value;
-  const side = document.getElementById("tf-side").value;
-  const quantity = parseFloat(document.getElementById("tf-qty").value);
-  const price = parseFloat(document.getElementById("tf-price").value);
-  const fees = parseFloat(document.getElementById("tf-fees").value) || 0;
-  const traded_at = document.getElementById("tf-date").value || todayISO();
-  const note = document.getElementById("tf-note").value.trim() || null;
+/* ---------- persistence ---------- */
 
-  if (!(quantity > 0)) return tradeErr("Enter a quantity.");
-  if (!(price >= 0)) return tradeErr("Enter a price (GBP per share).");
+async function saveRow(id, er) {
+  const v = (sel) => er.querySelector(sel).value;
+  const quantity = parseFloat(v(".te-qty"));
+  const price = parseFloat(v(".te-price"));
+  const fees = parseFloat(v(".te-fees")) || 0;
+  const side = v(".te-side");
+  const traded_at = v(".te-date") || todayISO();
+  const note = er.querySelector(".te-note").value.trim() || null;
+  if (!(quantity > 0) || !(price >= 0)) return; // need qty + price
 
-  let position_id = posVal;
-  if (posVal === "__new__") {
-    const instrument = document.getElementById("tf-instr").value.trim().toUpperCase();
-    const name = document.getElementById("tf-name").value.trim() || null;
-    const currency = document.getElementById("tf-ccy").value || guessCurrency(instrument);
-    if (!instrument) return tradeErr("Enter the instrument ticker for the new position.");
-    const pr = await db.from("positions").insert({ account_id: accountId, instrument, name, currency }).select();
-    if (pr.error) return tradeErr("Create position failed: " + pr.error.message);
+  const accountId = v(".te-acct");
+  let position_id = v(".te-pos");
+  if (position_id === "__new__") {
+    const instrument = er.querySelector(".te-instr").value.trim().toUpperCase();
+    if (!instrument) { er.querySelector(".te-instr").focus(); return; }
+    const currency = er.querySelector(".te-ccy").value || guessCurrency(instrument);
+    const pr = await db.from("positions").insert({ account_id: accountId, instrument, currency }).select();
+    if (pr.error) return alert("Create position failed: " + pr.error.message);
     position_id = pr.data[0].id;
   }
-  const tr = await db.from("trades").insert({ position_id, side, quantity, price, fees, traded_at, note }).select();
-  if (tr.error) return tradeErr("Add trade failed: " + tr.error.message);
+
+  const fields = { position_id, side, quantity, price, fees, traded_at, note };
+  const res = id === "__new__"
+    ? await db.from("trades").insert(fields).select()
+    : await db.from("trades").update(fields).eq("id", id);
+  if (res.error) return alert("Save failed: " + res.error.message);
+  editing = null;
   loadAll();
 }
 
-/* ---------- trades table ---------- */
-
-async function onTradeClick(e) {
-  const id = e.target.dataset?.del;
-  if (!id) return;
+async function delTrade(id) {
   const { error } = await db.from("trades").delete().eq("id", id);
   if (error) return alert("Delete failed: " + error.message);
   loadAll();
