@@ -9,16 +9,16 @@
 // weakness (a dip), momentum strategies buy strength (a breakout); there is no
 // "sell" — bearish views are Phase 2 (buy an inverse ETF).
 //
-// Strategy MATH is imported from v1's strategy-engine.js (tested). v1 bars are
-// [iso, open, close]; our chart bars are [iso, close], so we adapt to
-// [iso, close, close] — the scanner only uses entry:"close".
+// Strategy MATH is imported from v1's strategy-engine.js (tested). Both use
+// [iso, open, close] bars. The scanner enters at the NEXT open (entry:"open") —
+// you can't buy at the close you detect on; you'd buy tomorrow's open.
 
 import "./nav.js";
 import { createOptionsBar } from "./options-bar.js";
 import {
   findEvents, findStreakEvents, findMultiDayEvents, findBreakoutEvents, findRangeEvents, findCrossEvents,
   liveBounce, liveStreak, liveMultiDay, liveBreakout, liveRange, liveCross,
-  computeStats, indexAsOf, forwardReturn,
+  computeStats, indexAsOf,
   HORIZONS, STREAK_HORIZONS, MULTIDAY_HORIZONS, BREAKOUT_HORIZONS, RANGE_HORIZONS, CROSS_HORIZONS,
   fmt,
 } from "../../js/strategy-engine.js";
@@ -47,27 +47,27 @@ const STRATEGIES = [
   { key: "bounce", label: "Buy the Bounce", style: "dip", dir: "down", hold: HORIZONS.at(-1), horizons: HORIZONS,
     detect: (b) => liveBounce(b, { direction: "down", threshold: state.threshold }),
     signal: (s) => `${fmt(s.move)} day`, sigVal: (s) => s.move,
-    stats: (b) => computeStats(findEvents(b, { direction: "down", threshold: state.threshold, entry: "close", range: state.range }))[2] },
+    stats: (b) => computeStats(findEvents(b, { direction: "down", threshold: state.threshold, entry: "open", range: state.range }))[2] },
   { key: "streak", label: "Red Streak", style: "dip", dir: "down", hold: STREAK_HORIZONS.at(-1), horizons: STREAK_HORIZONS,
     detect: (b) => liveStreak(b, { direction: "down", streak: state.streak }),
     signal: (s) => `${s.run} red closes`, sigVal: () => null,
-    stats: (b) => computeStats(findStreakEvents(b, { direction: "down", streak: state.streak, entry: "close", range: state.range }))[2] },
+    stats: (b) => computeStats(findStreakEvents(b, { direction: "down", streak: state.streak, entry: "open", range: state.range }))[2] },
   { key: "multiday", label: "Multi-Day Drop", style: "dip", dir: "down", hold: MULTIDAY_HORIZONS.at(-1), horizons: MULTIDAY_HORIZONS,
     detect: (b) => liveMultiDay(b, { direction: "down", ...MD_MOVE }),
     signal: (s) => `${fmt(s.move)} / ${MD_MOVE.window}d`, sigVal: (s) => s.move,
-    stats: (b) => computeStats(findMultiDayEvents(b, { direction: "down", threshold: MD_MOVE.threshold, window: MD_MOVE.window, entry: "close", range: state.range }))[2] },
+    stats: (b) => computeStats(findMultiDayEvents(b, { direction: "down", threshold: MD_MOVE.threshold, window: MD_MOVE.window, entry: "open", range: state.range }))[2] },
   { key: "breakout", label: "Breakout High", style: "breakout", dir: "up", hold: BREAKOUT_HORIZONS.at(-1), horizons: BREAKOUT_HORIZONS,
     detect: (b) => liveBreakout(b, { direction: "up", lookback: BREAK_LOOK }),
     signal: () => `${BREAK_LOOK}-day high`, sigVal: () => null,
-    stats: (b) => computeStats(findBreakoutEvents(b, { direction: "up", lookback: BREAK_LOOK, entry: "close", range: state.range }))[2] },
+    stats: (b) => computeStats(findBreakoutEvents(b, { direction: "up", lookback: BREAK_LOOK, entry: "open", range: state.range }))[2] },
   { key: "cross", label: "MA Cross Up", style: "breakout", dir: "up", hold: CROSS_HORIZONS.at(-1), horizons: CROSS_HORIZONS,
     detect: (b) => liveCross(b, { direction: "up", period: CROSS_PER }),
     signal: () => `above ${CROSS_PER}-day`, sigVal: () => null,
-    stats: (b) => computeStats(findCrossEvents(b, { direction: "up", period: CROSS_PER, entry: "close", range: state.range }))[2] },
+    stats: (b) => computeStats(findCrossEvents(b, { direction: "up", period: CROSS_PER, entry: "open", range: state.range }))[2] },
   { key: "range", label: "Tight Range", style: "range", dir: null, hold: RANGE_HORIZONS.at(-1), horizons: RANGE_HORIZONS,
     detect: (b) => liveRange(b, RANGE_SET),
     signal: (s) => `${s.spread.toFixed(1)}% range`, sigVal: () => null,
-    stats: (b) => computeStats(findRangeEvents(b, { band: RANGE_SET.band, window: RANGE_SET.window, entry: "close", range: state.range }))[2] },
+    stats: (b) => computeStats(findRangeEvents(b, { band: RANGE_SET.band, window: RANGE_SET.window, entry: "open", range: state.range }))[2] },
 ];
 
 const INSTR = []; // [{ticker, name, theme, bars:[[iso,c,c]]}]
@@ -84,17 +84,30 @@ function yearsAgoISO(view, n) {
   return `${Y - n}-${String(M).padStart(2, "0")}-${String(D).padStart(2, "0")}`;
 }
 
-// Unconditional forward-return baseline over the same window/horizon — the
-// "always invested" drift the signal must beat to be a real edge.
+// Unconditional next-open-entry baseline over the same window/horizon — the
+// "always invested" drift the signal must beat to be a real edge. Enter the
+// open after bar i, exit H closes later (same convention as entry:"open").
 function baselineStats(view, H) {
   const minDate = state.range === "5y" ? yearsAgoISO(view, 5) : null;
   let n = 0, wins = 0, sum = 0;
-  for (let i = 0; i < view.length - H; i++) {
+  for (let i = 0; i < view.length - H - 1; i++) {
     if (minDate && view[i][0] < minDate) continue;
-    const r = view[i + H][2] / view[i][2] - 1;
+    const entry = view[i + 1][1]; // next-day open
+    if (!(entry > 0)) continue;
+    const r = view[i + 1 + H][2] / entry - 1;
     sum += r; if (r > 0) wins += 1; n += 1;
   }
   return n ? { n, rate: (wins / n) * 100, avg: (sum / n) * 100 } : { n: 0, rate: NaN, avg: NaN };
+}
+
+// Realised next-open-entry outcome (rewind mode): enter the open after the
+// as-of bar, exit H closes later. NaN if the window hasn't elapsed.
+function outcomeOpen(bars, idx, H) {
+  const exit = idx + 1 + H;
+  if (exit >= bars.length) return NaN;
+  const entry = bars[idx + 1][1];
+  if (!(entry > 0)) return NaN;
+  return (bars[exit][2] / entry - 1) * 100;
 }
 
 // Above the 200-day average on the as-of bar? null if too little history.
@@ -134,10 +147,10 @@ function scanRows() {
       const edgeWin = Number.isFinite(st.rate) && Number.isFinite(base.rate) ? st.rate - base.rate : NaN;
       // Rank by per-day edge, shrunk toward zero by sample size.
       const score = Number.isFinite(edge) ? (edge / strat.hold) * (st.n / (st.n + SHRINK_K)) : -Infinity;
-      const outcome = history ? forwardReturn(bars, idx, strat.hold) : NaN;
+      const outcome = history ? outcomeOpen(bars, idx, strat.hold) : NaN;
 
       rows.push({
-        ticker: inst.ticker, name: inst.name, theme: inst.theme,
+        ticker: inst.ticker, name: inst.name, theme: inst.theme, lev: inst.lev,
         strategy: strat.label, signal: strat.signal(sig), sigVal: strat.sigVal(sig),
         trendUp: up, hold: `${strat.hold}d`,
         edge, edgeWin, avg: st.avg, rate: st.rate, med: st.med, worst: st.worst, n: st.n,
@@ -158,7 +171,10 @@ const paint = (cell, up, down) => {
 };
 const nameFmt = (cell) => {
   const d = cell.getRow().getData();
-  return `<span class="ps-name">${d.name}</span> <span class="ps-tkr">${d.ticker}</span>`;
+  const bolt = d.lev
+    ? ` <span class="ps-lev" title="Leveraged / inverse — daily decay & wider spread. A small edge won't survive costs.">⚡</span>`
+    : "";
+  return `<span class="ps-name">${d.name}</span> <span class="ps-tkr">${d.ticker}</span>${bolt}`;
 };
 const signalFmt = (cell) => {
   const d = cell.getRow().getData();
@@ -292,7 +308,7 @@ grid.on("tableBuilt", async () => {
           const res = await fetch(`data/charts/${encodeURIComponent(m.ticker)}.json`, { cache: "no-cache" });
           if (!res.ok) return null;
           const d = await res.json();
-          return { ticker: m.ticker, name: m.name, theme: m.theme, bars: (d.bars || []).map((b) => [b[0], b[1], b[1]]) };
+          return { ticker: m.ticker, name: m.name, theme: m.theme, lev: !!m.lev, bars: d.bars || [] };
         } catch { return null; }
       })
     );

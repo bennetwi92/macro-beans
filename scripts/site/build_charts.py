@@ -14,8 +14,11 @@ Run:
     /usr/local/bin/python3 scripts/site/build_charts.py
 
 Outputs:
-    web/v2/data/instruments.json       {built_at, instruments:[{ticker,name,theme}]}
-    web/v2/data/charts/<ticker>.json   {ticker, name, theme, bars:[[iso,close]]}
+    web/v2/data/instruments.json       {built_at, instruments:[{ticker,name,theme,lev}]}
+    web/v2/data/charts/<ticker>.json   {ticker, name, theme, bars:[[iso,open,close]]}
+
+Bars carry open as well as close so the scanner can model next-open entry
+(you can't buy at the close you detect on). The chart page draws close only.
 """
 
 from __future__ import annotations
@@ -35,11 +38,18 @@ from _common import BuildTally, write_json  # noqa: E402
 
 
 def bars_all(df) -> list[list]:
-    """Full history of a Date-indexed OHLCV frame as [iso, close] pairs."""
-    return [
-        [idx.strftime("%Y-%m-%d"), round(float(c), 4)]
-        for idx, c in zip(df.index, df["Close"].values)
-    ]
+    """Full history of a Date-indexed OHLCV frame as [iso, open, close] triples.
+
+    A missing/zero open (thin early bars) falls back to the close so next-open
+    entry never divides by zero downstream.
+    """
+    out = []
+    for idx, o, c in zip(df.index, df["Open"].values, df["Close"].values):
+        o = float(o); c = float(c)
+        if not (o > 0):
+            o = c
+        out.append([idx.strftime("%Y-%m-%d"), round(o, 4), round(c, 4)])
+    return out
 
 
 def main() -> None:
@@ -72,7 +82,8 @@ def main() -> None:
         bars = bars_all(df)
         write_json(charts_dir / f"{ticker}.json",
                    {"ticker": ticker, "name": inst.name, "theme": theme, "bars": bars})
-        menu.append({"ticker": ticker, "name": inst.name, "theme": theme})
+        menu.append({"ticker": ticker, "name": inst.name, "theme": theme,
+                     "lev": inst.category == "Leveraged & Inverse"})
         tally.record_ok()
         print(f"{len(bars):>5d} bars  ({bars[0][0]} .. {bars[-1][0]})")
 

@@ -136,10 +136,11 @@ function render() {
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
 
+  // bars are [iso, open, close]; the line chart draws close (index 2).
   let lo = Infinity, hi = -Infinity;
   for (const b of slice) {
-    if (b[1] < lo) lo = b[1];
-    if (b[1] > hi) hi = b[1];
+    if (b[2] < lo) lo = b[2];
+    if (b[2] > hi) hi = b[2];
   }
   if (lo === hi) { lo *= 0.99; hi *= 1.01; }
 
@@ -147,7 +148,7 @@ function render() {
   const y = (v) => padT + plotH * (1 - (v - lo) / (hi - lo));
 
   let pts = "";
-  for (let i = 0; i < slice.length; i++) pts += `${i ? " " : ""}${x(i).toFixed(1)},${y(slice[i][1]).toFixed(1)}`;
+  for (let i = 0; i < slice.length; i++) pts += `${i ? " " : ""}${x(i).toFixed(1)},${y(slice[i][2]).toFixed(1)}`;
 
   const grid = [hi, (lo + hi) / 2, lo]
     .map((v) => {
@@ -163,7 +164,7 @@ function render() {
   const xlab =
     `<text class="chart-axis" x="${padL}" y="${H - 7}" text-anchor="start">${first[0]}</text>` +
     `<text class="chart-axis" x="${W - padR}" y="${H - 7}" text-anchor="end">${last[0]}</text>`;
-  const dot = `<circle class="chart-dot" cx="${x(slice.length - 1).toFixed(1)}" cy="${y(last[1]).toFixed(1)}" r="2.6"/>`;
+  const dot = `<circle class="chart-dot" cx="${x(slice.length - 1).toFixed(1)}" cy="${y(last[2]).toFixed(1)}" r="2.6"/>`;
 
   const svg =
     `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">` +
@@ -173,14 +174,14 @@ function render() {
     xlab +
     `</svg>`;
 
-  const chg = (last[1] / first[1] - 1) * 100;
+  const chg = (last[2] / first[2] - 1) * 100;
   const cls = chg >= 0 ? "up" : "down";
   const head =
     `<div class="chart-head">` +
     `<span class="chart-name">${current.name}</span> ` +
     `<span class="chart-tkr">${current.ticker}</span>` +
     `<span class="chart-sep">·</span>` +
-    `<span class="chart-last">${fmtV(last[1])}</span> ` +
+    `<span class="chart-last">${fmtV(last[2])}</span> ` +
     `<span class="${cls}">${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%</span>` +
     `</div>`;
 

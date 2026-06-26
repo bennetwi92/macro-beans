@@ -363,7 +363,7 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 }
 
 /* ---------- price-sheet grid (Tabulator, compact terminal theme) ---------- */
-#ps-grid{
+#ps-grid, #scan-grid{
   height:calc(100vh - 52px);   /* fill below app bar (26) + options bar (26) */
 }
 
@@ -425,6 +425,7 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 /* conditional value colours (set on cells by the formatters) */
 .tabulator .tabulator-cell.up{ color:var(--win); }
 .tabulator .tabulator-cell.down{ color:var(--loss); }
+.tabulator .tabulator-cell.ps-dim{ color:var(--dim); }
 
 /* cell content helpers */
 .tabulator .tabulator-cell.ps-theme{ color:var(--dim); }
@@ -432,3 +433,4 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 .ps-tkr{ color:var(--dim); font-size:10px; }
 .ps-chart{ color:var(--dim); display:inline-flex; align-items:center; }
 .ps-chart:hover{ color:var(--cyan); }
+.ps-lev{ color:var(--gold); cursor:help; }
