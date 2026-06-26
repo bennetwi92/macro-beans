@@ -38,7 +38,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install build dependencies
-        run: pip install --quiet "yfinance>=0.2.40" "pandas>=2.0" "numpy>=1.26" "duckdb>=1.0"
+        run: pip install --quiet "yfinance>=0.2.40" "pandas>=2.0" "numpy>=1.26" "duckdb>=1.0" "markdown>=3.5"
 
       - name: Restore price cache
         # The DuckDB price cache (data/market.duckdb) is gitignored and not in
@@ -88,6 +88,11 @@ jobs:
         # Per-instrument full-history files + the instrument menu for the chart
         # page. Also reads only from the cache (no network).
         run: python scripts/site/build_charts.py
+
+      - name: Build reports
+        # Renders docs/ markdown research notes to HTML fragments + an index for
+        # the Reports page. No network, no cache — reads the repo's docs/.
+        run: python scripts/site/build_reports.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
