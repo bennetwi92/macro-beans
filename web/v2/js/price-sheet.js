@@ -4,6 +4,7 @@
 
 import "./nav.js";
 import { createOptionsBar } from "./options-bar.js";
+import { rowAsOf } from "./price-metrics.js";
 import { TabulatorFull as Tabulator } from "https://cdn.jsdelivr.net/npm/tabulator-tables@6.5.2/dist/js/tabulator_esm.min.js";
 
 /* ---------- options bar ---------- */
@@ -16,8 +17,8 @@ function todayISO() {
 
 createOptionsBar("optbar", {
   primary: [{ type: "date", id: "ps-date", label: "DATE", value: todayISO() }],
-  onChange: () => {
-    /* grid not yet wired to date — placeholder */
+  onChange: (id, value) => {
+    if (id === "ps-date" && value) renderAsOf(value);
   },
 });
 
@@ -87,10 +88,10 @@ const grid = new Tabulator("#ps-grid", {
   columns: [
     { title: "INSTRUMENT", field: "name", frozen: true, width: 168, formatter: nameFmt },
     { title: "THEME", field: "theme", width: 142, cssClass: "ps-theme" },
-    { title: "LAST", field: "last", width: 70, hozAlign: R, formatter: num2 },
-    { title: "OPEN", field: "open", width: 70, hozAlign: R, formatter: num2 },
-    { title: "GAP%", field: "gap", width: 64, hozAlign: R, formatter: pct1 },
-    { title: "PREV", field: "prev", width: 70, hozAlign: R, formatter: num2 },
+    // LAST / OPEN / GAP are hidden for now: the data is pulled overnight (EOD),
+    // so there is no live last price, session open, or intraday gap to show.
+    // CLOSE is the latest settled close. (The metrics still compute internally.)
+    { title: "CLOSE", field: "last", width: 74, hozAlign: R, formatter: num2 },
     { title: "1D%", field: "d1", width: 62, hozAlign: R, formatter: pct1 },
     { title: "1W%", field: "w1", width: 62, hozAlign: R, formatter: pct1 },
     { title: "1M%", field: "m1", width: 64, hozAlign: R, formatter: pct1 },
@@ -103,15 +104,46 @@ const grid = new Tabulator("#ps-grid", {
   ],
 });
 
-/* ---------- load real data ---------- */
+/* ---------- load bars, compute as-of the picked date ---------- */
+
+let INSTRUMENTS = [];
+
+// Include the chosen day's own bar (end of local day).
+const asOfMs = (iso) => Date.parse(`${iso}T23:59:59`);
+
+function renderAsOf(iso) {
+  if (!INSTRUMENTS.length) return;
+  const ms = asOfMs(iso);
+  const rows = INSTRUMENTS.map((inst) => ({
+    ticker: inst.ticker,
+    name: inst.name,
+    theme: inst.theme,
+    ...rowAsOf(inst.bars, ms),
+  }));
+  grid.setData(rows);
+}
 
 grid.on("tableBuilt", async () => {
   try {
     const res = await fetch("data/price-sheet.json", { cache: "no-cache" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const payload = await res.json();
-    await grid.setData(payload.rows || []);
-    if (!payload.rows || !payload.rows.length) grid.setPlaceholder("No instruments");
+    INSTRUMENTS = payload.instruments || [];
+    if (!INSTRUMENTS.length) {
+      grid.setPlaceholder("No instruments");
+      return;
+    }
+    // Bound the date picker: earliest available bar .. today.
+    const dateEl = document.getElementById("ps-date");
+    if (dateEl) {
+      let min = null;
+      for (const inst of INSTRUMENTS) {
+        if (inst.bars.length && (min === null || inst.bars[0][0] < min)) min = inst.bars[0][0];
+      }
+      if (min) dateEl.min = min;
+      dateEl.max = todayISO();
+    }
+    renderAsOf(dateEl && dateEl.value ? dateEl.value : todayISO());
   } catch (err) {
     grid.setPlaceholder(`Could not load price data (${err.message})`);
   }
