@@ -35,6 +35,7 @@ const state = {
   style: "all",   // all | dip | breakout
   fresh: true,    // only setups that became true on the as-of bar
   trend: "all",   // all | up (above 200-day)
+  regime: "all",  // all | match (track record conditioned on the current trend)
   range: "5y",    // track-record window
   asOf: null,     // rewind date; null = live
   threshold: 2.0,
@@ -43,31 +44,34 @@ const state = {
 
 // Each strategy carries its natural BUY direction and style. A long buyer buys
 // dips (mean-reversion, "down") and breakouts (momentum, "up").
+// Each strategy: live detector + an events(bars, regime) builder (one find*
+// call yields both the track record and the MAE). z() is the trigger-extremity
+// metric where the move is symmetric (dips); null otherwise.
 const STRATEGIES = [
-  { key: "bounce", label: "Buy the Bounce", style: "dip", dir: "down", hold: HORIZONS.at(-1), horizons: HORIZONS,
+  { key: "bounce", label: "Buy the Bounce", style: "dip", hold: HORIZONS.at(-1),
     detect: (b) => liveBounce(b, { direction: "down", threshold: state.threshold }),
-    signal: (s) => `${fmt(s.move)} day`, sigVal: (s) => s.move,
-    stats: (b) => computeStats(findEvents(b, { direction: "down", threshold: state.threshold, entry: "open", range: state.range }))[2] },
-  { key: "streak", label: "Red Streak", style: "dip", dir: "down", hold: STREAK_HORIZONS.at(-1), horizons: STREAK_HORIZONS,
+    signal: (s) => `${fmt(s.move)} day`, sigVal: (s) => s.move, z: (v) => moveZ(v, 1),
+    events: (b, regime) => findEvents(b, { direction: "down", threshold: state.threshold, entry: "open", range: state.range, regime }) },
+  { key: "streak", label: "Red Streak", style: "dip", hold: STREAK_HORIZONS.at(-1),
     detect: (b) => liveStreak(b, { direction: "down", streak: state.streak }),
-    signal: (s) => `${s.run} red closes`, sigVal: () => null,
-    stats: (b) => computeStats(findStreakEvents(b, { direction: "down", streak: state.streak, entry: "open", range: state.range }))[2] },
-  { key: "multiday", label: "Multi-Day Drop", style: "dip", dir: "down", hold: MULTIDAY_HORIZONS.at(-1), horizons: MULTIDAY_HORIZONS,
+    signal: (s) => `${s.run} red closes`, sigVal: () => null, z: null,
+    events: (b, regime) => findStreakEvents(b, { direction: "down", streak: state.streak, entry: "open", range: state.range, regime }) },
+  { key: "multiday", label: "Multi-Day Drop", style: "dip", hold: MULTIDAY_HORIZONS.at(-1),
     detect: (b) => liveMultiDay(b, { direction: "down", ...MD_MOVE }),
-    signal: (s) => `${fmt(s.move)} / ${MD_MOVE.window}d`, sigVal: (s) => s.move,
-    stats: (b) => computeStats(findMultiDayEvents(b, { direction: "down", threshold: MD_MOVE.threshold, window: MD_MOVE.window, entry: "open", range: state.range }))[2] },
-  { key: "breakout", label: "Breakout High", style: "breakout", dir: "up", hold: BREAKOUT_HORIZONS.at(-1), horizons: BREAKOUT_HORIZONS,
+    signal: (s) => `${fmt(s.move)} / ${MD_MOVE.window}d`, sigVal: (s) => s.move, z: (v) => moveZ(v, MD_MOVE.window),
+    events: (b, regime) => findMultiDayEvents(b, { direction: "down", threshold: MD_MOVE.threshold, window: MD_MOVE.window, entry: "open", range: state.range, regime }) },
+  { key: "breakout", label: "Breakout High", style: "breakout", hold: BREAKOUT_HORIZONS.at(-1),
     detect: (b) => liveBreakout(b, { direction: "up", lookback: BREAK_LOOK }),
-    signal: () => `${BREAK_LOOK}-day high`, sigVal: () => null,
-    stats: (b) => computeStats(findBreakoutEvents(b, { direction: "up", lookback: BREAK_LOOK, entry: "open", range: state.range }))[2] },
-  { key: "cross", label: "MA Cross Up", style: "breakout", dir: "up", hold: CROSS_HORIZONS.at(-1), horizons: CROSS_HORIZONS,
+    signal: () => `${BREAK_LOOK}-day high`, sigVal: () => null, z: null,
+    events: (b, regime) => findBreakoutEvents(b, { direction: "up", lookback: BREAK_LOOK, entry: "open", range: state.range, regime }) },
+  { key: "cross", label: "MA Cross Up", style: "breakout", hold: CROSS_HORIZONS.at(-1),
     detect: (b) => liveCross(b, { direction: "up", period: CROSS_PER }),
-    signal: () => `above ${CROSS_PER}-day`, sigVal: () => null,
-    stats: (b) => computeStats(findCrossEvents(b, { direction: "up", period: CROSS_PER, entry: "open", range: state.range }))[2] },
-  { key: "range", label: "Tight Range", style: "range", dir: null, hold: RANGE_HORIZONS.at(-1), horizons: RANGE_HORIZONS,
+    signal: () => `above ${CROSS_PER}-day`, sigVal: () => null, z: null,
+    events: (b, regime) => findCrossEvents(b, { direction: "up", period: CROSS_PER, entry: "open", range: state.range, regime }) },
+  { key: "range", label: "Tight Range", style: "range", hold: RANGE_HORIZONS.at(-1),
     detect: (b) => liveRange(b, RANGE_SET),
-    signal: (s) => `${s.spread.toFixed(1)}% range`, sigVal: () => null,
-    stats: (b) => computeStats(findRangeEvents(b, { band: RANGE_SET.band, window: RANGE_SET.window, entry: "open", range: state.range }))[2] },
+    signal: (s) => `${s.spread.toFixed(1)}% range`, sigVal: () => null, z: null,
+    events: (b, regime) => findRangeEvents(b, { band: RANGE_SET.band, window: RANGE_SET.window, entry: "open", range: state.range, regime }) },
 ];
 
 const INSTR = []; // [{ticker, name, theme, bars:[[iso,c,c]]}]
@@ -84,14 +88,53 @@ function yearsAgoISO(view, n) {
   return `${Y - n}-${String(M).padStart(2, "0")}-${String(D).padStart(2, "0")}`;
 }
 
+const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN);
+
+// Trailing 200-day SMA array over a view (rolling), for regime conditioning.
+function sma200Array(view) {
+  const n = view.length;
+  const ma = new Array(n).fill(NaN);
+  let run = 0;
+  for (let i = 0; i < n; i++) {
+    run += view[i][2];
+    if (i >= 200) run -= view[i - 200][2];
+    if (i >= 199) ma[i] = run / 200;
+  }
+  return ma;
+}
+
+// Trigger extremity: z-score of the latest w-day move vs its trailing-1y
+// distribution. |z| large = an unusually big move for this instrument.
+function moveZ(view, w) {
+  const n = view.length;
+  if (n < w + 40) return null;
+  const start = Math.max(w, n - 252);
+  const moves = [];
+  for (let i = start; i < n; i++) moves.push(view[i][2] / view[i - w][2] - 1);
+  if (moves.length < 20) return null;
+  const m = mean(moves);
+  let s = 0; for (const x of moves) { const d = x - m; s += d * d; }
+  s = Math.sqrt(s / moves.length);
+  if (!s) return null;
+  const last = view[n - 1][2] / view[n - 1 - w][2] - 1;
+  return (last - m) / s;
+}
+
 // Unconditional next-open-entry baseline over the same window/horizon — the
-// "always invested" drift the signal must beat to be a real edge. Enter the
-// open after bar i, exit H closes later (same convention as entry:"open").
-function baselineStats(view, H) {
+// "always invested" drift the signal must beat to be a real edge. With a
+// regime ('up'/'down') it conditions on the 200-day trend, matching the
+// regime-filtered track record so EDGE stays apples-to-apples.
+function baselineStats(view, H, regime) {
   const minDate = state.range === "5y" ? yearsAgoISO(view, 5) : null;
+  const sma = regime ? sma200Array(view) : null;
   let n = 0, wins = 0, sum = 0;
   for (let i = 0; i < view.length - H - 1; i++) {
     if (minDate && view[i][0] < minDate) continue;
+    if (sma) {
+      const sm = sma[i];
+      if (!Number.isFinite(sm)) continue;
+      if ((regime === "up") !== (view[i][2] >= sm)) continue;
+    }
     const entry = view[i + 1][1]; // next-day open
     if (!(entry > 0)) continue;
     const r = view[i + 1 + H][2] / entry - 1;
@@ -133,6 +176,9 @@ function scanRows() {
     const view = idx === bars.length - 1 ? bars : bars.slice(0, idx + 1);
     const up = trendUp(view);
     if (state.trend === "up" && up === false) continue;
+    // Regime-matched stats: condition the track record on the current trend
+    // (null when off, or when there isn't enough history to know the trend).
+    const regime = state.regime === "match" && up !== null ? (up ? "up" : "down") : null;
 
     for (const strat of STRATEGIES) {
       if (!passesStyle(strat)) continue;
@@ -141,8 +187,10 @@ function scanRows() {
       // "New today": true on the as-of bar but not the one before it.
       if (state.fresh && view.length > 3 && strat.detect(view.slice(0, -1)).triggered) continue;
 
-      const st = strat.stats(view);
-      const base = baselineStats(view, strat.hold);
+      const evs = strat.events(view, regime);
+      const st = computeStats(evs)[2];
+      const maeAvg = evs.length ? mean(evs.map((e) => e.mae)) : NaN;
+      const base = baselineStats(view, strat.hold, regime);
       const edge = Number.isFinite(st.avg) && Number.isFinite(base.avg) ? st.avg - base.avg : NaN;
       const edgeWin = Number.isFinite(st.rate) && Number.isFinite(base.rate) ? st.rate - base.rate : NaN;
       // Rank by per-day edge, shrunk toward zero by sample size.
@@ -152,13 +200,19 @@ function scanRows() {
       rows.push({
         ticker: inst.ticker, name: inst.name, theme: inst.theme, lev: inst.lev,
         strategy: strat.label, signal: strat.signal(sig), sigVal: strat.sigVal(sig),
+        z: strat.z ? strat.z(view) : null,
         trendUp: up, hold: `${strat.hold}d`,
-        edge, edgeWin, avg: st.avg, rate: st.rate, med: st.med, worst: st.worst, n: st.n,
+        edge, edgeWin, med: st.med, worst: st.worst, mae: Number.isFinite(maeAvg) ? maeAvg : null,
+        rate: st.rate, n: st.n,
         score, outcome: Number.isFinite(outcome) ? outcome : null,
         pending: history && !Number.isFinite(outcome),
       });
     }
   }
+  // Confluence: how many setups fired on each instrument (a stronger signal).
+  const byTicker = {};
+  for (const r of rows) byTicker[r.ticker] = (byTicker[r.ticker] || 0) + 1;
+  for (const r of rows) r.confluence = byTicker[r.ticker];
   return rows;
 }
 
@@ -174,7 +228,10 @@ const nameFmt = (cell) => {
   const bolt = d.lev
     ? ` <span class="ps-lev" title="Leveraged / inverse — daily decay & wider spread. A small edge won't survive costs.">⚡</span>`
     : "";
-  return `<span class="ps-name">${d.name}</span> <span class="ps-tkr">${d.ticker}</span>${bolt}`;
+  const conf = d.confluence > 1
+    ? ` <span class="ps-conf" title="${d.confluence} setups firing on this instrument">×${d.confluence}</span>`
+    : "";
+  return `<span class="ps-name">${d.name}</span> <span class="ps-tkr">${d.ticker}</span>${bolt}${conf}`;
 };
 const signalFmt = (cell) => {
   const d = cell.getRow().getData();
@@ -205,6 +262,14 @@ const nFmt = (cell) => {
   if (v == null) return "";
   if (v < 10) { cell.getElement().classList.add("ps-dim"); return `${v} ⚠`; }
   return String(v);
+};
+const zFmt = (cell) => {
+  const v = cell.getValue();
+  const el = cell.getElement();
+  el.classList.remove("ps-hot", "ps-dim");
+  if (v == null || Number.isNaN(v)) { el.classList.add("ps-dim"); return "—"; }
+  if (Math.abs(v) >= 2) el.classList.add("ps-hot"); // unusually extreme move
+  return `${v > 0 ? "+" : ""}${v.toFixed(1)}σ`;
 };
 const trendFmt = (cell) => {
   const up = cell.getRow().getData().trendUp;
@@ -244,18 +309,19 @@ const grid = new Tabulator("#scan-grid", {
   placeholder: "No buy setups for these filters — widen the setup/trend filters or the date.",
   initialSort: [{ column: "score", dir: "desc" }],
   columns: [
-    { title: "INSTRUMENT", field: "name", frozen: true, width: 168, formatter: nameFmt },
-    { title: "THEME", field: "theme", width: 116, cssClass: "ps-theme" },
-    { title: "SETUP", field: "strategy", width: 130 },
-    { title: "SIGNAL", field: "signal", width: 104, formatter: signalFmt },
-    { title: "TREND", field: "trendUp", width: 56, hozAlign: "center", headerSort: false, formatter: trendFmt, headerTooltip: "Above (▲) or below (▼) the 200-day average" },
-    { title: "EDGE", field: "edge", width: 66, hozAlign: R, formatter: edgeFmt, headerTooltip: "Avg forward return minus the instrument's own baseline (drift removed). This is the real edge." },
-    { title: "AVG", field: "avg", width: 60, hozAlign: R, formatter: pct1, headerTooltip: "Average forward return over the hold (gross — includes market drift)" },
-    { title: "WIN%", field: "rate", width: 60, hozAlign: R, formatter: rateFmt, headerTooltip: "Win rate; coloured vs the instrument's baseline win rate" },
-    { title: "MED", field: "med", width: 58, hozAlign: R, formatter: pct1, headerTooltip: "Median forward return" },
-    { title: "WORST", field: "worst", width: 64, hozAlign: R, formatter: pct1, headerTooltip: "Worst single outcome in the track record" },
-    { title: "N", field: "n", width: 50, hozAlign: R, formatter: nFmt, headerTooltip: "Sample size (⚠ under 10 — treat as noise)" },
-    { title: "HOLD", field: "hold", width: 48, hozAlign: R, cssClass: "ps-theme" },
+    { title: "INSTRUMENT", field: "name", frozen: true, width: 178, formatter: nameFmt },
+    { title: "THEME", field: "theme", width: 112, cssClass: "ps-theme" },
+    { title: "SETUP", field: "strategy", width: 128 },
+    { title: "SIGNAL", field: "signal", width: 102, formatter: signalFmt },
+    { title: "Z", field: "z", width: 56, hozAlign: R, formatter: zFmt, headerTooltip: "How extreme the trigger move is vs this instrument's own 1-year history (z-score; ≥2σ highlighted)" },
+    { title: "TREND", field: "trendUp", width: 54, hozAlign: "center", headerSort: false, formatter: trendFmt, headerTooltip: "Above (▲) or below (▼) the 200-day average" },
+    { title: "EDGE", field: "edge", width: 64, hozAlign: R, formatter: edgeFmt, headerTooltip: "Avg forward return minus the instrument's own baseline (drift removed). This is the real edge." },
+    { title: "WIN%", field: "rate", width: 58, hozAlign: R, formatter: rateFmt, headerTooltip: "Win rate; coloured vs the instrument's baseline win rate" },
+    { title: "MED", field: "med", width: 56, hozAlign: R, formatter: pct1, headerTooltip: "Median forward return" },
+    { title: "MAE", field: "mae", width: 60, hozAlign: R, formatter: pct1, headerTooltip: "Avg max drawdown during the hold (how much it typically dips before working — stop context)" },
+    { title: "WORST", field: "worst", width: 62, hozAlign: R, formatter: pct1, headerTooltip: "Worst single outcome in the track record" },
+    { title: "N", field: "n", width: 48, hozAlign: R, formatter: nFmt, headerTooltip: "Sample size (⚠ under 10 — treat as noise)" },
+    { title: "HOLD", field: "hold", width: 46, hozAlign: R, cssClass: "ps-theme" },
     { title: "OUTCOME", field: "outcome", width: 74, hozAlign: R, visible: false, formatter: outcomeFmt },
     { title: "score", field: "score", visible: false },
     { title: "", field: "chart", width: 34, hozAlign: "center", headerSort: false, formatter: chartFmt },
@@ -280,6 +346,8 @@ createOptionsBar("optbar", {
       options: [{ value: "new", label: "New today" }, { value: "active", label: "All active" }] },
     { type: "seg", id: "scan-trend", label: "TREND", value: state.trend,
       options: [{ value: "all", label: "All" }, { value: "up", label: "Uptrend" }] },
+    { type: "seg", id: "scan-stats", label: "STATS", value: state.regime,
+      options: [{ value: "all", label: "All history" }, { value: "match", label: "Same trend" }] },
     { type: "seg", id: "scan-range", label: "TRACK", value: state.range,
       options: [{ value: "5y", label: "5Y" }, { value: "all", label: "All" }] },
     { type: "date", id: "scan-asof", label: "AS OF" },
@@ -288,6 +356,7 @@ createOptionsBar("optbar", {
     if (id === "scan-style") state.style = value;
     else if (id === "scan-fresh") state.fresh = value === "new";
     else if (id === "scan-trend") state.trend = value;
+    else if (id === "scan-stats") state.regime = value;
     else if (id === "scan-range") state.range = value;
     else if (id === "scan-asof") state.asOf = value && value < globalLatest() ? value : null;
     refresh();

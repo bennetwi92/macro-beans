@@ -484,3 +484,33 @@ test("forwardReturn: an invalid (negative) index is NaN", () => {
   const bars = [["d0", 1, 100], ["d1", 1, 105]];
   assert.ok(Number.isNaN(forwardReturn(bars, -1, 1)));
 });
+
+/* ---------- Phase 3: max adverse excursion + regime filter ---------- */
+
+test("findEvents: event carries max adverse excursion (mae) over the hold", () => {
+  // trigger at index 3 (90, -10%); gradual dip to 86 (each step < 5% so it is
+  // not itself a second trigger) before recovering.
+  const closes = [100, 100, 100, 90, 88, 86, 99, 99, 99, 99];
+  const bars = fromCloses(closes);
+  const events = findEvents(bars, { direction: "down", threshold: 5, entry: "close", range: "all" });
+  assert.equal(events.length, 1);
+  // entry 90; path 88/86/99 -> worst drawdown = 86/90 - 1 = -4.4444%
+  approx(events[0].mae, (86 / 90 - 1) * 100, 1e-9);
+});
+
+test("findEvents: mae is 0 when the hold never dips below entry", () => {
+  const closes = [100, 100, 100, 90, 94.5, 99, 99, 99, 99, 99]; // only rises after entry
+  const bars = fromCloses(closes);
+  const events = findEvents(bars, { direction: "down", threshold: 5, entry: "close", range: "all" });
+  approx(events[0].mae, 0, 1e-9);
+});
+
+test("findEvents: regime 'up' keeps only events that fired at/above the 200-day", () => {
+  // 205 flat bars at 100, then a -10% drop -> the drop sits BELOW the ~100 SMA.
+  const closes = new Array(205).fill(100).concat([90, 95, 99, 99]);
+  const bars = fromCloses(closes);
+  const base = { direction: "down", threshold: 5, entry: "close", range: "all" };
+  assert.equal(findEvents(bars, base).length, 1);                       // no filter
+  assert.equal(findEvents(bars, { ...base, regime: "down" }).length, 1); // below 200d -> kept
+  assert.equal(findEvents(bars, { ...base, regime: "up" }).length, 0);   // not above 200d -> dropped
+});

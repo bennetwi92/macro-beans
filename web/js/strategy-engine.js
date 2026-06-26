@@ -7,6 +7,28 @@
 
 export const HORIZONS = [1, 2, 3];
 
+/* ---------- regime filter + max adverse excursion (scanner Phase 3) ----------
+   Both additive — callers that omit opts.regime / ignore event.mae are
+   unaffected (v1 pages keep working).
+   - regimeSkip: with opts.regime set, only count events that fired in that
+     200-day trend regime ('up' = close at/above the 200-day SMA).
+   - maePct: the worst close-based drawdown from entry over the hold window
+     (max adverse excursion), in %. */
+function regimeSkip(sma200, i, regime, close){
+  if(!sma200) return false;
+  const s = sma200[i];
+  if(!Number.isFinite(s)) return true;          // not enough history -> exclude
+  return (regime === "up") !== (close >= s);    // skip on regime mismatch
+}
+function maePct(bars, exitIndexBase, entryPrice, maxH){
+  let mae = 0;
+  for(let h = 1; h <= maxH; h++){
+    const r = bars[exitIndexBase + h][2] / entryPrice - 1;
+    if(r < mae) mae = r;
+  }
+  return mae * 100;
+}
+
 /* findEvents
    bars: [[date_iso, open, close], ...]
    opts: {direction:'down'|'up', threshold:pct (positive number),
@@ -18,6 +40,7 @@ export function findEvents(bars, opts){
   const sign = opts.direction === "down" ? -1 : 1;
   const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
   const needed = opts.entry === "open" ? 4 : 3;
+  const rsma = opts.regime ? simpleMA(bars, 200) : null;
   const events = [];
 
   for(let i = 1; i < bars.length - needed; i++){
@@ -27,6 +50,7 @@ export function findEvents(bars, opts){
     if(sign === -1 && trig > -thr) continue;
     if(sign === +1 && trig < +thr) continue;
     if(minDate && date < minDate) continue;
+    if(regimeSkip(rsma, i, opts.regime, close)) continue;
 
     let entryPrice, exitIndexBase;
     if(opts.entry === "close"){
@@ -43,6 +67,7 @@ export function findEvents(bars, opts){
       d1: ds[0] * 100,
       d2: ds[1] * 100,
       d3: ds[2] * 100,
+      mae: maePct(bars, exitIndexBase, entryPrice, 3),
     });
   }
   return events;
@@ -73,6 +98,7 @@ export function findStreakEvents(bars, opts){
   const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
   const maxH = STREAK_HORIZONS[STREAK_HORIZONS.length - 1];
   const needed = opts.entry === "open" ? maxH + 1 : maxH;
+  const rsma = opts.regime ? simpleMA(bars, 200) : null;
   const events = [];
 
   for(let i = N; i < bars.length - needed; i++){
@@ -86,6 +112,7 @@ export function findStreakEvents(bars, opts){
     }
     if(!run) continue;
     if(minDate && date < minDate) continue;
+    if(regimeSkip(rsma, i, opts.regime, close)) continue;
 
     let entryPrice, exitIndexBase;
     if(opts.entry === "close"){
@@ -102,6 +129,7 @@ export function findStreakEvents(bars, opts){
       d1: ds[0] * 100,
       d2: ds[1] * 100,
       d3: ds[2] * 100,
+      mae: maePct(bars, exitIndexBase, entryPrice, maxH),
     });
   }
   return events;
@@ -129,6 +157,7 @@ export function findMultiDayEvents(bars, opts){
   const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
   const maxH = MULTIDAY_HORIZONS[MULTIDAY_HORIZONS.length - 1];
   const needed = opts.entry === "open" ? maxH + 1 : maxH;
+  const rsma = opts.regime ? simpleMA(bars, 200) : null;
   const events = [];
 
   for(let i = win; i < bars.length - needed; i++){
@@ -136,6 +165,7 @@ export function findMultiDayEvents(bars, opts){
     const move = close / bars[i - win][2] - 1;
     if(down ? move > -thr : move < thr) continue;
     if(minDate && date < minDate) continue;
+    if(regimeSkip(rsma, i, opts.regime, close)) continue;
 
     let entryPrice, exitIndexBase;
     if(opts.entry === "close"){ entryPrice = close; exitIndexBase = i; }
@@ -147,6 +177,7 @@ export function findMultiDayEvents(bars, opts){
       d1: ds[0] * 100,
       d2: ds[1] * 100,
       d3: ds[2] * 100,
+      mae: maePct(bars, exitIndexBase, entryPrice, maxH),
     });
   }
   return events;
@@ -169,6 +200,7 @@ export function findBreakoutEvents(bars, opts){
   const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
   const maxH = BREAKOUT_HORIZONS[BREAKOUT_HORIZONS.length - 1];
   const needed = opts.entry === "open" ? maxH + 1 : maxH;
+  const rsma = opts.regime ? simpleMA(bars, 200) : null;
   const events = [];
 
   for(let i = look; i < bars.length - needed; i++){
@@ -182,6 +214,7 @@ export function findBreakoutEvents(bars, opts){
     const level = up ? hi : lo;
     if(up ? !(close > hi) : !(close < lo)) continue;
     if(minDate && date < minDate) continue;
+    if(regimeSkip(rsma, i, opts.regime, close)) continue;
 
     let entryPrice, exitIndexBase;
     if(opts.entry === "close"){ entryPrice = close; exitIndexBase = i; }
@@ -193,6 +226,7 @@ export function findBreakoutEvents(bars, opts){
       d1: ds[0] * 100,
       d2: ds[1] * 100,
       d3: ds[2] * 100,
+      mae: maePct(bars, exitIndexBase, entryPrice, maxH),
     });
   }
   return events;
@@ -231,6 +265,7 @@ export function findRangeEvents(bars, opts){
   const minDate = opts.range === "5y" ? yearsAgo(bars, 5) : null;
   const maxH = RANGE_HORIZONS[RANGE_HORIZONS.length - 1];
   const needed = opts.entry === "open" ? maxH + 1 : maxH;
+  const rsma = opts.regime ? simpleMA(bars, 200) : null;
   const events = [];
 
   for(let i = win - 1; i < bars.length - needed; i++){
@@ -241,6 +276,7 @@ export function findRangeEvents(bars, opts){
     if(minDate && bars[i][0] < minDate) continue;
 
     const close = bars[i][2];
+    if(regimeSkip(rsma, i, opts.regime, close)) continue;
     let entryPrice, exitIndexBase;
     if(opts.entry === "close"){ entryPrice = close; exitIndexBase = i; }
     else { entryPrice = bars[i + 1][1]; exitIndexBase = i + 1; }
@@ -251,6 +287,7 @@ export function findRangeEvents(bars, opts){
       d1: ds[0] * 100,
       d2: ds[1] * 100,
       d3: ds[2] * 100,
+      mae: maePct(bars, exitIndexBase, entryPrice, maxH),
     });
   }
   return events;
@@ -287,6 +324,7 @@ export function findCrossEvents(bars, opts){
   const maxH = CROSS_HORIZONS[CROSS_HORIZONS.length - 1];
   const needed = opts.entry === "open" ? maxH + 1 : maxH;
   const ma = simpleMA(bars, period);
+  const rsma = opts.regime ? simpleMA(bars, 200) : null;
   const events = [];
 
   for(let i = period; i < bars.length - needed; i++){
@@ -297,6 +335,7 @@ export function findCrossEvents(bars, opts){
                        : (cPrev >= sPrev && cCur < sCur);
     if(!crossed) continue;
     if(minDate && bars[i][0] < minDate) continue;
+    if(regimeSkip(rsma, i, opts.regime, cCur)) continue;
 
     let entryPrice, exitIndexBase;
     if(opts.entry === "close"){ entryPrice = cCur; exitIndexBase = i; }
@@ -308,6 +347,7 @@ export function findCrossEvents(bars, opts){
       d1: ds[0] * 100,
       d2: ds[1] * 100,
       d3: ds[2] * 100,
+      mae: maePct(bars, exitIndexBase, entryPrice, maxH),
     });
   }
   return events;
