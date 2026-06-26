@@ -26,7 +26,7 @@ async function loadAll() {
   const [a, p, t] = await Promise.all([
     db.from("accounts").select("*").order("name"),
     db.from("positions").select("*").order("created_at"),
-    db.from("trades").select("*,positions(instrument,name,account_id,currency,accounts(name))").order("traded_at", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("trades").select("*,positions(instrument,name,ref,account_id,currency,accounts(name))").order("traded_at", { ascending: false }).order("created_at", { ascending: false }),
   ]);
   if (a.error) { root.innerHTML = `<div class="req-msg">Could not load (${esc(a.error.message)})</div>`; return; }
   accounts = a.data || []; positions = p.data || []; trades = t.data || [];
@@ -67,7 +67,7 @@ function displayRow(t) {
     `<tr class="tr-row" data-id="${t.id}">` +
     `<td>${esc(t.traded_at)}</td>` +
     `<td>${esc(acc.name || "")}</td>` +
-    `<td>${esc(pos.instrument || "")}${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
+    `<td>${esc(pos.instrument || "")} <span class="dim-note">#${pos.ref}</span>${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
     `<td class="${t.side === "sell" ? "down" : "up"}">${esc(t.side)}</td>` +
     `<td class="r">${fmtNum(t.quantity)}</td>` +
     `<td class="r">${fmtNum(t.price)} <span class="dim-note">${esc(pos.currency || "")}</span></td>` +
@@ -129,7 +129,7 @@ function populatePos(er, accountId, selectedPosId) {
   const sel = er.querySelector(".te-pos");
   const inAcct = positions.filter((p) => p.account_id === accountId);
   sel.innerHTML =
-    inAcct.map((p) => `<option value="${p.id}"${p.id === selectedPosId ? " selected" : ""}>${esc(p.instrument)}${p.name ? ` · ${esc(p.name)}` : ""}</option>`).join("") +
+    inAcct.map((p) => `<option value="${p.id}"${p.id === selectedPosId ? " selected" : ""}>${esc(p.instrument)} #${p.ref}${p.name ? ` · ${esc(p.name)}` : ""}</option>`).join("") +
     `<option value="__new__">＋ new position…</option>`;
   if (!selectedPosId && !inAcct.length) sel.value = "__new__";
   toggleNew(er);

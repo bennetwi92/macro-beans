@@ -1528,3 +1528,12 @@ surfaces = ["cockpit"]
 web_ticker = "GLT5.L"
 sublabel = "UK gilts (short)"
 group = "Bonds & Credit"
+
+[[instrument]]
+slug = "fwrg"
+name = "FTSE All-World"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "FWRG.L"
+sublabel = "Global all-cap"
+group = "Stock Markets"

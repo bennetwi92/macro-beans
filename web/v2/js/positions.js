@@ -116,7 +116,7 @@ function rowHtml(pos, accGroups) {
   const grpOpts = `<option value="">— none —</option>` + accGroups.map((g) => `<option value="${g.id}"${pos.group_id === g.id ? " selected" : ""}>${esc(g.name)}</option>`).join("");
   return (
     `<tr>` +
-    `<td>${esc(pos.instrument)} <span class="dim-note">${m.cur}</span>${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
+    `<td>${esc(pos.instrument)} <span class="dim-note">#${pos.ref} · ${m.cur}</span>${pos.name ? ` <span class="dim-note">${esc(pos.name)}</span>` : ""}</td>` +
     `<td class="r">${m.open ? fmtNum(m.qty) : `<span class="dim-note">—</span>`}</td>` +
     `<td class="r">${m.open ? fmtGBP(m.avg) : `<span class="dim-note">—</span>`}</td>` +
     markCell +
