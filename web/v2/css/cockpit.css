@@ -362,6 +362,53 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
   .report-body{ padding:20px 18px 70px; }
 }
 
+/* ---------- requests (wishlist tracker) ---------- */
+.req-msg{ padding:40px 16px; text-align:center; color:var(--dim); font-size:13px; }
+
+.auth-card{ max-width:360px; margin:48px auto 0; }
+.auth-h{ font-family:var(--mono); font-weight:600; font-size:14px; letter-spacing:.06em; margin:0 0 6px; }
+.auth-sub{ color:var(--dim); font-size:13px; line-height:1.5; margin:0 0 16px; }
+.auth-err{ background:var(--loss-bg); color:var(--loss); border:1px solid var(--loss); border-radius:3px; padding:6px 9px; font-size:12px; margin-bottom:12px; }
+.auth-row{ display:flex; gap:8px; margin-top:4px; }
+
+.req-in{
+  width:100%; box-sizing:border-box;
+  background:var(--inset); border:1px solid var(--line); border-radius:3px;
+  color:var(--ink); font-family:var(--mono); font-size:14px;
+  padding:8px 10px; margin-bottom:8px;
+}
+.req-in:focus{ outline:none; border-color:var(--cyan); }
+.req-btn{
+  background:var(--cyan); color:var(--bg); border:0; border-radius:3px;
+  font-family:var(--mono); font-size:13px; font-weight:600; padding:8px 14px; cursor:pointer; white-space:nowrap;
+}
+.req-btn.ghost{ background:transparent; color:var(--dim); border:1px solid var(--line); }
+.req-btn.ghost:hover{ color:var(--ink); border-color:var(--line-2); }
+
+.req-add{ display:flex; gap:8px; max-width:640px; margin:6px auto 14px; }
+.req-add .req-in{ margin-bottom:0; }
+
+.req-list{ list-style:none; margin:0 auto; padding:0; max-width:640px; }
+.req-empty{ color:var(--dim); font-size:13px; padding:16px 4px; }
+.req-item{ display:flex; align-items:flex-start; gap:10px; padding:9px 6px; border-bottom:1px solid var(--line); }
+.req-check{
+  flex:0 0 auto; width:18px; height:18px; margin-top:1px;
+  background:transparent; border:1px solid var(--line-2); border-radius:3px;
+  color:var(--win); font-size:12px; line-height:1; cursor:pointer;
+}
+.req-check:hover{ border-color:var(--win); }
+.req-body{ flex:1 1 auto; min-width:0; }
+.req-title{ color:var(--ink); font-size:14px; word-break:break-word; }
+.req-note{ color:var(--dim); font-size:12px; margin-top:2px; word-break:break-word; }
+.req-item.done .req-title{ color:var(--dim); text-decoration:line-through; }
+.req-ic{ flex:0 0 auto; background:transparent; border:0; color:var(--dim); font-family:var(--mono); font-size:13px; cursor:pointer; padding:2px 6px; }
+.req-ic:hover{ color:var(--ink); }
+.req-ic.save{ color:var(--cyan); }
+.req-item.editing .req-body{ display:flex; flex-direction:column; }
+.req-item.editing .req-in{ margin-bottom:6px; }
+
+.req-user{ color:var(--ink); font-size:13px; }
+
 /* ---------- price-sheet grid (Tabulator, compact terminal theme) ---------- */
 #ps-grid, #scan-grid{
   height:calc(100vh - 52px);   /* fill below app bar (26) + options bar (26) */
