@@ -182,13 +182,23 @@ def load_instruments(surface: str | None = None) -> list[Instrument]:
     return [i for i in instruments if i.on(surface)]
 
 
+def surface_tickers(surface: str) -> list[str]:
+    """The yfinance tickers carried on one ``surface`` (e.g. "web"/"research").
+
+    Deduplicated, registry order. Used by ``refresh.py`` to seed/update the
+    DuckDB cache for a whole surface (e.g. every LSE ETF on the web surface).
+    """
+    out: list[str] = []
+    for inst in load_instruments(surface):
+        for sym in inst.symbols():
+            if sym.surface == surface and sym.ticker not in out:
+                out.append(sym.ticker)
+    return out
+
+
 def research_tickers() -> list[str]:
     """The yfinance tickers that make up the research/scanner universe."""
-    return [
-        i.research_ticker
-        for i in load_instruments("research")
-        if i.research_ticker
-    ]
+    return surface_tickers("research")
 
 
 @lru_cache(maxsize=1)
@@ -249,4 +259,5 @@ __all__ = [
     "load_portfolios",
     "load_strategies",
     "research_tickers",
+    "surface_tickers",
 ]

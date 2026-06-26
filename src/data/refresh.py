@@ -22,7 +22,7 @@ import duckdb
 import pandas as pd
 
 from src.data.paths import DB_PATH
-from src.data.registry import research_tickers
+from src.data.registry import surface_tickers
 
 # How many days of overlap to re-fetch on an incremental update, so late
 # corrections to recent bars get picked up.
@@ -195,17 +195,26 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Refresh the DuckDB price cache.")
     ap.add_argument("--full", action="store_true", help="re-fetch full history")
     ap.add_argument(
+        "--surface",
+        choices=["research", "web", "all"],
+        default="research",
+        help="which registry surface to refresh (ignored if --tickers given)",
+    )
+    ap.add_argument(
         "--tickers",
         type=str,
         default=None,
-        help="comma-separated tickers (default: research universe from registry)",
+        help="comma-separated tickers (default: the --surface universe from registry)",
     )
     args = ap.parse_args(argv)
 
     if args.tickers:
         tickers = [t.strip() for t in args.tickers.split(",") if t.strip()]
+    elif args.surface == "all":
+        # union of every surface, dedup preserving order
+        tickers = list(dict.fromkeys(surface_tickers("research") + surface_tickers("web")))
     else:
-        tickers = research_tickers()
+        tickers = surface_tickers(args.surface)
 
     if not tickers:
         print("No tickers to refresh.", file=sys.stderr)
