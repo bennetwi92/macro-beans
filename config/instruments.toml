@@ -1071,3 +1071,460 @@ surfaces = ["cockpit"]
 web_ticker = "3HCL.L"
 sublabel = "Copper"
 group = "Leveraged & Inverse"
+
+
+# ============================================================================
+# Cockpit surface -- curated diverse liquid LSE ETFs (distinct exposures across
+# regions / sectors / factors / income / themes). v2-only; single-stock and
+# duplicate share-class/hedge listings excluded. Screened for liquidity.
+# ============================================================================
+
+[[instrument]]
+slug = "ssac"
+name = "MSCI ACWI"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "SSAC.L"
+sublabel = "Global all-country"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "igwd"
+name = "MSCI World (GBP hedged)"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "IGWD.L"
+sublabel = "Global (GBP-hedged)"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "igus"
+name = "S&P 500 (GBP hedged)"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "IGUS.L"
+sublabel = "US large cap (GBP-hedged)"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "spex"
+name = "S&P 500 Equal Weight"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "SPEX.L"
+sublabel = "US large cap (equal-weight)"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "isp6"
+name = "S&P SmallCap 600"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "ISP6.L"
+sublabel = "US small cap"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "cnky"
+name = "Nikkei 225"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "CNKY.L"
+sublabel = "Japan (Nikkei 225)"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "smea"
+name = "MSCI Europe"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "SMEA.L"
+sublabel = "Europe (broad)"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "ieux"
+name = "MSCI Europe ex-UK"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "IEUX.L"
+sublabel = "Europe ex-UK"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "ceu1"
+name = "MSCI EMU"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "CEU1.L"
+sublabel = "Eurozone"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "xxsc"
+name = "MSCI Europe Small Cap"
+category = "Stock Markets"
+surfaces = ["cockpit"]
+web_ticker = "XXSC.L"
+sublabel = "Europe small cap"
+group = "Stock Markets"
+
+[[instrument]]
+slug = "xdax"
+name = "DAX"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "XDAX.L"
+sublabel = "Germany (DAX)"
+group = "Regions"
+
+[[instrument]]
+slug = "isfr"
+name = "MSCI France"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "ISFR.L"
+sublabel = "France"
+group = "Regions"
+
+[[instrument]]
+slug = "itwn"
+name = "MSCI Taiwan"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "ITWN.L"
+sublabel = "Taiwan"
+group = "Regions"
+
+[[instrument]]
+slug = "ikor"
+name = "MSCI Korea"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "IKOR.L"
+sublabel = "South Korea"
+group = "Regions"
+
+[[instrument]]
+slug = "ibzl"
+name = "MSCI Brazil"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "IBZL.L"
+sublabel = "Brazil"
+group = "Regions"
+
+[[instrument]]
+slug = "csca"
+name = "MSCI Canada"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "CSCA.L"
+sublabel = "Canada"
+group = "Regions"
+
+[[instrument]]
+slug = "saus"
+name = "MSCI Australia"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "SAUS.L"
+sublabel = "Australia"
+group = "Regions"
+
+[[instrument]]
+slug = "iash"
+name = "MSCI China A"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "IASH.L"
+sublabel = "China A-shares"
+group = "Regions"
+
+[[instrument]]
+slug = "ltam"
+name = "MSCI EM Latin America"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "LTAM.L"
+sublabel = "EM Latin America"
+group = "Regions"
+
+[[instrument]]
+slug = "srsa"
+name = "MSCI South Africa"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "SRSA.L"
+sublabel = "South Africa"
+group = "Regions"
+
+[[instrument]]
+slug = "emxg"
+name = "MSCI EM ex-China"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "EMXG.L"
+sublabel = "EM ex-China"
+group = "Regions"
+
+[[instrument]]
+slug = "spol"
+name = "MSCI Poland"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "SPOL.L"
+sublabel = "Poland"
+group = "Regions"
+
+[[instrument]]
+slug = "hidr"
+name = "MSCI Indonesia"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "HIDR.L"
+sublabel = "Indonesia"
+group = "Regions"
+
+[[instrument]]
+slug = "ifff"
+name = "MSCI AC Far East ex-Japan"
+category = "Regions"
+surfaces = ["cockpit"]
+web_ticker = "IFFF.L"
+sublabel = "Asia ex-Japan"
+group = "Regions"
+
+[[instrument]]
+slug = "spog"
+name = "Oil & Gas E&P"
+category = "Sectors"
+surfaces = ["cockpit"]
+web_ticker = "SPOG.L"
+sublabel = "Oil & gas producers"
+group = "Sectors"
+
+[[instrument]]
+slug = "x7pp"
+name = "STOXX Europe 600 Banks"
+category = "Sectors"
+surfaces = ["cockpit"]
+web_ticker = "X7PP.L"
+sublabel = "European banks"
+group = "Sectors"
+
+[[instrument]]
+slug = "iwfm"
+name = "World Momentum"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "IWFM.L"
+sublabel = "Global momentum"
+group = "Factors"
+
+[[instrument]]
+slug = "iwfv"
+name = "World Value"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "IWFV.L"
+sublabel = "Global value"
+group = "Factors"
+
+[[instrument]]
+slug = "iwfq"
+name = "World Quality"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "IWFQ.L"
+sublabel = "Global quality"
+group = "Factors"
+
+[[instrument]]
+slug = "minv"
+name = "World Min Volatility"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "MINV.L"
+sublabel = "Global min-vol"
+group = "Factors"
+
+[[instrument]]
+slug = "iumf"
+name = "USA Momentum"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "IUMF.L"
+sublabel = "US momentum"
+group = "Factors"
+
+[[instrument]]
+slug = "mvus"
+name = "USA Min Volatility"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "MVUS.L"
+sublabel = "US min-vol"
+group = "Factors"
+
+[[instrument]]
+slug = "iuvf"
+name = "USA Value"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "IUVF.L"
+sublabel = "US value"
+group = "Factors"
+
+[[instrument]]
+slug = "iuqf"
+name = "USA Quality"
+category = "Factors"
+surfaces = ["cockpit"]
+web_ticker = "IUQF.L"
+sublabel = "US quality"
+group = "Factors"
+
+[[instrument]]
+slug = "iukd"
+name = "UK Dividend"
+category = "Income"
+surfaces = ["cockpit"]
+web_ticker = "IUKD.L"
+sublabel = "UK dividend"
+group = "Income"
+
+[[instrument]]
+slug = "idvy"
+name = "Euro Dividend"
+category = "Income"
+surfaces = ["cockpit"]
+web_ticker = "IDVY.L"
+sublabel = "Eurozone dividend"
+group = "Income"
+
+[[instrument]]
+slug = "iapd"
+name = "Asia-Pacific Dividend"
+category = "Income"
+surfaces = ["cockpit"]
+web_ticker = "IAPD.L"
+sublabel = "Asia-Pacific dividend"
+group = "Income"
+
+[[instrument]]
+slug = "jegp"
+name = "Global Equity Premium Income"
+category = "Income"
+surfaces = ["cockpit"]
+web_ticker = "JEGP.L"
+sublabel = "Global covered-call income"
+group = "Income"
+
+[[instrument]]
+slug = "ispy"
+name = "Cybersecurity"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "ISPY.L"
+sublabel = "Cybersecurity"
+group = "Themes"
+
+[[instrument]]
+slug = "klwd"
+name = "Cloud Computing"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "KLWD.L"
+sublabel = "Cloud computing"
+group = "Themes"
+
+[[instrument]]
+slug = "ih2o"
+name = "Global Water"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "IH2O.L"
+sublabel = "Water"
+group = "Themes"
+
+[[instrument]]
+slug = "batg"
+name = "Battery Value Chain"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "BATG.L"
+sublabel = "Batteries & storage"
+group = "Themes"
+
+[[instrument]]
+slug = "natp"
+name = "Future of Defence"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "NATP.L"
+sublabel = "Defence"
+group = "Themes"
+
+[[instrument]]
+slug = "urnp"
+name = "Uranium Miners"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "URNP.L"
+sublabel = "Uranium miners"
+group = "Themes"
+
+[[instrument]]
+slug = "infr"
+name = "Global Infrastructure"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "INFR.L"
+sublabel = "Infrastructure"
+group = "Themes"
+
+[[instrument]]
+slug = "spag"
+name = "Agribusiness"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "SPAG.L"
+sublabel = "Agribusiness"
+group = "Themes"
+
+[[instrument]]
+slug = "iprv"
+name = "Listed Private Equity"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "IPRV.L"
+sublabel = "Listed private equity"
+group = "Themes"
+
+[[instrument]]
+slug = "fdn"
+name = "Dow Jones Internet"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "FDN.L"
+sublabel = "US internet"
+group = "Themes"
+
+[[instrument]]
+slug = "arks"
+name = "ARK Innovation"
+category = "Themes"
+surfaces = ["cockpit"]
+web_ticker = "ARKS.L"
+sublabel = "Disruptive innovation"
+group = "Themes"
+
+[[instrument]]
+slug = "glt5"
+name = "UK Gilts 1-5yr"
+category = "Bonds & Credit"
+surfaces = ["cockpit"]
+web_ticker = "GLT5.L"
+sublabel = "UK gilts (short)"
+group = "Bonds & Credit"
