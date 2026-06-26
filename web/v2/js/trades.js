@@ -41,11 +41,12 @@ function render() {
     return;
   }
   root.innerHTML =
-    `<div class="np-wrap">` +
+    `<div class="tr-page">` +
     `<div class="tr-head"><div class="np-h">TRADES <span class="dim-note">${trades.length}</span></div>` +
     `<button id="tr-add" class="req-btn"${editing ? " disabled" : ""}>＋ Add trade</button></div>` +
     `<div class="logwrap"><table class="np-tbl trade-tbl">` +
-    `<thead><tr><th>Date</th><th>Account</th><th>Instrument</th><th>Side</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Fees £</th><th class="r">Value £</th><th>Note</th><th></th></tr></thead>` +
+    `<colgroup><col class="c-date"><col class="c-acct"><col class="c-pos"><col class="c-side"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-act"></colgroup>` +
+    `<thead><tr><th>Date</th><th>Account</th><th>Instrument</th><th>Side</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Fees £</th><th class="r">Value £</th><th></th></tr></thead>` +
     `<tbody id="tr-body">${bodyRows()}</tbody></table></div></div>`;
   wire();
 }
@@ -54,7 +55,7 @@ function bodyRows() {
   let html = "";
   if (editing === "__new__") html += editRow(null);
   for (const t of trades) html += t.id === editing ? editRow(t) : displayRow(t);
-  if (!trades.length && editing !== "__new__") html += `<tr><td colspan="10" class="dim-note">No trades yet — ＋ Add trade.</td></tr>`;
+  if (!trades.length && editing !== "__new__") html += `<tr><td colspan="9" class="dim-note">No trades yet — ＋ Add trade.</td></tr>`;
   return html;
 }
 
@@ -72,7 +73,6 @@ function displayRow(t) {
     `<td class="r">${fmtNum(t.price)} <span class="dim-note">${esc(pos.currency || "")}</span></td>` +
     `<td class="r">${Number(t.fees) ? fmtGBP(t.fees) : "—"}</td>` +
     `<td class="r">${value != null ? fmtGBP(value) : `<span class="dim-note">—</span>`}</td>` +
-    `<td class="tr-note">${esc(t.note || "")}</td>` +
     `<td class="r te-actions"><button class="req-ic" data-edit="${t.id}" title="Edit">✎</button><button class="req-ic" data-del="${t.id}" title="Delete">✕</button></td>` +
     `</tr>`
   );
@@ -86,13 +86,12 @@ function editRow(t) {
     `<tr class="tr-edit" data-id="${id}">` +
     `<td><input class="te-date req-in" type="date" value="${t ? t.traded_at : todayISO()}"></td>` +
     `<td><select class="te-acct req-in">${accounts.map((a) => `<option value="${a.id}"${a.id === accId ? " selected" : ""}>${esc(a.name)}</option>`).join("")}</select></td>` +
-    `<td class="te-poscell"><select class="te-pos req-in"></select><div class="te-new" hidden><input class="te-instr req-in" placeholder="ticker"><select class="te-ccy req-in">${ccyOpts}</select></div></td>` +
+    `<td class="te-poscell"><select class="te-pos req-in"></select><div class="te-new" hidden><input class="te-instr req-in" placeholder="new ticker e.g. FWRG.L"><select class="te-ccy req-in" title="Currency (GBp = pence)">${ccyOpts}</select></div></td>` +
     `<td><select class="te-side req-in"><option value="buy"${t && t.side === "buy" ? " selected" : ""}>buy</option><option value="sell"${t && t.side === "sell" ? " selected" : ""}>sell</option></select></td>` +
     `<td><input class="te-qty req-in" type="number" step="any" min="0" value="${t ? t.quantity : ""}"></td>` +
     `<td><input class="te-price req-in" type="number" step="any" min="0" value="${t ? t.price : ""}"></td>` +
     `<td><input class="te-fees req-in" type="number" step="any" min="0" value="${t ? t.fees : "0"}"></td>` +
     `<td class="r dim-note">—</td>` +
-    `<td><input class="te-note req-in" value="${t ? esc(t.note || "") : ""}"></td>` +
     `<td class="r te-actions"><button class="req-ic save" data-saverow="${id}" title="Save">✓</button><button class="req-ic" data-cancel="1" title="Cancel">✕</button></td>` +
     `</tr>`
   );
@@ -151,7 +150,7 @@ async function saveRow(id, er) {
   const fees = parseFloat(v(".te-fees")) || 0;
   const side = v(".te-side");
   const traded_at = v(".te-date") || todayISO();
-  const note = er.querySelector(".te-note").value.trim() || null;
+  const note = null; // note field removed from the compact form
   if (!(quantity > 0) || !(price >= 0)) return; // need qty + price
 
   const accountId = v(".te-acct");
