@@ -6,6 +6,8 @@ on:
     paths:
       - "web/**"
       - "scripts/site/**"
+      - "src/data/**"
+      - "config/**"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
   schedule:
@@ -36,7 +38,20 @@ jobs:
           python-version: "3.11"
 
       - name: Install build dependencies
-        run: pip install --quiet "yfinance>=0.2.40" "pandas>=2.0"
+        run: pip install --quiet "yfinance>=0.2.40" "pandas>=2.0" "numpy>=1.26" "duckdb>=1.0"
+
+      - name: Restore price cache
+        # The DuckDB price cache (data/market.duckdb) is gitignored and not in
+        # the repo, so without this every run would re-fetch full history and
+        # hammer yfinance. A unique key per run + a prefix restore-key gives a
+        # ROLLING cache: restore the newest prior cache at start, save a fresh
+        # one at the end (the unique key is never a hit, so it always saves).
+        uses: actions/cache@v4
+        with:
+          path: data/market.duckdb
+          key: market-duckdb-${{ github.run_id }}
+          restore-keys: |
+            market-duckdb-
 
       - name: Build instrument data
         run: python scripts/site/build_data.py
@@ -56,6 +71,18 @@ jobs:
         # built fresh in CI and never committed, so this is the only place it
         # can be checked before it reaches readers' browsers.
         run: python scripts/site/validate_data.py
+
+      # --- v2 cockpit: DuckDB-cached price sheet ---
+      - name: Refresh price cache (incremental)
+        # The single yfinance reader. With a restored cache this only pulls the
+        # last few days per ticker; on a cold cache (first run / eviction) it
+        # seeds full history once. Per-ticker fetch errors are skipped, not fatal.
+        run: python -m src.data.refresh --surface web
+
+      - name: Build price sheet
+        # Reads bars from the cache via MarketStore (no network) and writes
+        # web/v2/data/price-sheet.json.
+        run: python scripts/site/build_price_sheet.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
