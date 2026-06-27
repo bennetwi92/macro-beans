@@ -1,0 +1,10 @@
+key,ticker,name,sleeve,weight,pie_pct
+AVWC,AVCG.L,Avantis Global Equity (value/profitability),equity,0.2229,22.3
+AVSG,AVSG.L,Avantis Global Small Cap Value,equity,0.1958,19.6
+EMIM,EMIM.L,iShares Core MSCI EM IMI,equity,0.1489,14.9
+XDEW,XDEW.L,Xtrackers S&P 500 Equal Weight,equity,0.0988,9.9
+IWQU,IWQU.L,iShares Edge MSCI World Quality,equity,0.0873,8.7
+DFND_EU,NAVY.L,"HANetf Future of European Defence (Screened, ex-US)",theme,0.0857,8.6
+URNM,URNP.L,Sprott Uranium Miners (HANetf),theme,0.0849,8.5
+GLIN,INFR.L,iShares Global Infrastructure,real_asset,0.0449,4.5
+SGLN,SGLN.L,iShares Physical Gold ETC,real_asset,0.0307,3.1
