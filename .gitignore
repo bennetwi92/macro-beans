@@ -41,3 +41,6 @@ data/stock_history/
 
 # Node test dependencies (jsdom etc. for the web engine tests)
 node_modules/
+
+# Scanner-strategy price caches — regenerable via scripts/scanner_strategy/fetch_prices.py
+data/scanner_strategy/*.parquet
