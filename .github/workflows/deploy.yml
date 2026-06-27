@@ -8,6 +8,7 @@ on:
       - "scripts/site/**"
       - "src/data/**"
       - "config/**"
+      - "docs/**"          # research notes -> v2 Reports page (build_reports.py)
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
   schedule:
