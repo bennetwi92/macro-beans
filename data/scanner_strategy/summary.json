@@ -1,0 +1,52 @@
+{
+  "config": {
+    "start": "2021-07-01",
+    "end": "2026-06-26",
+    "capital": 1000.0,
+    "edge_min": 0.3,
+    "edge_min_lev": 1.0,
+    "n_min": 15,
+    "require_green_win": true,
+    "uptrend_only": true,
+    "allow_leverage": false,
+    "dip_only": false,
+    "min_score": 0.0,
+    "min_abs_z": 0.0,
+    "max_new_per_day": 99,
+    "max_positions": 6,
+    "risk_pct": 0.015,
+    "stop_mult": 1.4,
+    "stop_min": 0.03,
+    "stop_max": 0.12,
+    "pos_cap": 0.4,
+    "tp_r": 3.0,
+    "min_ticket": 5.0,
+    "spread_plain": 0.0025,
+    "spread_lev": 0.006
+  },
+  "summary": {
+    "start": "2021-07-01",
+    "end": "2026-06-26",
+    "years": 4.99,
+    "final_equity": 1348.22,
+    "total_return_pct": 34.8,
+    "cagr_pct": 6.2,
+    "max_drawdown_pct": -31.7,
+    "n_trades": 629,
+    "win_rate_pct": 51.4,
+    "avg_trade_pct": 0.22,
+    "median_trade_pct": 0.09,
+    "avg_hold_days": 6.6,
+    "best_trade_pct": 16.5,
+    "worst_trade_pct": -13.8,
+    "exit_reasons": {
+      "time": 493,
+      "stop": 122,
+      "take_profit": 14
+    },
+    "pct_leveraged_trades": 0.0,
+    "benchmark_final": 1699.42,
+    "benchmark_return_pct": 69.9,
+    "benchmark_max_drawdown_pct": -25.9
+  }
+}
