@@ -35,6 +35,20 @@ feedback asked for.
 change can be ablated. `scanner_lib.py` imports v1's `_trigger_arrays` etc.
 verbatim, so the two backtests can never disagree on what fires when.
 
+```bash
+# 3. (v3 research) Extend the horizon study to ~3 months and report net-of-cost
+#    expectancy per setup -> data/scanner_strategy_v2/horizon_extended.{csv,png}.
+#    Underpins docs/guides/scanner_trade_strategy_v3.md.
+/usr/local/bin/python3 scripts/scanner_strategy_v2/horizon_extended.py
+```
+
+`horizon_extended.py` reuses the v2 price cache and v1 detectors to measure, per
+setup across holds of 3–63 trading days, the **net return per trade after a
+0.30% round-trip cost** (and its annualised, drift-removed-edge companions). The
+finding: short holds are net-negative, expectancy rises *monotonically* with
+horizon, and the dip setups' true edge grows with the hold — the evidence behind
+the v3 longer-horizon proposal.
+
 ## The headline finding
 
 v1's published return leaned on a close-only stop a real resting order would not
