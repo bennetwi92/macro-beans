@@ -1,0 +1,7 @@
+strategy,trades,win_pct,avg_ret_pct,total_pnl,avg_hold_days
+cross,77,55.8,0.727,99.97,17.2
+bounce,105,54.3,0.385,92.84,2.4
+range,25,60.0,0.701,35.46,8.4
+breakout,73,49.3,-0.287,5.7,7.8
+multiday,3,66.7,0.442,3.43,10.0
+streak,39,48.7,-1.065,-104.89,4.1

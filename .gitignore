@@ -44,3 +44,5 @@ node_modules/
 
 # Scanner-strategy price caches — regenerable via scripts/scanner_strategy/fetch_prices.py
 data/scanner_strategy/*.parquet
+# Scanner-strategy v2 caches — regenerable via scripts/scanner_strategy_v2/fetch_prices.py
+data/scanner_strategy_v2/*.parquet
