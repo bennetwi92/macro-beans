@@ -1,5 +1,14 @@
 ===============================================================
-MACRO BEANS — CLAUDE PROJECT SETUP
+MACRO BEANS — CLAUDE PROJECT SETUP   [SUPERSEDED]
+===============================================================
+
+NOTE (2026-06): This file describes the older, narrower "event-driven
+oil co-pilot" persona and is kept for history only. The current,
+repo-rooted project documents are:
+  docs/reference/macro_beans_claude_project.md   (description + instructions)
+  docs/reference/macro_beans_repo_guide.md        (platform map + direction)
+Use those instead. The content below is retained for reference.
+
 ===============================================================
 
 Copy-paste each section below into the corresponding field when
