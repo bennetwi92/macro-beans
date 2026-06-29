@@ -1,0 +1,5 @@
+trigger,low_vol_mean_fires,high_vol_mean_fires,high/low_ratio,corr_vol_fires
+fix_bounce,20.9,85.8,4.11,0.76
+z_bounce,30.8,31.9,1.04,-0.22
+fix_md8,2.2,13.2,5.93,0.88
+z_md,19.0,19.3,1.01,-0.29

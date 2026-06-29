@@ -1,0 +1,4 @@
+detector,n_fires,n_instruments,instrument_years,fires_per_inst_per_yr,fires_per_yr_universe
+52wk_high>=0.95,2269,91,444.3,5.11,464.7
+12-1_mom>0 & >200MA,2077,91,444.3,4.67,425.4
+drop_z(W10)<=-2,1348,91,444.3,3.03,276.1
