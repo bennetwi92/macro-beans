@@ -376,11 +376,52 @@ def summarise(cfg, equity_df, days, cost_total, rebal_log) -> dict:
     return out
 
 
+def sanitize_spikes(inst, thr: float = 0.25) -> int:
+    """Repair single-bar 'spike-and-revert' glitches in a price series.
+
+    Yahoo occasionally prints a bad close (e.g. SPGP 2517 -> 3317 -> 2380 on one
+    day) that jumps >thr and snaps back the next bar. Split repair (>4x) misses
+    these sub-split spikes; left in, they inflate a concentrated book's apparent
+    volatility and dent its Sharpe. We replace any bar that moves >thr and
+    reverts the opposite way next bar — and whose day-after price returns within
+    15% of the day-before price (confirming a round-trip, not a real move) — with
+    the interpolation of its neighbours, scaling O/H/L by the same factor. Only
+    isolated single-bar glitches are touched; genuine multi-day moves are left.
+    """
+    c = inst.close.copy()
+    o, h, lo = inst.open.copy(), inst.high.copy(), inst.low.copy()
+    n = len(c)
+    fixed = 0
+    for i in range(1, n - 1):
+        if c[i - 1] <= 0 or c[i] <= 0 or c[i + 1] <= 0:
+            continue
+        r_in = c[i] / c[i - 1] - 1.0
+        r_out = c[i + 1] / c[i] - 1.0
+        spike = (r_in > thr and r_out < -thr * 0.6) or (r_in < -thr and r_out > thr * 0.6)
+        if spike and abs(c[i + 1] / c[i - 1] - 1.0) < 0.15:
+            repl = (c[i - 1] + c[i + 1]) / 2.0
+            f = repl / c[i]
+            o[i] *= f
+            h[i] *= f
+            lo[i] *= f
+            c[i] = repl
+            fixed += 1
+    if fixed:
+        inst.close, inst.open, inst.high, inst.low = c, o, h, lo
+    return fixed
+
+
 def load_world():
-    """Load prices, FX, instruments, timeline and per-ticker index maps."""
+    """Load prices, FX, instruments, timeline and per-ticker index maps.
+
+    Prices are split-repaired (in build_instruments) and then de-spiked, so the
+    backtest never trades on or marks against a bad print."""
     prices = pd.read_parquet(PRICES)
     fx_df = pd.read_parquet(FX)
     insts = L.build_instruments(prices)
+    spikes = sum(sanitize_spikes(inst) for inst in insts.values())
+    if spikes:
+        print(f"  de-spiked {spikes} bad bars across the universe")
     timeline = pd.DatetimeIndex(sorted(prices["date"].unique()))
     idx_maps = {tk: {d: i for i, d in enumerate(inst.dates)} for tk, inst in insts.items()}
     return insts, fx_df, timeline, idx_maps
