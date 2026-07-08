@@ -50,9 +50,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/market.duckdb
-          key: market-duckdb-${{ github.run_id }}
+          # The `-v2` prefix bump abandons the old rolling caches on purpose:
+          # they hold bars written by the pre-fix date logic, which slipped every
+          # London (.L) bar back one calendar day during British Summer Time. A
+          # cold cache re-fetches full history once with the corrected dates
+          # (see src/data/refresh.py _calendar_dates); incremental refresh alone
+          # would leave the mis-dated rows in place. Bump again only to force
+          # another clean rebuild.
+          key: market-duckdb-v2-${{ github.run_id }}
           restore-keys: |
-            market-duckdb-
+            market-duckdb-v2-
 
       - name: Build instrument data
         run: python scripts/site/build_data.py
