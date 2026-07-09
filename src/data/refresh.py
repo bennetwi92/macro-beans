@@ -55,6 +55,26 @@ def ensure_schema(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(_SCHEMA_SQL)
 
 
+def _calendar_dates(series: pd.Series) -> pd.Series:
+    """Exchange-local calendar date for each bar (tz-safe, no day slip).
+
+    yfinance indexes daily bars at *local midnight in the exchange timezone*
+    (e.g. ``00:00 Europe/London``). We want that local trading day.
+
+    The naive ``to_datetime(utc=True).tz_localize(None)`` first shifts each
+    timestamp to UTC. During British Summer Time (UTC+1) a London-midnight bar
+    becomes ``23:00`` on the *previous* UTC day, so ``.normalize()`` floored
+    every ``.L`` bar back one calendar date (Mon -> Sun, Fri -> Thu) all summer
+    -- which is why recent trading days went missing from the picker. Dropping
+    the tz *without* converting to UTC keeps the local day. Tz-naive input
+    (e.g. already-normalized cache rows) passes through unchanged.
+    """
+    dt = pd.to_datetime(series)
+    if dt.dt.tz is not None:
+        dt = dt.dt.tz_localize(None)
+    return dt.dt.normalize()
+
+
 def normalize_ohlcv(raw: pd.DataFrame, ticker: str) -> pd.DataFrame:
     """Coerce a yfinance / cached frame into the DuckDB price schema.
 
@@ -78,7 +98,7 @@ def normalize_ohlcv(raw: pd.DataFrame, ticker: str) -> pd.DataFrame:
     out = pd.DataFrame(
         {
             "ticker": ticker,
-            "date": pd.to_datetime(df[date_col], utc=True).dt.tz_localize(None).dt.normalize(),
+            "date": _calendar_dates(df[date_col]),
             "open": pd.to_numeric(df[cols["open"]], errors="coerce"),
             "high": pd.to_numeric(df[cols["high"]], errors="coerce"),
             "low": pd.to_numeric(df[cols["low"]], errors="coerce"),
