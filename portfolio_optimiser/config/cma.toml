@@ -47,6 +47,7 @@ grid_theme         = 0.010   # electrification/grid capex supercycle over dev eq
 nuclear_theme      = 0.010   # nuclear fuel-cycle + utilities premium over dev equity
 japan_valueup      = 0.010   # Japan governance re-rating premium (GBP-hedged, no FX)
 silver_real        = 0.020   # silver long-run real (higher/more industrial than gold)
+water_theme        = 0.010   # water infra/utilities premium over dev equity (structural, defensive, low AI overlap)
 
 # ---- Per-instrument expected ARITHMETIC nominal GBP return -------------------
 # Either give an explicit `mu`, or a `formula` referencing blocks (evaluated by
@@ -108,3 +109,6 @@ formula = "equity_dev + japan_valueup"
 
 [instrument.SLVR]
 formula = "cash + silver_real - 0.005"
+
+[instrument.WATER]
+formula = "equity_dev + water_theme"
