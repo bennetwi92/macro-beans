@@ -156,3 +156,28 @@ optional. All of those are fixed in the revised report. The two genuine
 *investment* decisions the review raises (shrink/replace silver; re-pair the
 AI-capex themes) are now on the table for the account holder to decide, rather than
 buried.
+
+---
+
+## 6. Decisions taken by the account holder (July 2026)
+
+After reading the review, the account holder made the two surfaced investment
+decisions and confirmed the implementation choices. These are now reflected in the
+proposal (rev. 2) and in the one-page [`isa_5y_build_sheet.md`](isa_5y_build_sheet.md):
+
+| Item the review raised | Decision |
+|---|---|
+| Silver as a return-drag (~0.8% compounded / ~28% vol) | **Dropped.** Moved to the bench (available later as pure inflation optionality). |
+| Grid + nuclear both AI-capex-linked (§2.4, §3) | **Addressed by the same swap** — silver replaced with **water (`IH2O.L`)**, a structural, defensive theme whose drivers are orthogonal to AI capex, so the sleeve is no longer one-way-long the AI factor. Grid and nuclear are kept as deliberate AI-power satellites. |
+| Single-manager Avantis concentration (~34%) | **Consciously kept** — the three funds do different jobs, the pot is within the £85k FSCS limit, and the holder accepts the manager concentration. |
+| Lump sum vs phasing (§10) | **Invest in full at once** — the money is transferring in already-invested from Nutmeg. |
+| Glidepath calendar reminders | **Self-managed** — the dated de-risking schedule is written into the build sheet for the holder to diary. |
+
+One consequence for the numbers: swapping silver → water was **not** re-run through
+the Monte-Carlo (market data was offline when the decision was made), so the
+committed `results.json` / `wealth_5y.png` still reflect the silver-in build. Water
+has a higher expected return (~6% vs ~0.8% compounded) and lower volatility (~15% vs
+~28%), so the swap moves the true figures **modestly in the investor's favour**; a
+full refresh runs at the next online model update
+(`portfolio_optimiser/outputs/isa_5y/REFRESH_NOTE.md`). The `targets_recommended.csv`
+Pie weights are already updated (a deterministic 5% row swap).

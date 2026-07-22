@@ -243,6 +243,9 @@ proxy = "GLIN"
 # ---- Rotating thematic sleeve (2026 -- fresher, less-crowded second-order) ----
 # Reviewed and rotated ~annually; sized ~5% each (~20% combined). DFND_EU and
 # URNM above are kept as BENCH ALTERNATES (now consensus, not selected in 2026).
+# SLVR (below) is ALSO benched from the 2026-07 build: the account holder replaced
+# it with WATER after the analyst review (silver's ~0.8% modelled return / ~28%
+# vol made it a return-drag). See report/build_isa_5y.py THEMES.
 
 [[instrument]]
 key = "GRIDN"
@@ -295,6 +298,19 @@ role = "Silver & PGMs -- monetary + industrial (solar/electronics), higher-beta 
 isa_eligible = true
 sipp_eligible = true
 proxy = "SLVR"
+
+[[instrument]]
+key = "WATER"
+ticker = "IH2O.L"            # iShares Global Water UCITS ETF (USD line, LSE)
+name = "iShares Global Water"
+isin = "IE00B1TXK627"          # VERIFY before funding
+ter = 0.0065
+accumulating = false           # Dist share class; USD-quoted (small FX consideration)
+sleeve = "theme"
+role = "Water infrastructure/utilities -- structural, defensive, low AI-capex overlap"
+isa_eligible = true
+sipp_eligible = true
+proxy = "WATER"
 
 # ============================================================================
 # Proxy series for covariance estimation.
@@ -403,3 +419,8 @@ note = "WisdomTree Japan Hedged Equity (since 2006). IJPH is GBP-HEDGED, so we u
 source = "SLV"
 ccy = "USD"
 note = "iShares Silver Trust (since 2006) -- silver price in GBP after FX conversion"
+
+[proxy.WATER]
+source = "CGW"
+ccy = "USD"
+note = "Invesco S&P Global Water (US, since 2007) -- same S&P Global Water index family as IH2O; water utilities + infrastructure beta, GBP after FX conversion"

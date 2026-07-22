@@ -20,11 +20,19 @@ The 2026 rotating sleeve (equal ~5% each) is:
     GRIDN  grid & electrification (picks-and-shovels of AI power demand)
     NUKE   nuclear fuel cycle + utilities (broader than the now-crowded miners)
     JPNV   Japan value-up (governance re-rating; GBP-hedged, no JPY FX)
-    SLVR   silver & PGMs (monetary + industrial; higher-beta than gold)
+    WATER  global water infra/utilities (structural, defensive, low AI overlap)
 
-Defence (DFND_EU) and uranium miners (URNM) remain in the universe as BENCH
-ALTERNATES for future rotations -- they have become consensus and are not
-selected this year.
+Defence (DFND_EU), uranium miners (URNM) and silver (SLVR) remain in the universe
+as BENCH ALTERNATES for future rotations. Silver was dropped from the active
+sleeve after the July-2026 analyst review (its ~0.8% modelled return / ~28% vol
+made it a return-drag) and replaced with WATER, which the review recommended as a
+genuinely orthogonal, non-AI-capex theme.
+
+NOTE: WATER (IH2O.L) is a new line with no entry in the committed return cache, so
+regenerating the outputs below requires a network refresh:
+    python -m portfolio_optimiser.report.build_isa_5y --refresh
+Until that runs online, the committed outputs/isa_5y/ risk artifacts still reflect
+the prior SLVR-in build -- see outputs/isa_5y/REFRESH_NOTE.md.
 
 Method: the CORE is optimised with the same engine as ``build_report``
 (forward-looking CMAs, Ledoit-Wolf shrinkage covariance on proxy-spliced GBP
@@ -77,7 +85,7 @@ HORIZON_YEARS = 5
 CORE = ["AVWC", "AVSG", "XDEW", "IWQU", "UKEQ", "EMVL", "SGLN", "JMFP", "GLIN", "ERNS"]
 # ROTATING sleeve (~20%): four fresher second-order themes, equal-weighted, and
 # reviewed/rotated ~annually.
-THEMES = ["GRIDN", "NUKE", "JPNV", "SLVR"]
+THEMES = ["GRIDN", "NUKE", "JPNV", "WATER"]
 THEME_SLEEVE_FRAC = 0.20
 
 ALL = CORE + THEMES
