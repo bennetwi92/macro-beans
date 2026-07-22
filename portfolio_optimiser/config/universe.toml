@@ -107,6 +107,34 @@ isa_eligible = true
 sipp_eligible = true
 proxy = "MVOL"
 
+# ---- Core value / geography sleeves (2026 refresh) ---------------------------
+
+[[instrument]]
+key = "UKEQ"
+ticker = "CUKX.L"              # iShares Core FTSE 100 (Acc). GBP LSE, no FX fee.
+name = "iShares Core FTSE 100 (UK large-cap)"
+isin = "IE00B53HP851"          # VERIFY before funding
+ter = 0.0007
+accumulating = true
+sleeve = "equity"
+role = "UK -- cheapest developed market, high ROE, GBP (zero FX)"
+isa_eligible = true
+sipp_eligible = true
+proxy = "UKEQ"
+
+[[instrument]]
+key = "EMVL"
+ticker = "AVEM.L"              # Avantis Emerging Markets Equity (value/profitability)
+name = "Avantis Emerging Markets Equity (value/profitability)"
+isin = "IE0002AD6WL2"          # VERIFY before funding
+ter = 0.0036
+accumulating = true
+sleeve = "equity"
+role = "EM value tilt -- de-concentrates the ~42%-tech cap-weight EM index"
+isa_eligible = true
+sipp_eligible = true
+proxy = "EMVL"
+
 # ---- Diversifiers ------------------------------------------------------------
 
 [[instrument]]
@@ -212,6 +240,62 @@ isa_eligible = true
 sipp_eligible = true
 proxy = "GLIN"
 
+# ---- Rotating thematic sleeve (2026 -- fresher, less-crowded second-order) ----
+# Reviewed and rotated ~annually; sized ~5% each (~20% combined). DFND_EU and
+# URNM above are kept as BENCH ALTERNATES (now consensus, not selected in 2026).
+
+[[instrument]]
+key = "GRIDN"
+ticker = "PIKG.L"             # VanEck Electrification & Power Infra (GBP Acc)
+name = "VanEck Electrification & Power Infrastructure"
+isin = "IE000YYVSM16"          # VERIFIED (justETF); launched 2026-06
+ter = 0.0055
+accumulating = true
+sleeve = "theme"
+role = "Grid/electrification -- picks-and-shovels of AI power demand"
+isa_eligible = true
+sipp_eligible = true
+proxy = "GRIDN"
+
+[[instrument]]
+key = "NUKE"
+ticker = "NUCG.L"             # VanEck Uranium & Nuclear Technologies (GBP Acc)
+name = "VanEck Uranium & Nuclear Technologies"
+isin = "IE000M7V94E1"          # VERIFY before funding
+ter = 0.0055
+accumulating = true
+sleeve = "theme"
+role = "Nuclear fuel cycle + utilities + reactors (broader than miners)"
+isa_eligible = true
+sipp_eligible = true
+proxy = "NUKE"
+
+[[instrument]]
+key = "JPNV"
+ticker = "IJPH.L"             # iShares MSCI Japan GBP-Hedged (Acc) -- strips JPY FX
+name = "iShares MSCI Japan GBP-Hedged (governance/value-up)"
+isin = "IE00B42Z5J44"          # VERIFY before funding
+ter = 0.0064
+accumulating = true
+sleeve = "theme"
+role = "Japan value-up -- governance re-rating; GBP-hedged so no JPY FX"
+isa_eligible = true
+sipp_eligible = true
+proxy = "JPNV"
+
+[[instrument]]
+key = "SLVR"
+ticker = "ISLN.L"            # iShares Physical Silver (GBP)
+name = "iShares Physical Silver"
+isin = "IE00B4NCWG09"          # VERIFY before funding
+ter = 0.0020
+accumulating = true            # ETC, no distribution
+sleeve = "theme"
+role = "Silver & PGMs -- monetary + industrial (solar/electronics), higher-beta than gold"
+isa_eligible = true
+sipp_eligible = true
+proxy = "SLVR"
+
 # ============================================================================
 # Proxy series for covariance estimation.
 # ----------------------------------------------------------------------------
@@ -289,3 +373,33 @@ note = "Global X Uranium (since 2010) -- uranium-miner beta"
 source = "IGF"
 ccy = "USD"
 note = "iShares Global Infrastructure (US line, since 2007)"
+
+[proxy.UKEQ]
+source = "ISF.L"
+ccy = "GBP"
+note = "iShares Core FTSE 100 (Dist, GBP, since 2009) -- same index as CUKX, exact analogue"
+
+[proxy.EMVL]
+source = "EEM"
+ccy = "USD"
+note = "iShares MSCI EM (since 2003) -- EM-equity beta; AVEM adds the value/profitability tilt"
+
+[proxy.GRIDN]
+source = "GRID"
+ccy = "USD"
+note = "First Trust NASDAQ Clean Edge Smart Grid (since 2009) -- grid/electrification beta"
+
+[proxy.NUKE]
+source = "NLR"
+ccy = "USD"
+note = "VanEck Uranium+Nuclear (US, since 2007) -- near-exact analogue of the NUCG index (miners + utilities + reactors)"
+
+[proxy.JPNV]
+source = "DXJ"
+ccy = "GBP"
+note = "WisdomTree Japan Hedged Equity (since 2006). IJPH is GBP-HEDGED, so we use the yen-hedged USD proxy WITHOUT FX conversion (both strip the currency), matching the JMFP treatment."
+
+[proxy.SLVR]
+source = "SLV"
+ccy = "USD"
+note = "iShares Silver Trust (since 2006) -- silver price in GBP after FX conversion"

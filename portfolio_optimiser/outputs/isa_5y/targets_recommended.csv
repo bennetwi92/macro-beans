@@ -1,0 +1,14 @@
+key,ticker,name,sleeve,bucket,weight,pie_pct,ter
+AVWC,AVCG.L,Avantis Global Equity (value/profitability),equity,core,0.1258,12.6,0.0022
+AVSG,AVSG.L,Avantis Global Small Cap Value,equity,core,0.1085,10.8,0.0039
+EMVL,AVEM.L,Avantis Emerging Markets Equity (value/profitability),equity,core,0.1039,10.4,0.0036
+GLIN,INFR.L,iShares Global Infrastructure,real_asset,core,0.0959,9.6,0.0065
+JMFP,JMFP.L,JPM Managed Futures (GBP-hedged),diversifier,core,0.0932,9.3,0.0057
+UKEQ,CUKX.L,iShares Core FTSE 100 (UK large-cap),equity,core,0.0926,9.3,0.0007
+SGLN,SGLN.L,iShares Physical Gold ETC,real_asset,core,0.0677,6.8,0.0012
+XDEW,XDEW.L,Xtrackers S&P 500 Equal Weight,equity,core,0.0583,5.8,0.0015
+IWQU,IWQU.L,iShares Edge MSCI World Quality,equity,core,0.0541,5.4,0.0025
+GRIDN,PIKG.L,VanEck Electrification & Power Infrastructure,theme,rotating,0.05,5.0,0.0055
+NUKE,NUCG.L,VanEck Uranium & Nuclear Technologies,theme,rotating,0.05,5.0,0.0055
+JPNV,IJPH.L,iShares MSCI Japan GBP-Hedged (governance/value-up),theme,rotating,0.05,5.0,0.0064
+SLVR,ISLN.L,iShares Physical Silver,theme,rotating,0.05,5.0,0.002
