@@ -27,6 +27,30 @@ the benchmark, via proxy ACWI); VHVG IE00BK5BQV03 0.12% Acc; DPGT IE000S67ID55 0
 (launched 2025-11, viable alt to AVSG); DFNG IE000YYE6WK5 0.55% Acc (the US-tech-heavy
 defence line we deliberately avoid).
 
+## 2026 refresh additions (core value/geography + rotating themes)
+
+*Checked 2026-07 via Yahoo (GBP LSE line resolves with monthly history) and web
+factsheets. **ISINs marked ⚠ still need confirming on the issuer factsheet /
+justETF before funding.** Each is spliced onto the noted long-history proxy for
+covariance (`config/universe.toml` `[proxy.*]`).*
+
+| Key | Fund | GBP ticker | ISIN | TER | Class | Proxy (history) | Note |
+|-----|------|-----------|------|-----|-------|-----------------|------|
+| UKEQ | iShares Core FTSE 100 | CUKX.L | IE00B53HP851 ⚠ | 0.07% | Acc | ISF.L (2009) | UK = cheapest DM; GBP, no FX. Value alt: IUKD.L. |
+| EMVL | Avantis Emerging Markets Equity | AVEM.L | IE0002AD6WL2 ⚠ | 0.36% | Acc | EEM (2003) | EM **value** — replaces cap-weight EMIM (now ~42% tech). Young (2025). |
+| GRIDN | VanEck Electrification & Power Infra | PIKG.L | IE000YYVSM16 | 0.55% | Acc | GRID (2009) | Confirmed (justETF); launched 2026-06. Alt: Xtrackers Smart Grid **WIRE.L**. |
+| NUKE | VanEck Uranium & Nuclear Technologies | NUCG.L | IE000M7V94E1 ⚠ | 0.55% | Acc | NLR (2007) | Miners + utilities + reactors (broader than URNP miners). |
+| JPNV | iShares MSCI Japan GBP-Hedged | IJPH.L | IE00B42Z5J44 ⚠ | 0.64% | Acc | DXJ (2006, no FX) | GBP-hedged → no JPY FX. Governance/value-up proxy. |
+| SLVR | iShares Physical Silver | ISLN.L | IE00B4NCWG09 ⚠ | 0.20% | ETC | SLV (2006) | Silver & PGMs. Alt: Global X Silver Miners **SILV.L** (higher beta). |
+
+Bench alternates kept in the universe but **not selected in 2026** (now consensus):
+European defence NAVY.L, uranium miners URNP.L. Future-rotation watchlist: copper
+miners COPM.L/MINE.L, water IH2O.L, agriculture/fertiliser, LatAm/Brazil, Korea value-up.
+
+All six are UCITS and commission-free on Trading 212's ISA per the T212 instrument
+pages; JPNV/EMVL FX is avoided (GBP-hedged / the .L line is GBP) — but **confirm each is
+searchable in your ISA and reconcile the ⚠ ISINs before building the Pie.**
+
 ## Trading 212 SIPP eligibility (as of 2026-06)
 
 - **Operator fee — GONE (confirmed).** T212 took its own FCA SIPP authorisation in

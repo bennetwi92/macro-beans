@@ -40,6 +40,13 @@ mf_premium         = 0.010   # managed-futures expected over cash (ex rebal bonu
 infra_premium      = 0.005   # listed infrastructure over dev equity-risk-free mix
 defence_theme      = 0.005   # thematic premium (speculative) over dev equity
 uranium_theme      = 0.010   # thematic premium (speculative, high vol) over dev equity
+# ---- 2026 refresh: value/geography + rotating second-order themes ----
+uk_value_premium   = 0.015   # UK = cheapest developed market (Fidelity/Schroders), high ROE
+em_value_premium   = 0.010   # value/profitability tilt on top of EM (Avantis AVEM)
+grid_theme         = 0.010   # electrification/grid capex supercycle over dev equity
+nuclear_theme      = 0.010   # nuclear fuel-cycle + utilities premium over dev equity
+japan_valueup      = 0.010   # Japan governance re-rating premium (GBP-hedged, no FX)
+silver_real        = 0.020   # silver long-run real (higher/more industrial than gold)
 
 # ---- Per-instrument expected ARITHMETIC nominal GBP return -------------------
 # Either give an explicit `mu`, or a `formula` referencing blocks (evaluated by
@@ -82,3 +89,22 @@ formula = "equity_dev + uranium_theme"
 
 [instrument.GLIN]
 formula = "equity_dev + infra_premium - 0.010"
+
+# ---- 2026 refresh building blocks ----
+[instrument.UKEQ]
+formula = "equity_dev + uk_value_premium"
+
+[instrument.EMVL]
+formula = "equity_dev + em_premium + em_value_premium"
+
+[instrument.GRIDN]
+formula = "equity_dev + grid_theme"
+
+[instrument.NUKE]
+formula = "equity_dev + nuclear_theme"
+
+[instrument.JPNV]
+formula = "equity_dev + japan_valueup"
+
+[instrument.SLVR]
+formula = "cash + silver_real - 0.005"
