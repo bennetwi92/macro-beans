@@ -16,9 +16,11 @@
 #   sleeve         logical sleeve for reporting / sleeve-level caps
 #   role           one-line description of why it is here
 #   isa_eligible   may be held in the ISA (Portfolio A)
-#   sipp_eligible  may be held in the Trading 212 SIPP (Portfolio B).
-#                  ETCs (e.g. SGLN) and some liquid-alts need checking -- see
-#                  the "VERIFY" notes; fall back to `*_fallback` if excluded.
+#   sipp_eligible  may be held in the SIPP (Portfolio B). As of 2026-07 the SIPP
+#                  is with INTERACTIVE INVESTOR, whose whole-of-market permitted
+#                  list covers UCITS ETFs, investment trusts, funds and
+#                  physically-backed ETCs, so the Trading 212 exclusions that
+#                  originally qualified these flags no longer bind.
 #   proxy          longer-history series for covariance estimation when the
 #                  fund itself is young (see [proxy.*] tables below).
 #
@@ -147,10 +149,17 @@ accumulating = true
 sleeve = "diversifier"
 role = "Trend/CTA -- crisis alpha + rebalancing-bonus engine"
 isa_eligible = true
-sipp_eligible = true           # UNCONFIRMED inside T212 SIPP -- it IS a UCITS ETF
-                               # (clears the ETN exclusion) but the derivatives-based
-                               # strategy may hit the "risk appetite" catch-all.
-                               # Confirm with T212; fallback = broad-commodity ETF.
+sipp_eligible = false          # ** FUND LIQUIDATED ** J.P. Morgan closed its
+                               # Managed Futures UCITS ETF in November 2020 and
+                               # JMFP.L has no price data after 2020-12. It is
+                               # NOT investable and must not be recommended.
+                               # Retained here only so the ISA config still
+                               # loads; the SIPP universe excludes it. There is
+                               # currently no liquid, long-history LSE-listed
+                               # trend/CTA UCITS line to replace it: the nearest
+                               # (DBMG.L, iMGP DBi, listed 2025-04) has ~15
+                               # months of history and quote data too erratic to
+                               # model. See docs/portfolio/ for the write-up.
 proxy = "JMFP"
 
 [[instrument]]
@@ -163,10 +172,9 @@ accumulating = true            # ETC, no distribution
 sleeve = "real_asset"
 role = "Risk-off hedge / inflation-regime hedge"
 isa_eligible = true
-sipp_eligible = true           # LIKELY: T212 excludes ETNs (not ETCs) by name and
-                               # SGLN is tradable on-platform; physically-backed gold
-                               # ETCs are broadly SIPP-permissible. Not explicitly
-                               # documented -- confirm. Fallback = gold-miners equity ETF.
+sipp_eligible = true           # OK on ii: physically-backed gold ETCs are
+                               # SIPP-permissible and ii lists SGLN. Fallback if
+                               # ever excluded = gold-miners equity ETF.
 proxy = "SGLN"
 
 # ---- Ballast (short-duration, ISA liquidity floor) ---------------------------
@@ -346,9 +354,9 @@ ccy = "USD"
 note = "iShares MSCI EM -- EM-equity beta (IMI adds small caps)"
 
 [proxy.IWQU]
-source = "QUAL"
+source = "SPHQ"
 ccy = "USD"
-note = "iShares MSCI USA Quality Factor -- quality-factor beta (US, since 2013)"
+note = "Invesco S&P 500 Quality (since 2005-12) -- quality-factor beta. Replaces QUAL (2013-07), which began too late to cover the 2008 crisis and was the binding constraint on how far back the whole panel could reach."
 
 [proxy.MVOL]
 source = "ACWV"
@@ -391,9 +399,9 @@ ccy = "USD"
 note = "iShares Global Infrastructure (US line, since 2007)"
 
 [proxy.UKEQ]
-source = "ISF.L"
-ccy = "GBP"
-note = "iShares Core FTSE 100 (Dist, GBP, since 2009) -- same index as CUKX, exact analogue"
+source = "EWU"
+ccy = "USD"
+note = "iShares MSCI United Kingdom (US line, since 1996) -- UK equity total return, converted back to GBP so the series is the GBP experience of a UK investor. Replaces ISF.L, whose Yahoo history only starts in 2009 and so excluded the 2008 crisis."
 
 [proxy.EMVL]
 source = "EEM"

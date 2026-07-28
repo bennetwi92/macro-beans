@@ -28,12 +28,27 @@ def _synthetic_inputs(keys, seed=0):
 
 def test_config_loads(cfg):
     assert cfg.isa.liquidity_floor_gbp == 10000
-    assert cfg.sipp.value_gbp == 20000
     assert cfg.isa.cvar_limit == 0.20
     # every universe key must have a CMA and a proxy
     for k in set(cfg.isa.universe) | set(cfg.sipp.universe):
         assert k in cfg.universe.instruments
         assert cfg.universe.instruments[k].proxy in cfg.universe.proxies
+
+
+def test_sipp_contribution_mandate_loads(cfg):
+    """The SIPP is a contribution stream to 2049, not a single-year lump."""
+    c = cfg.sipp.contributions
+    assert c["horizon_years"] == 23
+    assert c["target_year"] == 2049
+    assert c["opening_balance_gbp"] == 0
+    assert c["monthly_gbp"] > 0
+    # de-risking must start inside the horizon and finish by the target date
+    assert 0 < c["derisk_start_years_before"] <= c["horizon_years"]
+    assert 0.0 <= c["terminal_defensive_frac"] < 1.0
+    # Interactive Investor execution limits must be present for the £ ladder
+    e = cfg.sipp.execution
+    assert e["min_instruction_gbp"] == 25
+    assert e["max_instructions"] == 25
 
 
 def test_sipp_weights_valid(cfg):

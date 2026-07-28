@@ -80,6 +80,10 @@ class PortfolioConstraints:
     cvar_alpha: float | None = None
     cvar_limit: float | None = None
     fixed_fee_gbp: float = 0.0
+    # SIPP-only: the contribution stream, glidepath schedule and platform
+    # execution limits. Left empty for the ISA, which is a single seed pot.
+    contributions: dict = field(default_factory=dict)
+    execution: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -168,6 +172,8 @@ def load_constraints() -> tuple[PortfolioConstraints, PortfolioConstraints, Sett
         sleeve_caps={k: float(v) for k, v in sipp_raw.get("sleeve_caps", {}).items()},
         sleeve_floors={k: float(v) for k, v in sipp_raw.get("sleeve_floors", {}).items()},
         fixed_fee_gbp=float(sipp_raw.get("fixed_fee_gbp", 0.0)),
+        contributions=dict(sipp_raw.get("contributions", {})),
+        execution=dict(sipp_raw.get("execution", {})),
     )
 
     isa_raw = raw["isa"]

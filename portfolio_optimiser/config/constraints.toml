@@ -2,14 +2,20 @@
 # Portfolio constraints and investor parameters
 # ============================================================================
 #
-# The three investor-supplied parameters (confirmed 2026-06):
-#   * ISA 1-year withdrawal need (liquidity floor)  : ~GBP 10,000
-#   * SIPP funding for 2026/27 tax year             : ~GBP 20,000
-#   * ISA tail limit (max drawdown / 95% CVaR)      : ~20%
+# The investor-supplied parameters:
+#   * ISA 1-year withdrawal need (liquidity floor)  : ~GBP 10,000   (2026-06)
+#   * ISA tail limit (max drawdown / 95% CVaR)      : ~20%          (2026-06)
+#   * SIPP: 23-year accumulation to age 57 in 2049  : see [sipp]    (2026-07)
 #
-# NOTE (2026-06): Trading 212 SIPP no longer carries the Gaudi operator fee.
-# `fixed_fee_gbp` is therefore 0, but the knob is retained so the drag can be
-# re-introduced if the fee schedule ever changes.
+# NOTE (2026-07): the SIPP mandate changed materially. It is no longer a single
+# GBP 20k tax-year lump in a Trading 212 SIPP; it is a ~23-year monthly
+# CONTRIBUTION STREAM into an Interactive Investor SIPP. The two differ in kind,
+# not degree -- under a stream the money's effective duration is roughly half the
+# calendar horizon, so the risk budget and the glidepath both change. The
+# lifecycle machinery lives in optimiser/lifecycle.py and the driver is
+# report/build_sipp_23y.py.
+#
+# The ISA block below is UNCHANGED and still describes the Trading 212 ISA.
 # ============================================================================
 
 [data]
@@ -27,26 +33,95 @@ shrinkage = "ledoit_wolf"    # covariance estimator
 
 # ---------------------------------------------------------------------------
 # Portfolio B -- SIPP. Objective: maximise expected GEOMETRIC growth.
+#
+# Mandate (2026-07): Interactive Investor SIPP, opened with a nil balance and
+# funded by a monthly contribution stream from contractor income (umbrella
+# salary sacrifice, employer NI passed back). Horizon runs to the normal minimum
+# pension age of 57 in 2049. The account holder's stated risk posture is the
+# maximum available -- a -40% year is treated as a buying opportunity -- so no
+# tail constraint is imposed here. The binding discipline is the geometric
+# (Kelly) objective itself, which penalises variance through the -sigma^2/2 term.
 # ---------------------------------------------------------------------------
 [sipp]
-value_gbp = 20000            # this tax year's funding (investor-supplied)
-fixed_fee_gbp = 0            # no operator fee on T212 SIPP (2026)
+value_gbp = 18000            # nominal reference = one year of contributions
 objective = "max_geometric"
-# Per-holding band (long-only, fully invested).
+# Per-holding band (long-only, fully invested). Raised from the 0.30 that suited
+# the tail-constrained ISA: on a pure growth mandate that cap binds for no
+# economic reason. 0.35 still forces genuine diversification.
 weight_min = 0.0             # 0 = may be excluded; min_holding cleans up dust
-weight_max = 0.30
-# Universe is the sipp_eligible instruments by default; restrict here if wanted.
-universe = ["AVWC", "AVSG", "EMIM", "XDEW", "IWQU", "JMFP", "SGLN", "GLIN"]
-# Optional sleeve caps (sum of weights in a sleeve <= cap).
+weight_max = 0.35
+
+# Interactive Investor charges a FLAT monthly platform fee, not a percentage.
+# The drag therefore starts high on a nil-balance pot and decays toward zero as
+# it compounds -- the opposite profile to the ISA's percentage-fee platform.
+# The driver models this explicitly rather than assuming a constant drag.
+platform_fee_monthly_gbp = 5.99   # ii Core plan (portfolios up to GBP 100k)
+platform_fee_monthly_gbp_above_100k = 14.99   # ii Plus plan, no investment limit
+
+# Universe: sipp_eligible, LSE-listed, GBP trading lines. Widened from the
+# previous 8 keys to give the optimiser the full factor and geography menu.
+# EMIM is deliberately EXCLUDED in favour of EMVL: same asset class and sleeve,
+# but EMVL carries the value/profitability tilt, so on these CMAs it dominates
+# EMIM outright and holding both would be a coin-flip the optimiser resolves
+# arbitrarily. EMIM remains in universe.toml as a cheaper passive substitute.
+#
+# JMFP (managed futures) is EXCLUDED: J.P. Morgan liquidated that ETF in
+# November 2020, so it is not investable. No liquid, long-history LSE-listed
+# trend fund exists to replace it, so the "does an uncorrelated sleeve raise
+# compound growth?" question is tested with gold (SGLN) instead, which is live,
+# liquid and has decades of history.
+universe = ["AVWC", "AVSG", "XDEW", "IWQU", "UKEQ", "EMVL", "JPNV",
+            "SGLN", "GLIN"]
+
+# Sleeve caps (sum of weights in a sleeve <= cap). Loosened vs the ISA so the
+# geometric objective can size the uncorrelated sleeve on its own merits.
 [sipp.sleeve_caps]
-diversifier = 0.15
-real_asset = 0.15
-# Sleeve floors encode the design intent that a pure max-return objective skips:
-# keep a managed-futures rebalancing-bonus engine and a real-asset hedge. Set to
-# 0 to let the optimiser decide freely.
+diversifier = 0.20
+real_asset = 0.20
+theme = 0.15
+
+# Sleeve FLOORS are set to zero for the primary run. The account holder asked to
+# be shown whatever the optimisation concludes, so the diversifier and real-asset
+# sleeves must earn their weight rather than be handed one. The driver also runs
+# a floored variant for comparison and the report states which way it fell.
+#
+# Note the economics: under a geometric objective a low-return but genuinely
+# uncorrelated sleeve can still RAISE compound growth, because cutting portfolio
+# variance lifts the -sigma^2/2 term by more than the return give-up costs. If
+# trend or gold survives here it is a growth argument, not a safety blanket.
 [sipp.sleeve_floors]
-diversifier = 0.05   # JMFP -- rebalancing-bonus engine
-real_asset = 0.08    # SGLN gold + INFR infrastructure
+diversifier = 0.0
+real_asset = 0.0
+
+# ---------------------------------------------------------------------------
+# SIPP contribution stream (drives report/build_sipp_23y.py).
+# ---------------------------------------------------------------------------
+[sipp.contributions]
+monthly_gbp = 1500           # ~GBP 80/day gross into the pension x ~225 days / 12
+annual_gbp = 18000           # ~GBP 40/day net cost, grossed up at the additional
+                             # rate plus the employer-NI passback from the umbrella
+billable_days = 225          # contractor working year assumption
+opening_balance_gbp = 0      # new SIPP, no transfers in
+horizon_years = 23           # to age 57 in 2049 (born 1992; NMPA 57 from Apr 2028)
+target_year = 2049
+escalation_annual = 0.0      # contribution uplift per year; 0 = flat in nominal terms
+
+# Glidepath: stay fully aggressive while contributions dominate the pot, then
+# de-risk into the access date. Expressed in years BEFORE target_year so the
+# whole schedule re-points in one edit if the NMPA moves again.
+derisk_start_years_before = 8
+derisk_years = 8
+terminal_defensive_frac = 0.30   # defensive share reached at target_year
+
+# Interactive Investor "regular investing" execution limits (verified 2026-07).
+# Free, but instruction amounts are FIXED GBP -- there is no percentage split --
+# so target weights must be translated into a GBP ladder.
+[sipp.execution]
+platform = "interactive_investor"
+min_instruction_gbp = 25     # ii minimum per regular-investment line
+max_instructions = 25        # ii maximum lines per account
+collection_day = 12          # ii invests on the 12th of each month
+partial_fill_by_order = true # short of cash, ii fills in the order lines were added
 
 # ---------------------------------------------------------------------------
 # Portfolio A -- ISA. Objective: risk-adjusted geometric growth subject to

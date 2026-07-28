@@ -1,0 +1,6 @@
+order,key,ticker,name,sleeve,weight,pct,monthly_gbp,ter,accumulating,clears_ii_minimum
+1,AVSG,AVSG.L,Avantis Global Small Cap Value,equity,0.2921,29.2,437,0.0039,True,True
+2,EMVL,AVEM.L,Avantis Emerging Markets Equity (value/profitability),equity,0.2739,27.4,411,0.0036,True,True
+3,XDEW,XDEW.L,Xtrackers S&P 500 Equal Weight,equity,0.1777,17.8,267,0.0015,True,True
+4,AVWC,AVCG.L,Avantis Global Equity (value/profitability),equity,0.1597,16.0,240,0.0022,True,True
+5,UKEQ,CUKX.L,iShares Core FTSE 100 (UK large-cap),equity,0.0965,9.7,145,0.0007,True,True

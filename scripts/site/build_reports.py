@@ -32,12 +32,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import BuildTally, write_json  # noqa: E402
 
 # Top-level docs/ subdirs to leave out of the public library.
-EXCLUDE_DIRS = {"web_v2"}
+# Directories under docs/ that must never reach the public site.
+#   web_v2  -- internal build/design notes for the cockpit itself
+#   private -- notes containing personal financial detail (contribution amounts,
+#              day rates, account balances). The published companion notes carry
+#              the same analysis expressed in percentages.
+EXCLUDE_DIRS = {"web_v2", "private"}
 
 # Nicer category names than a plain title-case of the directory.
 CATEGORY_NAMES = {
     "event_studies": "Event Studies",
     "mean_reversion": "Mean Reversion",
+    "portfolio": "Portfolio",
     "reference": "Reference",
     "vix_options": "VIX Options",
 }

@@ -31,12 +31,41 @@ CACHE = OUTPUTS / "returns_monthly.csv"
 FX_TICKER = "GBPUSD=X"  # USD per GBP
 
 
+def _session():
+    """A yfinance-compatible session that survives a TLS-terminating proxy.
+
+    yfinance ships curl_cffi impersonating Chrome. Behind an MITM proxy that
+    handshake gets reset, so we fall back to the Safari fingerprint, which
+    negotiates cleanly. Returns None when curl_cffi is unavailable, in which case
+    yfinance uses its own default.
+    """
+    try:
+        from curl_cffi import requests as cr
+    except ImportError:
+        return None
+    ca = Path("/root/.ccr/ca-bundle.crt")
+    for impersonate in ("safari", "chrome"):
+        try:
+            return cr.Session(
+                impersonate=impersonate,
+                **({"verify": str(ca)} if ca.exists() else {}),
+            )
+        except Exception:
+            continue
+    return None
+
+
 def _download(tickers: list[str], start: str) -> pd.DataFrame:
     """Adjusted-close (total-return) prices via yfinance. Lazy import."""
     import yfinance as yf
 
+    kwargs = {}
+    session = _session()
+    if session is not None:
+        kwargs["session"] = session
     data = yf.download(
-        tickers, start=start, progress=False, auto_adjust=True, group_by="column"
+        tickers, start=start, progress=False, auto_adjust=True, group_by="column",
+        **kwargs,
     )
     if isinstance(data.columns, pd.MultiIndex):
         close = data["Close"]
@@ -80,42 +109,49 @@ def build_returns(
     keys: list[str] | None = None,
     use_cache: bool = True,
     refresh: bool = False,
+    cache_path: Path | None = None,
 ) -> pd.DataFrame:
     """Month-end GBP total returns, one column per instrument key (spliced).
 
     Falls back to the cache, then errors with guidance if data is unreachable.
+
+    ``cache_path`` overrides the shared cache. Pass a private path when fetching
+    over a different history window, so a longer-history mandate cannot silently
+    change the covariance inputs of an already-published one.
     """
     keys = keys or universe.keys()
+    cache = cache_path or CACHE
 
-    if use_cache and not refresh and CACHE.exists():
-        cached = pd.read_csv(CACHE, index_col=0, parse_dates=True)
+    if use_cache and not refresh and cache.exists():
+        cached = pd.read_csv(cache, index_col=0, parse_dates=True)
         if set(keys).issubset(cached.columns):
             return cached[keys].dropna(how="all")
 
     try:
         returns = _fetch_and_splice(universe, settings, keys)
     except Exception as exc:  # network/data failure
-        if CACHE.exists():
-            cached = pd.read_csv(CACHE, index_col=0, parse_dates=True)
-            have = [k for k in keys if k in cached.columns]
-            if have:
-                return cached[have].dropna(how="all")
+        for fallback in (cache, CACHE):
+            if fallback.exists():
+                cached = pd.read_csv(fallback, index_col=0, parse_dates=True)
+                have = [k for k in keys if k in cached.columns]
+                if have:
+                    return cached[have].dropna(how="all")
         raise RuntimeError(
             "Could not fetch market data and no usable cache exists.\n"
             f"Underlying error: {exc}\n"
             "Supply a month-end total-return CSV at "
-            f"{CACHE} (date index, one column per instrument key) and re-run."
+            f"{cache} (date index, one column per instrument key) and re-run."
         ) from exc
 
-    OUTPUTS.mkdir(exist_ok=True)
+    cache.parent.mkdir(parents=True, exist_ok=True)
     # Merge into any existing cache so partial fetches accumulate.
-    if CACHE.exists():
-        prev = pd.read_csv(CACHE, index_col=0, parse_dates=True)
+    if cache.exists():
+        prev = pd.read_csv(cache, index_col=0, parse_dates=True)
         merged = prev.combine_first(returns)
         merged.update(returns)
-        merged.to_csv(CACHE)
+        merged.to_csv(cache)
     else:
-        returns.to_csv(CACHE)
+        returns.to_csv(cache)
     return returns
 
 

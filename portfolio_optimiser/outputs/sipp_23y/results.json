@@ -1,0 +1,424 @@
+{
+  "meta": {
+    "mandate": "Interactive Investor SIPP, monthly contributions, access at 57 in 2049",
+    "horizon_years": 23,
+    "target_year": 2049,
+    "monthly_contribution_gbp": 1500.0,
+    "annual_contribution_gbp": 18000.0,
+    "opening_balance_gbp": 0.0,
+    "history_start": "2008-04",
+    "history_end": "2026-07",
+    "history_months": 220,
+    "glidepath_history_start": "2009-05",
+    "glidepath_history_months": 207,
+    "includes_gfc_crash": true,
+    "mc_paths": 20000,
+    "resample_draws": 250,
+    "random_seed": 20260623,
+    "block_mean_months": 12,
+    "min_holding": 0.05,
+    "blended_ter": 0.00281,
+    "ensemble_methods": [
+      "michaud_resampled",
+      "michaud_black_litterman"
+    ],
+    "platform_fee_monthly_gbp": 5.99,
+    "recentred": "Bootstrap panel shifted so each column's mean equals its CMA expected return; higher moments left untouched."
+  },
+  "recommended": {
+    "label": "Ensemble growth portfolio",
+    "exp_geometric": 0.0777,
+    "exp_arithmetic": 0.0891,
+    "volatility": 0.1511,
+    "n_holdings": 5,
+    "sleeves": {
+      "equity": 1.0
+    },
+    "weights": [
+      {
+        "order": 1,
+        "key": "AVSG",
+        "ticker": "AVSG.L",
+        "name": "Avantis Global Small Cap Value",
+        "sleeve": "equity",
+        "weight": 0.2921,
+        "pct": 29.2,
+        "monthly_gbp": 437,
+        "ter": 0.0039,
+        "accumulating": true,
+        "clears_ii_minimum": true
+      },
+      {
+        "order": 2,
+        "key": "EMVL",
+        "ticker": "AVEM.L",
+        "name": "Avantis Emerging Markets Equity (value/profitability)",
+        "sleeve": "equity",
+        "weight": 0.2739,
+        "pct": 27.4,
+        "monthly_gbp": 411,
+        "ter": 0.0036,
+        "accumulating": true,
+        "clears_ii_minimum": true
+      },
+      {
+        "order": 3,
+        "key": "XDEW",
+        "ticker": "XDEW.L",
+        "name": "Xtrackers S&P 500 Equal Weight",
+        "sleeve": "equity",
+        "weight": 0.1777,
+        "pct": 17.8,
+        "monthly_gbp": 267,
+        "ter": 0.0015,
+        "accumulating": true,
+        "clears_ii_minimum": true
+      },
+      {
+        "order": 4,
+        "key": "AVWC",
+        "ticker": "AVCG.L",
+        "name": "Avantis Global Equity (value/profitability)",
+        "sleeve": "equity",
+        "weight": 0.1597,
+        "pct": 16.0,
+        "monthly_gbp": 240,
+        "ter": 0.0022,
+        "accumulating": true,
+        "clears_ii_minimum": true
+      },
+      {
+        "order": 5,
+        "key": "UKEQ",
+        "ticker": "CUKX.L",
+        "name": "iShares Core FTSE 100 (UK large-cap)",
+        "sleeve": "equity",
+        "weight": 0.0965,
+        "pct": 9.7,
+        "monthly_gbp": 145,
+        "ter": 0.0007,
+        "accumulating": true,
+        "clears_ii_minimum": true
+      }
+    ],
+    "risk_contributions": {
+      "AVSG": 0.3266,
+      "EMVL": 0.2801,
+      "XDEW": 0.1821,
+      "AVWC": 0.1381,
+      "UKEQ": 0.0732
+    }
+  },
+  "outcomes": {
+    "bootstrap": {
+      "total_contributed": 414000,
+      "median_gbp": 1157822,
+      "p5_gbp": 645337,
+      "p25_gbp": 910550,
+      "p75_gbp": 1486088,
+      "p95_gbp": 2158317,
+      "median_multiple": 2.8,
+      "p5_multiple": 1.56,
+      "prob_below_contributions": 0.0016,
+      "money_weighted_return": 0.0809,
+      "worst_drawdown_median": -0.3666,
+      "worst_drawdown_p5": -0.4987
+    },
+    "normal_model": {
+      "total_contributed": 414000,
+      "median_gbp": 1214976,
+      "p5_gbp": 596692,
+      "p25_gbp": 899907,
+      "p75_gbp": 1651799,
+      "p95_gbp": 2606286,
+      "median_multiple": 2.93,
+      "p5_multiple": 1.44,
+      "prob_below_contributions": 0.0056,
+      "money_weighted_return": 0.0845,
+      "worst_drawdown_median": -0.3222,
+      "worst_drawdown_p5": -0.4884
+    },
+    "passive_tracker": {
+      "total_contributed": 414000,
+      "median_gbp": 887590,
+      "p5_gbp": 531893,
+      "p25_gbp": 720601,
+      "p75_gbp": 1095803,
+      "p95_gbp": 1502094,
+      "median_multiple": 2.14,
+      "p5_multiple": 1.28,
+      "prob_below_contributions": 0.0077,
+      "money_weighted_return": 0.0612,
+      "worst_drawdown_median": -0.3698,
+      "worst_drawdown_p5": -0.4949
+    },
+    "prob_beat_tracker": 0.986,
+    "normal_vs_bootstrap_p5_gap_pct": -0.0754
+  },
+  "glidepath": {
+    "derisk_start_year": 15.0,
+    "derisk_years": 8,
+    "terminal_defensive_frac": 0.3,
+    "defensive_mix": {
+      "IGLS": 1.0
+    },
+    "static": {
+      "total_contributed": 414000,
+      "median_gbp": 1186562,
+      "p5_gbp": 672402,
+      "p25_gbp": 933233,
+      "p75_gbp": 1530821,
+      "p95_gbp": 2256494,
+      "median_multiple": 2.87,
+      "p5_multiple": 1.62,
+      "prob_below_contributions": 0.0006,
+      "money_weighted_return": 0.0827,
+      "worst_drawdown_median": -0.2954,
+      "worst_drawdown_p5": -0.4238
+    },
+    "glidepath": {
+      "total_contributed": 414000,
+      "median_gbp": 1140140,
+      "p5_gbp": 683322,
+      "p25_gbp": 917886,
+      "p75_gbp": 1440977,
+      "p95_gbp": 2067781,
+      "median_multiple": 2.75,
+      "p5_multiple": 1.65,
+      "prob_below_contributions": 0.0003,
+      "money_weighted_return": 0.0798,
+      "worst_drawdown_median": -0.286,
+      "worst_drawdown_p5": -0.4093
+    },
+    "median_cost_pct": -0.0391,
+    "p5_benefit_pct": 0.0162
+  },
+  "stability": {
+    "max_weight_move_raw_engine": 0.35,
+    "max_weight_move_resampled_engine": 0.098,
+    "most_sensitive_block": "value_premium",
+    "geo_spread_worst_block": 0.0195
+  },
+  "no_premia_check": {
+    "exp_geometric": 0.0599,
+    "exp_arithmetic": 0.0713,
+    "volatility": 0.1511,
+    "mu_by_holding": {
+      "AVSG": 0.0661,
+      "EMVL": 0.0814,
+      "XDEW": 0.0685,
+      "AVWC": 0.0678,
+      "UKEQ": 0.0693
+    },
+    "bootstrap": {
+      "total_contributed": 414000,
+      "median_gbp": 896167,
+      "p5_gbp": 510666,
+      "p25_gbp": 709868,
+      "p75_gbp": 1140162,
+      "p95_gbp": 1637973,
+      "median_multiple": 2.16,
+      "p5_multiple": 1.23,
+      "prob_below_contributions": 0.0115,
+      "money_weighted_return": 0.062,
+      "worst_drawdown_median": -0.3758,
+      "worst_drawdown_p5": -0.5236
+    },
+    "prob_beat_tracker": 0.548
+  },
+  "sequence_risk": [
+    {
+      "shock_year": 1,
+      "shock_return": -0.4,
+      "median_gbp": 1116022.3132,
+      "vs_baseline_pct": -0.0361,
+      "p5_gbp": 625845.6581
+    },
+    {
+      "shock_year": 3,
+      "shock_return": -0.4,
+      "median_gbp": 1040545.4119,
+      "vs_baseline_pct": -0.1013,
+      "p5_gbp": 591044.6331
+    },
+    {
+      "shock_year": 5,
+      "shock_return": -0.4,
+      "median_gbp": 976817.4341,
+      "vs_baseline_pct": -0.1563,
+      "p5_gbp": 560219.452
+    },
+    {
+      "shock_year": 10,
+      "shock_return": -0.4,
+      "median_gbp": 854861.3926,
+      "vs_baseline_pct": -0.2617,
+      "p5_gbp": 498709.2769
+    },
+    {
+      "shock_year": 15,
+      "shock_return": -0.4,
+      "median_gbp": 772612.1179,
+      "vs_baseline_pct": -0.3327,
+      "p5_gbp": 449766.5358
+    },
+    {
+      "shock_year": 20,
+      "shock_return": -0.4,
+      "median_gbp": 715711.0282,
+      "vs_baseline_pct": -0.3818,
+      "p5_gbp": 407777.6679
+    },
+    {
+      "shock_year": 23,
+      "shock_return": -0.4,
+      "median_gbp": 690453.09,
+      "vs_baseline_pct": -0.4037,
+      "p5_gbp": 385522.3045
+    }
+  ],
+  "method_comparison": {
+    "max_geometric_raw": {
+      "exp_geometric": 0.0819,
+      "exp_arithmetic": 0.0935,
+      "volatility": 0.1526
+    },
+    "black_litterman_raw": {
+      "exp_geometric": 0.0748,
+      "exp_arithmetic": 0.0877,
+      "volatility": 0.1605
+    },
+    "michaud_resampled": {
+      "exp_geometric": 0.0753,
+      "exp_arithmetic": 0.0841,
+      "volatility": 0.1332
+    },
+    "michaud_black_litterman": {
+      "exp_geometric": 0.0742,
+      "exp_arithmetic": 0.0854,
+      "volatility": 0.1498
+    },
+    "ensemble": {
+      "exp_geometric": 0.0748,
+      "exp_arithmetic": 0.0847,
+      "volatility": 0.1411
+    },
+    "hrp": {
+      "exp_geometric": 0.0661,
+      "exp_arithmetic": 0.0729,
+      "volatility": 0.1163
+    },
+    "erc": {
+      "exp_geometric": 0.0656,
+      "exp_arithmetic": 0.0721,
+      "volatility": 0.1137
+    },
+    "floored": {
+      "exp_geometric": 0.0729,
+      "exp_arithmetic": 0.0811,
+      "volatility": 0.1284
+    }
+  },
+  "instruments": {
+    "AVWC": {
+      "ticker": "AVCG.L",
+      "name": "Avantis Global Equity (value/profitability)",
+      "sleeve": "equity",
+      "role": "Value/profitability-tilted global equity core",
+      "ter": 0.0022,
+      "accumulating": true,
+      "mu_arith": 0.0928,
+      "vol": 0.1226
+    },
+    "AVSG": {
+      "ticker": "AVSG.L",
+      "name": "Avantis Global Small Cap Value",
+      "sleeve": "equity",
+      "role": "Size x value x profitability -- top expected factor premium",
+      "ter": 0.0039,
+      "accumulating": true,
+      "mu_arith": 0.0961,
+      "vol": 0.1679
+    },
+    "XDEW": {
+      "ticker": "XDEW.L",
+      "name": "Xtrackers S&P 500 Equal Weight",
+      "sleeve": "equity",
+      "role": "De-concentrated US -- mega-cap-tech concentration removed",
+      "ter": 0.0015,
+      "accumulating": true,
+      "mu_arith": 0.0735,
+      "vol": 0.1628
+    },
+    "IWQU": {
+      "ticker": "IWQU.L",
+      "name": "iShares Edge MSCI World Quality",
+      "sleeve": "equity",
+      "role": "Durable compounders -- smooths the value sleeve",
+      "ter": 0.0025,
+      "accumulating": true,
+      "mu_arith": 0.0725,
+      "vol": 0.1347
+    },
+    "UKEQ": {
+      "ticker": "CUKX.L",
+      "name": "iShares Core FTSE 100 (UK large-cap)",
+      "sleeve": "equity",
+      "role": "UK -- cheapest developed market, high ROE, GBP (zero FX)",
+      "ter": 0.0007,
+      "accumulating": true,
+      "mu_arith": 0.0843,
+      "vol": 0.1248
+    },
+    "EMVL": {
+      "ticker": "AVEM.L",
+      "name": "Avantis Emerging Markets Equity (value/profitability)",
+      "sleeve": "equity",
+      "role": "EM value tilt -- de-concentrates the ~42%-tech cap-weight EM index",
+      "ter": 0.0036,
+      "accumulating": true,
+      "mu_arith": 0.0914,
+      "vol": 0.162
+    },
+    "JPNV": {
+      "ticker": "IJPH.L",
+      "name": "iShares MSCI Japan GBP-Hedged (governance/value-up)",
+      "sleeve": "theme",
+      "role": "Japan value-up -- governance re-rating; GBP-hedged so no JPY FX",
+      "ter": 0.0064,
+      "accumulating": true,
+      "mu_arith": 0.0736,
+      "vol": 0.1574
+    },
+    "SGLN": {
+      "ticker": "SGLN.L",
+      "name": "iShares Physical Gold ETC",
+      "sleeve": "real_asset",
+      "role": "Risk-off hedge / inflation-regime hedge",
+      "ter": 0.0012,
+      "accumulating": true,
+      "mu_arith": 0.0388,
+      "vol": 0.1875
+    },
+    "GLIN": {
+      "ticker": "INFR.L",
+      "name": "iShares Global Infrastructure",
+      "sleeve": "real_asset",
+      "role": "Real-asset, inflation-resilient cashflows",
+      "ter": 0.0065,
+      "accumulating": false,
+      "mu_arith": 0.0585,
+      "vol": 0.1974
+    },
+    "IGLS": {
+      "ticker": "IGLS.L",
+      "name": "iShares UK Gilts 0-5yr",
+      "sleeve": "ballast",
+      "role": "Low-volatility sell-without-pain bucket",
+      "ter": 0.0007,
+      "accumulating": false,
+      "mu_arith": 0.0393,
+      "vol": 0.0214
+    }
+  }
+}

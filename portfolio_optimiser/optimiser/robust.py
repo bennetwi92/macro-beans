@@ -1,6 +1,6 @@
-"""Estimation-error-robust cross-checks: resampling, Black-Litterman, HRP.
+"""Estimation-error-robust cross-checks: resampling, Black-Litterman, HRP, ERC.
 
-Single-point mean-variance is fragile. We compare three robust angles:
+Single-point mean-variance is fragile. We compare several robust angles:
 
   * Michaud resampling -- perturb the inputs by their estimation noise, re-optimise
     many times, average the weights. Smooths out corner solutions.
@@ -9,6 +9,15 @@ Single-point mean-variance is fragile. We compare three robust angles:
     pulls the answer toward.
   * Hierarchical Risk Parity -- a returns-free, risk-only allocation. A sanity
     check that does not trust the expected returns at all.
+  * Equal Risk Contribution -- the classic risk-parity formulation, also
+    returns-free, equalising each holding's share of portfolio variance.
+
+``ensemble_weights`` then blends whichever of these a mandate wants to trust.
+Note the split in what they answer: the first two maximise growth given a view on
+returns; the last two only spread risk. On a growth mandate the return-blind pair
+belongs as a diagnostic rather than an ingredient, because over a universe
+containing low-volatility assets they will load up on them regardless of how
+little they are expected to earn.
 
 The report tabulates where the methods agree and disagree.
 """
@@ -105,6 +114,75 @@ def black_litterman(
         pd.Series(post_mu, index=keys, name="bl_posterior"),
         pd.Series(pi, index=keys, name="bl_equilibrium"),
     )
+
+
+def erc_weights(cov: pd.DataFrame, keys: list[str]) -> pd.Series:
+    """Equal Risk Contribution (Maillard-Roncalli-Teiletche) weights.
+
+    Each holding contributes the same share of portfolio variance:
+    w_i * (Sigma w)_i is equalised across i. Like HRP this ignores expected
+    returns entirely, so it answers "how do I avoid concentrating risk?" rather
+    than "how do I compound fastest?" -- a cross-check on the return-driven
+    optimisers, not a substitute for them.
+
+    Solved in log space, which makes the problem convex and keeps weights
+    strictly positive without an explicit non-negativity constraint.
+    """
+    from scipy.optimize import minimize
+
+    sigma = cov.loc[keys, keys].values
+    n = len(keys)
+
+    def objective(y: np.ndarray) -> float:
+        w = np.exp(y)
+        w = w / w.sum()
+        mrc = sigma @ w                      # marginal risk contribution
+        rc = w * mrc                         # total risk contribution
+        return float(np.sum((rc - rc.mean()) ** 2)) * 1e4
+
+    res = minimize(
+        objective, np.zeros(n), method="Nelder-Mead",
+        options={"maxiter": 20000, "xatol": 1e-10, "fatol": 1e-14},
+    )
+    w = np.exp(res.x)
+    w = w / w.sum()
+    return pd.Series(w, index=keys, name="erc")
+
+
+def risk_contributions(weights: pd.Series, cov: pd.DataFrame) -> pd.Series:
+    """Fraction of portfolio variance attributable to each holding."""
+    keys = list(weights.index)
+    w = weights.values
+    sigma = cov.loc[keys, keys].values
+    rc = w * (sigma @ w)
+    return pd.Series(rc / rc.sum(), index=keys, name="risk_contribution")
+
+
+def ensemble_weights(
+    methods: dict[str, pd.Series], weights_by_method: dict[str, float] | None = None
+) -> pd.Series:
+    """Average several methods' allocations into one.
+
+    No single estimator is reliably best out of sample: mean-variance is
+    sensitive to the expected returns, Black-Litterman to the prior, HRP and ERC
+    to the covariance alone. Averaging cancels a good deal of the
+    estimator-specific error, and the average is always feasible when the inputs
+    are, because the long-only fully-invested set is convex.
+
+    ``weights_by_method`` defaults to equal weighting.
+    """
+    if not methods:
+        raise ValueError("ensemble_weights requires at least one method.")
+    frame = pd.DataFrame(methods).fillna(0.0)
+    if weights_by_method is None:
+        blend = frame.mean(axis=1)
+    else:
+        missing = set(frame.columns) - set(weights_by_method)
+        if missing:
+            raise ValueError(f"No blend weight supplied for: {sorted(missing)}")
+        w = pd.Series(weights_by_method).loc[frame.columns]
+        blend = frame.mul(w, axis=1).sum(axis=1) / w.sum()
+    return (blend / blend.sum()).rename("ensemble")
 
 
 def hrp_weights(cov: pd.DataFrame, keys: list[str]) -> pd.Series:
