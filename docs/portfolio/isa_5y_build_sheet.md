@@ -35,13 +35,13 @@ Create a single Trading 212 Pie, add one slice per row below at the given %, tur
 |---|---|---|---:|
 | 1 | Avantis Global Equity | `AVCG.L` | 12.6 |
 | 2 | Avantis Global Small-Cap Value | `AVSG.L` | 10.8 |
-| 3 | Avantis Emerging Markets Equity (value) | `AVEM.L` | 10.4 |
+| 3 | Avantis Emerging Markets Equity (value) | `AVEG.L` | 10.4 |
 | 4 | iShares Global Infrastructure | `INFR.L` | 9.6 |
 | 5 | JPM Managed Futures (GBP-hedged) | `JMFP.L` | 9.3 |
 | 6 | iShares Core FTSE 100 (UK) | `CUKX.L` | 9.3 |
 | 7 | iShares Physical Gold | `SGLN.L` | 6.8 |
-| 8 | Xtrackers S&P 500 Equal-Weight | `XDEW.L` | 5.8 |
-| 9 | iShares MSCI World Quality | `IWQU.L` | 5.4 |
+| 8 | Xtrackers S&P 500 Equal-Weight | `XDWE.L` | 5.8 |
+| 9 | iShares MSCI World Quality | `IWFQ.L` | 5.4 |
 
 ### Rotating themes — you review these ~yearly (20%, 5% each)
 
@@ -60,8 +60,15 @@ Create a single Trading 212 Pie, add one slice per row below at the given %, tur
 Before committing money, **search each ticker in your Trading 212 ISA** and
 confirm it's there and tradable. A few lines are worth a closer look:
 
-- **Confirm the ISIN** on the issuer factsheet for: `CUKX.L`, `AVEM.L`, `NUCG.L`, `IJPH.L`, `IH2O.L`.
-- **`IH2O.L` (water)** is a **USD-quoted** line (small currency effect on the price you see) — that's fine, but if you'd rather a GBP-quoted water ETF, that's an acceptable swap.
+- **Confirm the ISIN** on the issuer factsheet for: `CUKX.L`, `AVEG.L`, `NUCG.L`, `IJPH.L`, `IH2O.L`.
+- **Tickers corrected 2026-08 — use the ones in the table above.** Three lines in an
+  earlier version of this sheet were the **USD** LSE listing of the right fund, not
+  the sterling one: `AVEM.L`→**`AVEG.L`**, `XDEW.L`→**`XDWE.L`**, `IWQU.L`→**`IWFQ.L`**.
+  Same fund and same ISIN each time — just the sterling trading line, so no FX fee on
+  a GBP account. If you already bought any of the old three, you're in the right fund;
+  it's only costing you the FX conversion, so switch when convenient rather than urgently.
+- **`IH2O.L` (water)** *is* sterling-quoted (GBX) — an earlier note here called it
+  USD-quoted, which was wrong. No swap needed.
 - **`PIKG.L` (grid)** is a **new fund** (launched June 2026) — check the buy/sell spread looks tight before putting the full 5% in.
 - **If any line isn't available**, use a same-job stand-in: `WIRE.L` for grid, a broad UK line like `ISF.L` for the FTSE, and confirm before funding.
 

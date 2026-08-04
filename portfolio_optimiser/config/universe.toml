@@ -8,7 +8,16 @@
 #
 # Each [[instrument]] block:
 #   key            stable internal id used everywhere (config keys, output rows)
-#   ticker         GBP LSE trading line, yfinance form ("XDEW.L")
+#   ticker         the LSE trading line, yfinance form ("XDWE.L")
+#   ccy            REQUIRED. Quote currency of `ticker`: "GBX" (pence sterling),
+#                  "GBP", "USD" or "EUR". A `.L` suffix does NOT imply sterling --
+#                  most of these funds list BOTH a sterling and a USD line on the
+#                  LSE under different tickers (XDWE vs XDEW, IWFQ vs IWQU, MINV vs
+#                  MVOL, AVEG vs AVEM, SSLN vs ISLN, SGLN vs IGLN). Quoting the USD
+#                  line costs an FX fee per trade on a GBP account, and -- until the
+#                  2026-08 fix -- made the covariance model the currency-HEDGED
+#                  return, understating how correlated that holding really is with
+#                  the sterling book. Verify against the exchange, not the ".L".
 #   name           human label
 #   isin           ISIN (verify before relying on it)
 #   ter            ongoing charge, decimal (0.0015 = 0.15%)
@@ -41,6 +50,7 @@ role = "Value/profitability-tilted global equity core"
 isa_eligible = false
 sipp_eligible = true
 proxy = "AVWC"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "AVSG"
@@ -54,10 +64,12 @@ role = "Size x value x profitability -- top expected factor premium"
 isa_eligible = true
 sipp_eligible = true
 proxy = "AVSG"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "XDEW"
-ticker = "XDEW.L"
+ticker = "XDWE.L"             # CORRECTED 2026-08: XDWE = GBX LSE line.
+                              # XDEW.L is the USD line (was quoted here in error).
 name = "Xtrackers S&P 500 Equal Weight"
 isin = "IE00BLNMYC90"
 ter = 0.0015
@@ -67,6 +79,7 @@ role = "De-concentrated US -- mega-cap-tech concentration removed"
 isa_eligible = true
 sipp_eligible = true
 proxy = "XDEW"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "EMIM"
@@ -80,10 +93,12 @@ role = "Emerging markets -- diversification from US/tech"
 isa_eligible = true
 sipp_eligible = true
 proxy = "EMIM"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "IWQU"
-ticker = "IWQU.L"
+ticker = "IWFQ.L"             # CORRECTED 2026-08: IWFQ = GBX LSE line.
+                              # IWQU.L is the USD line (was quoted here in error).
 name = "iShares Edge MSCI World Quality"
 isin = "IE00BP3QZ601"          # VERIFIED (justETF)
 ter = 0.0025
@@ -93,12 +108,14 @@ role = "Durable compounders -- smooths the value sleeve"
 isa_eligible = true
 sipp_eligible = true
 proxy = "IWQU"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "MVOL"
-ticker = "MVOL.L"
+ticker = "MINV.L"              # CORRECTED 2026-08: MINV = GBX LSE line.
+                               # MVOL.L is the USD line (was quoted here in error).
 name = "iShares Edge MSCI World Min Volatility"
-isin = "IE00B8FHGS14"          # VERIFIED: ticker is MVOL (not MINV)
+isin = "IE00B8FHGS14"          # VERIFIED (fund identity)
 ter = 0.0030
 accumulating = true
 sleeve = "equity_defensive"
@@ -106,6 +123,7 @@ role = "Defensive equity factor"
 isa_eligible = true
 sipp_eligible = true
 proxy = "MVOL"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 # ---- Core value / geography sleeves (2026 refresh) ---------------------------
 
@@ -121,10 +139,12 @@ role = "UK -- cheapest developed market, high ROE, GBP (zero FX)"
 isa_eligible = true
 sipp_eligible = true
 proxy = "UKEQ"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "EMVL"
-ticker = "AVEM.L"              # Avantis Emerging Markets Equity (value/profitability)
+ticker = "AVEG.L"              # CORRECTED 2026-08: AVEG = GBP LSE line.
+                               # AVEM.L is the USD line (was quoted here in error).
 name = "Avantis Emerging Markets Equity (value/profitability)"
 isin = "IE0002AD6WL2"          # VERIFY before funding
 ter = 0.0036
@@ -134,6 +154,7 @@ role = "EM value tilt -- de-concentrates the ~42%-tech cap-weight EM index"
 isa_eligible = true
 sipp_eligible = true
 proxy = "EMVL"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 # ---- Diversifiers ------------------------------------------------------------
 
@@ -152,6 +173,7 @@ sipp_eligible = true           # UNCONFIRMED inside T212 SIPP -- it IS a UCITS E
                                # strategy may hit the "risk appetite" catch-all.
                                # Confirm with T212; fallback = broad-commodity ETF.
 proxy = "JMFP"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "SGLN"
@@ -168,6 +190,7 @@ sipp_eligible = true           # LIKELY: T212 excludes ETNs (not ETCs) by name a
                                # ETCs are broadly SIPP-permissible. Not explicitly
                                # documented -- confirm. Fallback = gold-miners equity ETF.
 proxy = "SGLN"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 # ---- Ballast (short-duration, ISA liquidity floor) ---------------------------
 
@@ -183,6 +206,7 @@ role = "Low-volatility sell-without-pain bucket"
 isa_eligible = true
 sipp_eligible = true
 proxy = "IGLS"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "ERNS"
@@ -196,6 +220,7 @@ role = "Cash-like"
 isa_eligible = true
 sipp_eligible = true
 proxy = "ERNS"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 # ---- Themes (non-AI) / real assets ------------------------------------------
 
@@ -211,6 +236,7 @@ role = "Rearmament theme, low AI/tech overlap"
 isa_eligible = true
 sipp_eligible = true
 proxy = "DFND_EU"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "URNM"
@@ -224,6 +250,7 @@ role = "Nuclear / energy-security theme"
 isa_eligible = true
 sipp_eligible = true
 proxy = "URNM"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "GLIN"
@@ -239,6 +266,7 @@ role = "Real-asset, inflation-resilient cashflows"
 isa_eligible = true
 sipp_eligible = true
 proxy = "GLIN"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 # ---- Rotating thematic sleeve (2026 -- fresher, less-crowded second-order) ----
 # Reviewed and rotated ~annually; sized ~5% each (~20% combined). DFND_EU and
@@ -259,6 +287,7 @@ role = "Grid/electrification -- picks-and-shovels of AI power demand"
 isa_eligible = true
 sipp_eligible = true
 proxy = "GRIDN"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "NUKE"
@@ -272,6 +301,7 @@ role = "Nuclear fuel cycle + utilities + reactors (broader than miners)"
 isa_eligible = true
 sipp_eligible = true
 proxy = "NUKE"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "JPNV"
@@ -285,10 +315,12 @@ role = "Japan value-up -- governance re-rating; GBP-hedged so no JPY FX"
 isa_eligible = true
 sipp_eligible = true
 proxy = "JPNV"
+ccy = "GBP"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "SLVR"
-ticker = "ISLN.L"            # iShares Physical Silver (GBP)
+ticker = "SSLN.L"            # CORRECTED 2026-08: SSLN = GBX line.
+                             # ISLN.L is the USD line (was quoted here in error).
 name = "iShares Physical Silver"
 isin = "IE00B4NCWG09"          # VERIFY before funding
 ter = 0.0020
@@ -298,19 +330,22 @@ role = "Silver & PGMs -- monetary + industrial (solar/electronics), higher-beta 
 isa_eligible = true
 sipp_eligible = true
 proxy = "SLVR"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 [[instrument]]
 key = "WATER"
-ticker = "IH2O.L"            # iShares Global Water UCITS ETF (USD line, LSE)
+ticker = "IH2O.L"            # VERIFIED 2026-08: IH2O is the GBX LSE line.
+                             # (An earlier note here called it USD-quoted -- wrong.)
 name = "iShares Global Water"
 isin = "IE00B1TXK627"          # VERIFY before funding
 ter = 0.0065
-accumulating = false           # Dist share class; USD-quoted (small FX consideration)
+accumulating = false           # Dist share class
 sleeve = "theme"
 role = "Water infrastructure/utilities -- structural, defensive, low AI-capex overlap"
 isa_eligible = true
 sipp_eligible = true
 proxy = "WATER"
+ccy = "GBX"                    # quote ccy of `ticker` (GBX = pence sterling)
 
 # ============================================================================
 # Proxy series for covariance estimation.

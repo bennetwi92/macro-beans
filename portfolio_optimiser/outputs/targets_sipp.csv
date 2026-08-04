@@ -1,9 +1,9 @@
 key,ticker,name,sleeve,weight,pie_pct
-AVWC,AVCG.L,Avantis Global Equity (value/profitability),equity,0.2521,25.2
-AVSG,AVSG.L,Avantis Global Small Cap Value,equity,0.2067,20.7
-EMIM,EMIM.L,iShares Core MSCI EM IMI,equity,0.1519,15.2
-IWQU,IWQU.L,iShares Edge MSCI World Quality,equity,0.1113,11.1
-XDEW,XDEW.L,Xtrackers S&P 500 Equal Weight,equity,0.1102,11.0
-JMFP,JMFP.L,JPM Managed Futures (GBP-hedged),diversifier,0.0617,6.2
-GLIN,INFR.L,iShares Global Infrastructure,real_asset,0.0602,6.0
-SGLN,SGLN.L,iShares Physical Gold ETC,real_asset,0.0459,4.6
+AVWC,AVCG.L,Avantis Global Equity (value/profitability),equity,0.2537,25.4
+AVSG,AVSG.L,Avantis Global Small Cap Value,equity,0.2108,21.1
+EMIM,EMIM.L,iShares Core MSCI EM IMI,equity,0.1594,15.9
+XDEW,XDWE.L,Xtrackers S&P 500 Equal Weight,equity,0.1217,12.2
+IWQU,IWFQ.L,iShares Edge MSCI World Quality,equity,0.0849,8.5
+GLIN,INFR.L,iShares Global Infrastructure,real_asset,0.0674,6.7
+JMFP,JMFP.L,JPM Managed Futures (GBP-hedged),diversifier,0.0613,6.1
+SGLN,SGLN.L,iShares Physical Gold ETC,real_asset,0.0407,4.1

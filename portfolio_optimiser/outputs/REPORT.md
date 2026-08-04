@@ -39,53 +39,53 @@ cross-checks; everything is validated by Monte Carlo and stress-tested against
 ## Portfolio B — SIPP (maximise terminal wealth)
 
 Objective: maximise expected geometric growth. **Recommended (resampled) target:**
-**geometric return 7.38%/yr · arithmetic 7.98% · vol 10.96%.**
+**geometric return 7.41%/yr · arithmetic 8.01% · vol 10.98%.**
 
 | Holding | Ticker | Sleeve | Weight | Pie % |
 |---|---|---|---:|---:|
-| Avantis Global Equity (value/profitability) | AVCG.L | equity | 25.2% | 25.2 |
-| Avantis Global Small Cap Value | AVSG.L | equity | 20.7% | 20.7 |
-| iShares Core MSCI EM IMI | EMIM.L | equity | 15.2% | 15.2 |
-| iShares Edge MSCI World Quality | IWQU.L | equity | 11.1% | 11.1 |
-| Xtrackers S&P 500 Equal Weight | XDEW.L | equity | 11.0% | 11.0 |
-| JPM Managed Futures (GBP-hedged) | JMFP.L | diversifier | 6.2% | 6.2 |
-| iShares Global Infrastructure | INFR.L | real_asset | 6.0% | 6.0 |
-| iShares Physical Gold ETC | SGLN.L | real_asset | 4.6% | 4.6 |
+| Avantis Global Equity (value/profitability) | AVCG.L | equity | 25.4% | 25.4 |
+| Avantis Global Small Cap Value | AVSG.L | equity | 21.1% | 21.1 |
+| iShares Core MSCI EM IMI | EMIM.L | equity | 15.9% | 15.9 |
+| Xtrackers S&P 500 Equal Weight | XDWE.L | equity | 12.2% | 12.2 |
+| iShares Edge MSCI World Quality | IWFQ.L | equity | 8.5% | 8.5 |
+| iShares Global Infrastructure | INFR.L | real_asset | 6.7% | 6.7 |
+| JPM Managed Futures (GBP-hedged) | JMFP.L | diversifier | 6.1% | 6.1 |
+| iShares Physical Gold ETC | SGLN.L | real_asset | 4.1% | 4.1 |
 
 ### Method comparison (weights %, recommended vs reference methods)
 
 |      |   recommended |   convex |   resampled_raw |   black_litterman |   hrp |
 |:-----|--------------:|---------:|----------------:|------------------:|------:|
-| AVWC |          25.2 |       30 |            25.2 |                 0 |   8.5 |
-| AVSG |          20.7 |       30 |            20.7 |                30 |   4   |
-| EMIM |          15.2 |       27 |            15.2 |                30 |   6.1 |
-| XDEW |          11   |        0 |            11   |                27 |   9.2 |
-| IWQU |          11.1 |        0 |            11.1 |                 0 |   8.1 |
-| JMFP |           6.2 |        5 |             6.2 |                 5 |  46.9 |
-| SGLN |           4.6 |        0 |             4.6 |                 0 |  10.3 |
-| GLIN |           6   |        8 |             6   |                 8 |   7   |
+| AVWC |          25.4 |       30 |            25.4 |               0   |   8.5 |
+| AVSG |          21.1 |       30 |            21.1 |              30   |   4.6 |
+| EMIM |          15.9 |       27 |            15.9 |              30   |   6.1 |
+| XDEW |          12.2 |        0 |            12.2 |              26   |  10   |
+| IWQU |           8.5 |        0 |             8.5 |               0   |   8.7 |
+| JMFP |           6.1 |        5 |             6.1 |               5.2 |  44.6 |
+| SGLN |           4.1 |        0 |             4.1 |               0   |   9.8 |
+| GLIN |           6.7 |        8 |             6.7 |               8.8 |   7.7 |
 
 ### Monte Carlo — 25-year terminal wealth (£20,000 seed, no future contributions)
 
 | Metric | Value |
 |---|---|
-| Median terminal multiple | ×6.19 (≈ £123,735) |
-| 5th percentile | ×2.39 |
-| 95th percentile | ×15.77 |
-| Realised geometric return | 7.56%/yr |
-| Tracker (VWRP proxy) median | ×4.83 |
-| **P(beat the global tracker)** | **89%** |
+| Median terminal multiple | ×6.29 (≈ £125,865) |
+| 5th percentile | ×2.44 |
+| 95th percentile | ×15.99 |
+| Realised geometric return | 7.62%/yr |
+| Tracker (VWRP proxy) median | ×4.86 |
+| **P(beat the global tracker)** | **94%** |
 
 ### What the answer hinges on (top CMA sensitivities)
 
 | block              |   shift |   max_weight_move | most_sensitive_holding   |    geo_up |   geo_down |   geo_spread |
 |:-------------------|--------:|------------------:|:-------------------------|----------:|-----------:|-------------:|
-| em_premium         |    0.01 |       0.192867    | EMIM                     | 0.0812147 |  0.0761487 |  0.00506596  |
-| profitability_q    |    0.01 |       0.192866    | EMIM                     | 0.0818487 |  0.0755032 |  0.00634553  |
-| equalweight_tilt   |    0.01 |       0.0762752   | EMIM                     | 0.0785843 |  0.0785032 |  8.10438e-05 |
-| size_value_premium |    0.01 |       0.0299553   | AVSG                     | 0.0815032 |  0.0755147 |  0.00598851  |
-| gold_real          |    0.01 |       1.63294e-06 | GLIN                     | 0.0785032 |  0.0785032 |  2.81773e-08 |
-| cash               |    0.01 |       1.26476e-06 | GLIN                     | 0.0790032 |  0.0780032 |  0.00100002  |
+| em_premium         |    0.01 |       0.207772    | EMIM                     | 0.0812986 |  0.0762007 |  0.00509793  |
+| profitability_q    |    0.01 |       0.202196    | IWQU                     | 0.081888  |  0.0755948 |  0.00629325  |
+| equalweight_tilt   |    0.01 |       0.110406    | EMIM                     | 0.0787683 |  0.0785948 |  0.000173589 |
+| size_value_premium |    0.01 |       0.0183872   | AVSG                     | 0.0815948 |  0.0755986 |  0.00599618  |
+| gold_real          |    0.01 |       2.62425e-06 | GLIN                     | 0.0785948 |  0.0785948 |  4.5234e-08  |
+| cash               |    0.01 |       2.10774e-06 | GLIN                     | 0.0790948 |  0.0780948 |  0.00100004  |
 
 ---
 
@@ -93,20 +93,20 @@ Objective: maximise expected geometric growth. **Recommended (resampled) target:
 
 Objective: geometric growth subject to a £10,000 ballast floor and a
 20% tail cap. **Recommended (resampled) target:**
-**geometric return 5.11%/yr · arithmetic 5.25% · vol 5.35%.**
-Ballast weight 51.9% (floor 50%, satisfied: True); modelled 95% CVaR 5.7% (limit 20%, satisfied: True).
+**geometric return 5.11%/yr · arithmetic 5.25% · vol 5.34%.**
+Ballast weight 51.6% (floor 50%, satisfied: True); modelled 95% CVaR 5.7% (limit 20%, satisfied: True).
 
 | Holding | Ticker | Sleeve | Weight | Pie % |
 |---|---|---|---:|---:|
 | iShares UK Gilts 0-5yr | IGLS.L | ballast | 30.0% | 30.0 |
-| iShares GBP Ultrashort Bond | ERNS.L | ballast | 21.9% | 21.9 |
-| Avantis Global Small Cap Value | AVSG.L | equity | 13.0% | 13.0 |
-| JPM Managed Futures (GBP-hedged) | JMFP.L | diversifier | 8.7% | 8.7 |
-| iShares Global Infrastructure | INFR.L | real_asset | 7.4% | 7.4 |
-| iShares Core MSCI EM IMI | EMIM.L | equity | 6.7% | 6.7 |
-| iShares Physical Gold ETC | SGLN.L | real_asset | 4.3% | 4.3 |
-| Sprott Uranium Miners (HANetf) | URNP.L | theme | 4.2% | 4.2 |
-| Xtrackers S&P 500 Equal Weight | XDEW.L | equity | 3.7% | 3.7 |
+| iShares GBP Ultrashort Bond | ERNS.L | ballast | 21.6% | 21.6 |
+| Avantis Global Small Cap Value | AVSG.L | equity | 11.7% | 11.7 |
+| JPM Managed Futures (GBP-hedged) | JMFP.L | diversifier | 8.6% | 8.6 |
+| iShares Global Infrastructure | INFR.L | real_asset | 7.6% | 7.6 |
+| iShares Core MSCI EM IMI | EMIM.L | equity | 6.7% | 6.6 |
+| Xtrackers S&P 500 Equal Weight | XDWE.L | equity | 5.5% | 5.5 |
+| Sprott Uranium Miners (HANetf) | URNP.L | theme | 4.4% | 4.4 |
+| iShares Physical Gold ETC | SGLN.L | real_asset | 4.0% | 4.0 |
 
 > **Glidepath note.** The £10,000 floor is an *absolute* amount, so on
 > the £20,000 seed it forces **50% in ballast** — a heavy drag on the
@@ -120,39 +120,39 @@ Ballast weight 51.9% (floor 50%, satisfied: True); modelled 95% CVaR 5.7% (limit
 
 |         |   recommended |   convex |   resampled_raw |   black_litterman |   hrp |
 |:--------|--------------:|---------:|----------------:|------------------:|------:|
-| AVSG    |          13   |     30   |            12.6 |              28.7 |   0   |
-| XDEW    |           3.7 |      0   |             3.6 |               0   |   0   |
-| EMIM    |           6.7 |      0   |             6.5 |               0   |   0   |
-| MVOL    |           0   |      0   |             1.1 |               0   |   0.1 |
-| JMFP    |           8.7 |      8.4 |             8.5 |               8   |   0.1 |
-| SGLN    |           4.3 |      0   |             4.2 |               0   |   0   |
-| IGLS    |          30   |     30   |            29.4 |              30   |   4.9 |
-| ERNS    |          21.9 |     21.1 |            21.2 |              20   |  94.8 |
-| DFND_EU |           0   |      0   |             1.6 |               3.3 |   0   |
-| URNM    |           4.2 |      0   |             4.1 |               0   |   0   |
-| GLIN    |           7.4 |     10.5 |             7.2 |              10   |   0   |
+| AVSG    |          11.7 |     30   |            11.4 |              30   |   0   |
+| XDEW    |           5.5 |      0   |             5.3 |               0   |   0   |
+| EMIM    |           6.6 |      0   |             6.5 |               0   |   0   |
+| MVOL    |           0   |      0   |             0.8 |               0   |   0   |
+| JMFP    |           8.6 |      8.4 |             8.4 |               8.4 |   0.1 |
+| SGLN    |           4   |      0   |             3.9 |               0   |   0   |
+| IGLS    |          30   |     30   |            29.6 |              30   |   5.3 |
+| ERNS    |          21.6 |     21.1 |            21   |              21.1 |  94.5 |
+| DFND_EU |           0   |      0   |             1.3 |               0   |   0   |
+| URNM    |           4.4 |      0   |             4.3 |               0   |   0   |
+| GLIN    |           7.6 |     10.5 |             7.4 |              10.5 |   0   |
 
 ### Monte Carlo — 1-year tail (does it breach the 20% limit?)
 
 | Metric | Value |
 |---|---|
-| Mean 1-year loss (negative = gain) | -5.40% |
-| 95% VaR (1-year loss) | 5.60% |
-| **95% CVaR (1-year expected shortfall)** | **8.04%** (limit 20%) |
-| 5th-percentile max drawdown | -8.65% |
-| Worst simulated max drawdown | -18.09% |
+| Mean 1-year loss (negative = gain) | -5.36% |
+| 95% VaR (1-year loss) | 5.19% |
+| **95% CVaR (1-year expected shortfall)** | **7.69%** (limit 20%) |
+| 5th-percentile max drawdown | -8.26% |
+| Worst simulated max drawdown | -17.81% |
 | **P(max drawdown worse than 20%)** | **0.0%** |
 
 ### What the answer hinges on (top CMA sensitivities)
 
 | block              |   shift |   max_weight_move | most_sensitive_holding   |    geo_up |   geo_down |   geo_spread |
 |:-------------------|--------:|------------------:|:-------------------------|----------:|-----------:|-------------:|
-| em_premium         |    0.01 |       0.0984519   | EMIM                     | 0.0562013 |  0.055165  |  0.00103622  |
-| size_value_premium |    0.01 |       0.0984518   | EMIM                     | 0.058165  |  0.0530013 |  0.00516378  |
-| gilt_short_premium |    0.01 |       0.0894737   | ERNS                     | 0.058165  |  0.0526051 |  0.00555997  |
-| equalweight_tilt   |    0.01 |       7.60909e-10 | GLIN                     | 0.055165  |  0.055165  |  4.93992e-12 |
-| infra_premium      |    0.01 |       6.75778e-10 | GLIN                     | 0.0562177 |  0.0541124 |  0.00210526  |
-| equity_dev         |    0.01 |       6.73053e-10 | GLIN                     | 0.0592177 |  0.0511124 |  0.00810526  |
+| size_value_premium |    0.01 |       0.0920272   | EMIM                     | 0.058188  |  0.0530118 |  0.00517616  |
+| em_premium         |    0.01 |       0.0920272   | EMIM                     | 0.0562118 |  0.055188  |  0.00102384  |
+| gilt_short_premium |    0.01 |       0.0894737   | ERNS                     | 0.058188  |  0.0526283 |  0.00555969  |
+| equity_dev         |    0.01 |       1.1541e-09  | GLIN                     | 0.0592406 |  0.0511354 |  0.00810526  |
+| infra_premium      |    0.01 |       8.40591e-10 | GLIN                     | 0.0562406 |  0.0541354 |  0.00210526  |
+| uranium_theme      |    0.01 |       8.38639e-10 | GLIN                     | 0.055188  |  0.055188  |  1.27347e-11 |
 
 ---
 
@@ -160,18 +160,18 @@ Ballast weight 51.9% (floor 50%, satisfied: True); modelled 95% CVaR 5.7% (limit
 
 |         |   mu_arith_net |   mu_geo |    vol |    ter |
 |:--------|---------------:|---------:|-------:|-------:|
-| AVSG    |         0.0961 |   0.0813 | 0.172  | 0.0039 |
-| AVWC    |         0.0928 |   0.0859 | 0.1176 | 0.0022 |
-| DFND_EU |         0.0711 |   0.0523 | 0.1938 | 0.0039 |
-| EMIM    |         0.0832 |   0.0723 | 0.1479 | 0.0018 |
+| AVSG    |         0.0961 |   0.0816 | 0.17   | 0.0039 |
+| AVWC    |         0.0928 |   0.0861 | 0.1154 | 0.0022 |
+| DFND_EU |         0.0711 |   0.0526 | 0.1923 | 0.0039 |
+| EMIM    |         0.0832 |   0.0722 | 0.148  | 0.0018 |
 | ERNS    |         0.0341 |   0.0341 | 0.0029 | 0.0009 |
 | GLIN    |         0.0585 |   0.0404 | 0.1901 | 0.0065 |
 | IGLS    |         0.0393 |   0.0392 | 0.0122 | 0.0007 |
-| IWQU    |         0.0725 |   0.0643 | 0.1279 | 0.0025 |
+| IWQU    |         0.0725 |   0.066  | 0.1143 | 0.0025 |
 | JMFP    |         0.0393 |   0.0365 | 0.075  | 0.0057 |
-| MVOL    |         0.057  |   0.0525 | 0.0951 | 0.003  |
+| MVOL    |         0.057  |   0.0514 | 0.1056 | 0.003  |
 | SGLN    |         0.0388 |   0.026  | 0.1601 | 0.0012 |
-| URNM    |         0.0715 |   0.024  | 0.3084 | 0.0085 |
+| URNM    |         0.0715 |   0.0239 | 0.3084 | 0.0085 |
 | XDEW    |         0.0735 |   0.0596 | 0.1669 | 0.0015 |
 
 ## Caveats

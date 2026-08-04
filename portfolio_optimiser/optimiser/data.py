@@ -145,11 +145,22 @@ def _fetch_and_splice(
         fund_px = raw[fund_tkr] if fund_tkr in raw.columns else pd.Series(dtype=float)
         proxy_px = raw[spec.source] if spec.source in raw.columns else pd.Series(dtype=float)
 
+        # The FUND line and the PROXY carry independent currencies -- convert each
+        # on its own evidence. A `.L` suffix does NOT imply sterling: several funds
+        # here list both a GBX and a USD line on the LSE under different tickers.
+        #
+        # Reading a USD line and skipping the conversion (the pre-2026-08 bug) does
+        # not add noise -- it silently models the CURRENCY-HEDGED return, dropping
+        # the GBP/USD exposure a sterling investor actually bears. The damage is in
+        # the covariance: every genuinely-sterling holding shares one FX factor, so
+        # an unconverted USD line looks far less correlated with the rest of the
+        # book than it is (IWQU vs AVWC measured 0.79 unconverted, 0.94 correct)
+        # and the optimiser rewards it as a diversifier it is not.
+        inst = universe.instruments[key]
+        if not inst.is_sterling and not fund_px.empty:
+            fund_px = _gbp_convert(fund_px.to_frame("p"), fx)["p"]
+
         if spec.ccy.upper() == "USD":
-            if not fund_px.empty:
-                # If the fund line is the .L GBP listing it is already GBP; only the
-                # proxy needs converting. Fund .L lines are GBP -> leave as-is.
-                pass
             proxy_px = _gbp_convert(proxy_px.to_frame("p"), fx)["p"]
 
         ret = _splice(fund_px, proxy_px)

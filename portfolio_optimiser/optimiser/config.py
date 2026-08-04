@@ -18,6 +18,12 @@ from pathlib import Path
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "config"
 
 
+# Currencies the trading line may be quoted in. GBX/GBp is pence sterling: the
+# same currency as GBP, so it needs no FX conversion (returns are scale-free).
+STERLING = {"GBP", "GBX"}  # compare uppercased; Yahoo reports pence as "GBp"
+KNOWN_CCY = STERLING | {"USD", "EUR"}
+
+
 @dataclass(frozen=True)
 class Instrument:
     key: str
@@ -31,6 +37,11 @@ class Instrument:
     isa_eligible: bool
     sipp_eligible: bool
     proxy: str
+    ccy: str  # quote currency of `ticker` -- REQUIRED, no default on purpose
+
+    @property
+    def is_sterling(self) -> bool:
+        return self.ccy.upper() in STERLING
 
 
 @dataclass(frozen=True)
@@ -109,6 +120,18 @@ def load_universe() -> Universe:
     raw = _load_toml("universe.toml")
     instruments: dict[str, Instrument] = {}
     for block in raw["instrument"]:
+        if "ccy" not in block:
+            raise ValueError(
+                f"universe.toml: instrument {block.get('key')!r} ({block.get('ticker')!r}) "
+                "has no `ccy`. Declare the quote currency of the trading line — an LSE "
+                "`.L` ticker is NOT necessarily sterling (many funds list both a GBX and "
+                "a USD line under different tickers)."
+            )
+        if block["ccy"].upper() not in KNOWN_CCY:
+            raise ValueError(
+                f"universe.toml: instrument {block['key']!r} has ccy={block['ccy']!r}; "
+                f"expected one of {sorted(KNOWN_CCY)}."
+            )
         instruments[block["key"]] = Instrument(**block)
     proxies: dict[str, ProxySpec] = {}
     for key, spec in raw.get("proxy", {}).items():
