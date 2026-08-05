@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-08-05 - Portfolio Rebalancing Study
+
+### Added
+- `src/rebalancing/` — typed library for a multi-asset rebalancing study:
+  data layer with committed CSV cache, validation gate, pluggable policy
+  objects, a single-code-path backtest engine (plus a vectorised batch path
+  for the bootstrap), metrics with a return/risk decomposition, block
+  bootstrap, and figures.
+- `scripts/rebalancing/run_study.py` — reproduces every table and chart in
+  one command; `scripts/rebalancing/requirements.txt` pins the versions.
+- `docs/rebalancing/{PLAN,report,README}.md`, `data/rebalancing/{cache,results,charts}/`.
+- `tests/rebalancing/test_engine.py` — 20 tests, including exact
+  cross-validation of the engine against analytic constant-mix and
+  buy-and-hold, and of the batch path against the single path.
+
+### Findings
+- The hypothesis that rebalancing more often pays after a gold flight-to-safety
+  crash does **not** survive. Event-triggered rebalancing beat monthly in four
+  of eight crashes at the 3-year horizon, and lost in 2003 and 2009 — the two
+  episodes the hypothesis says should be its best cases.
+- Every investable policy lands within ~48bps/yr over 34.8 years, and none of
+  the gaps is distinguishable from noise in a 2,000-replicate block bootstrap.
+  The only distinguishable result is negative: daily rebalancing loses 215bps
+  a year to costs.
+- Unhedged sterling exposure added ~0.80%/yr to every asset — roughly twenty
+  times the spread between the best and worst policies.
+
+### Notes
+- This study does **not** use the DuckDB `MarketStore`. It needs FRED macro
+  series, LBMA fixings and spliced total-return indices that the instrument
+  registry does not model, so it carries a self-contained committed CSV cache
+  (2.7 MB) instead. It does use `src.data.paths`.
+
 ## 2026-06-12 - Data Persistence Upgrade
 
 ### Major Changes
