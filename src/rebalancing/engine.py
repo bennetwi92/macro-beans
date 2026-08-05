@@ -144,6 +144,14 @@ def run(
                 value += inflow * (value / gross)
 
         total = value.sum()
+        if total <= 0.0:
+            # Ruined: nothing left to weight, drift or trade. Hold the target
+            # so the weight-deviation metric stays defined at zero.
+            weights_pre[t] = target
+            weights_out[t] = target
+            value_out[t] = 0.0
+            net_returns[t] = 0.0
+            continue
         weights_pre[t] = value / total
 
         if schedule[t] and policy.sells_allowed and policy.breached(weights_pre[t], target):
@@ -152,7 +160,12 @@ def run(
             traded = np.abs(delta)
             legs = int((traded > 1e-9).sum())
             charge = float(traded @ spread) + legs * commission
-            total_after = total - charge
+            # Ruin guard. Flat per-trade commissions on a small pot really can
+            # exceed the pot: daily rebalancing £10,000 at £5.95 a leg costs
+            # about £4,500 a year. Without this the value goes negative and
+            # every downstream metric becomes meaningless, hiding a result
+            # that is worth reporting.
+            total_after = max(total - charge, 0.0)
             value = target * total_after
             turnover_out[t] = float(traded.sum()) / total
             cost_out[t] = charge
@@ -160,10 +173,12 @@ def run(
             n_legs += legs
 
         value_out[t] = value.sum()
-        weights_out[t] = value / value_out[t]
+        weights_out[t] = value / value_out[t] if value_out[t] > 0 else target
         # Strip the contribution out of the return so a pound paid in is never
         # counted as a pound earned.
-        net_returns[t] = (value_out[t] - inflow) / opening - 1.0
+        net_returns[t] = (
+            (value_out[t] - inflow) / opening - 1.0 if opening > 0 else 0.0
+        )
 
     result = BacktestResult(
         policy=policy.name,
@@ -225,7 +240,8 @@ def run_batch(
         allowed = schedule[:, t] if per_rep_schedule else np.full(n_reps, schedule[t])
         if not allowed.any():
             continue
-        weights = value / total
+        with np.errstate(divide="ignore", invalid="ignore"):
+            weights = np.where(total > 0, value / np.where(total > 0, total, 1.0), target)
         act = allowed & policy.breached(weights, target) & policy.sells_allowed
 
         if not act.any():
@@ -235,7 +251,7 @@ def run_batch(
         traded = np.abs(desired - value[act])
         legs = (traded > 1e-9).sum(axis=1)
         charge = traded @ spread + legs * commission
-        value[act] = target * (sub_total - charge[:, None])
+        value[act] = target * np.maximum(sub_total - charge[:, None], 0.0)
 
     return value.sum(axis=1)
 

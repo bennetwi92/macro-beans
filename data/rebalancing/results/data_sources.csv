@@ -1,0 +1,6 @@
+series,source
+equity,VFINX -> 0.55*VTSMX+0.45*VGTSX (1996-04-30) -> ACWI (2008-03-31)
+bond,VFITX -> IEF (2002-07-31)
+gold,"LBMA gold PM fix (USD and GBP), 1968->"
+fx,FRED DEXUSUK (USD per GBP)
+cash,"FRED IUDSOIA (SONIA), pre-1997 FRED IR3TIB01GBM156N"

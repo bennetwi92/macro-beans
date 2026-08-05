@@ -26,7 +26,10 @@ from src.rebalancing.engine import BacktestResult, constant_mix
 
 def cagr(returns: pd.Series) -> float:
     years = len(returns) / TRADING_DAYS_PER_YEAR
-    return float((1.0 + returns).prod() ** (1.0 / years) - 1.0)
+    growth = float((1.0 + returns).prod())
+    if growth <= 0.0:
+        return -1.0  # total loss; see the ruin guard in engine.run
+    return float(growth ** (1.0 / years) - 1.0)
 
 
 def annual_volatility(returns: pd.Series) -> float:
