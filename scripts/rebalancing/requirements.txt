@@ -1,0 +1,23 @@
+# Portfolio rebalancing study.
+#   python -m pip install -r scripts/rebalancing/requirements.txt
+#   python scripts/rebalancing/run_study.py
+#
+# Pinned to the versions the committed results were produced with. Only the
+# bootstrap uses randomness and it is seeded, so these versions reproduce
+# data/rebalancing/results/*.csv exactly.
+
+numpy==2.4.6
+pandas==3.0.5
+scipy==1.17.1
+matplotlib==3.11.1
+
+# Data sources. yfinance pulls in curl_cffi, which the data layer needs
+# directly: it constructs a non-impersonating session because the default
+# Chrome TLS fingerprint is reset by a TLS-terminating proxy.
+yfinance==1.5.2
+curl_cffi==0.16.0
+pandas-datareader==0.11.1
+requests==2.33.1
+
+# Tests only.
+pytest==9.1.1

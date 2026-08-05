@@ -201,7 +201,8 @@ def equity_curves(
         title=f"Growth of £1, {currency}, by rebalancing policy",
         subtitle=(
             f"Log scale. Grey lines are the other {len(wealth) - len(highlight)} "
-            "policies tested — they overlap almost entirely."
+            "policies — they overlap almost entirely. The one clearly below is "
+            "the daily constant-mix control, eaten by trading costs."
         ),
         ylabel="Multiple of starting wealth",
     )

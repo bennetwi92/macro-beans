@@ -274,6 +274,35 @@ def main() -> None:
         "crash_window_dates.csv",
     )
 
+    # ---- taxable-account appendix ----------------------------------------
+    # ISA/SIPP is the base case, so this is an appendix, not a headline. A
+    # sell in a General Investment Account crystallises gains: the drag is
+    # sell-side turnover x the embedded gain fraction x the CGT rate. Shown
+    # across gain fractions because the embedded gain grows with holding
+    # period and is the term nobody can pin down in advance.
+    _log("taxable-GIA appendix")
+    base_rows = summary[
+        (summary.portfolio == HEADLINE_PORTFOLIO)
+        & (summary.currency == "GBP")
+        & (summary.cost_model == "base")
+    ]
+    cgt_rows = []
+    for _, row in base_rows.iterrows():
+        sell_side = row["turnover_per_year"] / 2.0
+        for gain_fraction in (0.20, 0.40, 0.60):
+            for rate, band in ((0.18, "basic"), (0.24, "higher")):
+                cgt_rows.append(
+                    {
+                        "policy": row["policy"],
+                        "sell_turnover_per_year": sell_side,
+                        "embedded_gain_fraction": gain_fraction,
+                        "cgt_rate": rate,
+                        "band": band,
+                        "annual_tax_drag_bps": sell_side * gain_fraction * rate * 1e4,
+                    }
+                )
+    _write(pd.DataFrame(cgt_rows), "taxable_gia_appendix.csv")
+
     # ---- correlations -----------------------------------------------------
     _log("correlation regimes")
     _write(stats.correlation_regimes(gbp.returns), "correlation_regimes_gbp.csv")
