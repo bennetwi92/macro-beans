@@ -57,49 +57,42 @@ magic.
 
 A portfolio's *compound* growth is roughly its average return minus half its
 variance. Volatility is a tax on compounding: a fund that gains 50% then
-loses 50% has an average return of zero but is down 25%. Now take two assets
-that wiggle differently. Mixing them produces a portfolio less volatile than
-the average of its parts. If you hold the *weights* constant — which requires
-trading, i.e. rebalancing — you keep the average return of the parts but pay a
-smaller variance tax. The difference is the diversification return.
+loses 50% averages zero but is down 25%. Mixing two assets that wiggle
+differently produces a portfolio less volatile than the average of its parts.
+Holding the *weights* constant — which requires trading, i.e. rebalancing —
+keeps the average return of the parts while paying a smaller variance tax.
+That difference is the diversification return.
 
 Two names attach to this, and the brief's "Fernholz-Shannon" conflates them.
-Both are real:
-
-- **Fernholz & Shay (1982)** formalised the *excess growth rate* of a
-  rebalanced portfolio in stochastic portfolio theory
-  ([Journal of Finance 37(2), 615–624](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.1982.tb03584.x)).
-  (The co-author is Brian Shay, not Shannon.)
-- **"Shannon's demon"** is Claude Shannon's 1960s demonstration that a 50/50
-  split between cash and a zero-drift random-walk stock, rebalanced each
-  period, compounds *upward* — return conjured from volatility alone.
+Both are real: **Fernholz & Shay (1982)** formalised the *excess growth rate*
+of a rebalanced portfolio
+([Journal of Finance 37(2), 615–624](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.1982.tb03584.x)
+— the co-author is Brian Shay, not Shannon), while **"Shannon's demon"** is
+Claude Shannon's demonstration that a 50/50 split between cash and a
+zero-drift random-walk stock, rebalanced each period, compounds *upward*.
 
 [Booth & Fama (1992)](https://rpc.cfainstitute.org/research/financial-analysts-journal/1992/faj-v48-n3-26)
 showed each asset's contribution to a fixed-weight portfolio exceeds its own
 compound return by exactly its diversification contribution.
 [Willenbrock (2011)](https://arxiv.org/abs/1109.1256) used the same identity
-to resolve the commodity-return puzzle, showing that much of what looked like
-a commodity risk premium was the rebalancing of a volatile, low-correlation
-basket.
+to show that much of the apparent commodity risk premium was really the
+rebalancing of a volatile, low-correlation basket.
 
 ### When the premium is negative
 
 This is the part usually left out. The rebalancing premium is **not** a free
 lunch. It turns negative when:
 
-- **Assets trend persistently.** Rebalancing sells the winner. If the winner
-  keeps winning, you have systematically sold too early. Over 1991–2026
+- **Assets trend persistently, or drifts differ.** Rebalancing sells the
+  winner; if the winner keeps winning you sold too early. Over 1991–2026
   equities out-compounded bonds by 4.4% a year, so every rebalance was a
-  transfer from the higher-drift asset to the lower-drift one.
-- **Drifts differ materially.** The bigger the gap in expected returns, the
-  more the mechanical drag of trimming the winner overwhelms the variance
-  saving.
+  transfer from the higher-drift asset to the lower-drift one, and the bigger
+  that gap the more the drag overwhelms the variance saving.
 - **Correlations are high.** The variance saving comes from imperfect
   correlation. As correlation goes to 1, the diversification return goes to 0.
-- **Costs and taxes bite.** The premium is measured in tens of basis points.
-  Frictions of the same size erase it — see the daily constant-mix control,
-  which harvested +12bps of genuine rebalancing return and then paid 215bps to
-  get it.
+- **Costs and taxes bite.** The premium is tens of basis points. Frictions of
+  the same size erase it — see the daily constant-mix control, which harvested
+  +12bps of genuine rebalancing return and paid 215bps to get it.
 
 My backtest confirms the drift problem directly: **buy-and-hold's
 "rebalancing effect" against monthly is −34bps a year.** Letting equities run
@@ -113,22 +106,20 @@ was *worth* something in a 35-year equity bull market. It just came with a
 Published research is reasonably consistent on horizons.
 [Moskowitz, Ooi & Pedersen (2012)](https://www.aqr.com/Insights/Research/Journal-Article/Time-Series-Momentum)
 document time-series momentum persisting for **one to twelve months** and
-partially reversing beyond that. Jegadeesh & Titman's cross-sectional
-momentum works over 3–12 months; De Bondt & Thaler's reversal effect appears
-at 3–5 years.
+partially reversing beyond. Jegadeesh & Titman's cross-sectional momentum
+works over 3–12 months; De Bondt & Thaler's reversal appears at 3–5 years.
 
-If prices trend for up to a year and revert after, then a contrarian strategy
-— which is what rebalancing is — should *lose* at sub-annual horizons and
-*win* at multi-year ones. That predicts an inverted-U: very frequent
-rebalancing fights momentum, very infrequent rebalancing lets risk drift, and
-something in between is best.
+If prices trend for up to a year and revert after, a contrarian strategy —
+which is what rebalancing is — should *lose* at sub-annual horizons and *win*
+at multi-year ones. That predicts an inverted-U: rebalance too often and you
+fight momentum, too rarely and you let risk drift.
 
-**My data agrees, weakly.** Daily constant mix earned only +12bps of
-gross rebalancing return before costs. Monthly rebalancing was the *worst* of
-the calendar policies. Annual and threshold policies, which trade roughly once
-a year or less, did best. But the spread across the whole sensible range is
-~30bps a year against a bootstrap standard error several times larger — so I
-would call this *consistent with the literature*, not *confirmation of it*.
+**My data agrees, weakly.** Daily constant mix earned only +12bps of gross
+rebalancing return before costs; monthly was the *worst* of the calendar
+policies; annual and threshold policies, trading roughly once a year or less,
+did best. But the spread across the sensible range is ~30bps a year against a
+bootstrap standard error several times larger — *consistent with* the
+literature, not *confirmation of* it.
 
 ---
 
