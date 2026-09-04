@@ -48,6 +48,14 @@ MAX_BARS = 1700
 # are skipped rather than shipped as a dead-end pick.
 MIN_BARS = 320
 
+# Coverage gate, deliberately looser than the site-wide 90%. A deal is a random
+# draw from whatever shipped, so 300-odd names train exactly as well as 503 —
+# and a cold cache seeds this universe over several nightly runs. Failing the
+# deploy (and with it the price sheet, scanner and charts) over a half-seeded
+# simulator would be the wrong trade. A total yfinance outage still fails: the
+# tally exits non-zero whenever nothing at all built.
+MIN_COVERAGE = 0.6
+
 
 def bars_ohlcv(df) -> list[list]:
     """The tail of a Date-indexed OHLCV frame as [iso, o, h, l, c, v] rows.
@@ -90,7 +98,7 @@ def main() -> None:
 
     universe = load_ticker_csv(SP500_CSV)
     built_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    tally = BuildTally(len(universe))
+    tally = BuildTally(len(universe), min_ok_fraction=MIN_COVERAGE)
     menu = []
 
     try:

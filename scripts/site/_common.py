@@ -49,11 +49,17 @@ def write_json(path: Path, payload) -> int:
 
 
 class BuildTally:
-    """Track which items built and which failed, then gate the exit code."""
+    """Track which items built and which failed, then gate the exit code.
 
-    def __init__(self, total: int) -> None:
+    ``min_ok_fraction`` overrides the shared threshold for builds where a
+    partial result is genuinely useful (the simulator universe works fine with
+    300 of 500 names, and must not be able to fail the whole site build).
+    """
+
+    def __init__(self, total: int, min_ok_fraction: float = MIN_OK_FRACTION) -> None:
         self.total = total
         self.ok = 0
+        self.min_ok_fraction = min_ok_fraction
         self.failures: list[tuple[str, str]] = []  # (name, error message)
 
     def record_ok(self) -> None:
@@ -73,14 +79,14 @@ class BuildTally:
             print("No items built — failing the build.")
             return 1
         frac = self.ok / self.total
-        if frac < MIN_OK_FRACTION:
+        if frac < self.min_ok_fraction:
             print(
                 f"Only {self.ok}/{self.total} built ({frac:.0%} < "
-                f"{MIN_OK_FRACTION:.0%}) — failing the build."
+                f"{self.min_ok_fraction:.0%}) — failing the build."
             )
             return 1
         print(
             f"{self.ok}/{self.total} built ({frac:.0%}) — above the "
-            f"{MIN_OK_FRACTION:.0%} threshold, publishing without the failed item(s)."
+            f"{self.min_ok_fraction:.0%} threshold, publishing without the failed item(s)."
         )
         return 0
