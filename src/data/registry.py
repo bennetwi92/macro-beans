@@ -12,6 +12,7 @@ list of ``surfaces`` that controls where it shows up.
 
 from __future__ import annotations
 
+import csv
 import tomllib
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -22,6 +23,10 @@ from src.data.paths import CONFIG_DIR
 INSTRUMENTS_TOML = CONFIG_DIR / "instruments.toml"
 PORTFOLIOS_TOML = CONFIG_DIR / "portfolios.toml"
 STRATEGIES_TOML = CONFIG_DIR / "strategies.toml"
+# The simulator universe is a flat constituent list, not a curated registry
+# of exposures, so it lives in a CSV rather than instruments.toml (503 rows
+# of [[instrument]] would drown the registry it shares a directory with).
+SP500_CSV = CONFIG_DIR / "sp500.csv"
 
 
 def _venue_of(ticker: str) -> str:
@@ -138,6 +143,42 @@ class Strategy:
     name: str
     requires_surface: str
     page: str | None = None
+
+
+@dataclass(frozen=True)
+class UniverseRow:
+    """One line of a flat ticker universe CSV (e.g. ``config/sp500.csv``)."""
+
+    ticker: str
+    name: str
+    sector: str
+
+
+def load_ticker_csv(path: Path | str = SP500_CSV) -> list[UniverseRow]:
+    """Read a ``ticker,name,sector`` CSV universe, skipping ``#`` comment lines.
+
+    Used for large index constituent lists that would be unwieldy as registry
+    entries. Duplicate tickers are dropped (first wins), file order preserved.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Universe file not found: {path}")
+    rows: list[UniverseRow] = []
+    seen: set[str] = set()
+    lines = [ln for ln in path.read_text().splitlines() if not ln.startswith("#")]
+    for row in csv.DictReader(lines):
+        ticker = (row.get("ticker") or "").strip()
+        if not ticker or ticker in seen:
+            continue
+        seen.add(ticker)
+        rows.append(
+            UniverseRow(
+                ticker=ticker,
+                name=(row.get("name") or ticker).strip(),
+                sector=(row.get("sector") or "").strip(),
+            )
+        )
+    return rows
 
 
 def _load_toml(path: Path) -> dict:
@@ -275,12 +316,14 @@ __all__ = [
     "PortfolioLeg",
     "Strategy",
     "Symbol",
+    "UniverseRow",
     "coverage_map",
     "instrument_covers",
     "load_instruments",
     "load_portfolios",
     "load_instruments_multi",
     "load_strategies",
+    "load_ticker_csv",
     "research_tickers",
     "surface_tickers",
 ]

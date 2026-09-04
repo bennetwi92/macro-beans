@@ -10,12 +10,14 @@ on:
     branches: ["**"]
     paths:
       - "web/js/**"
+      - "web/v2/js/**"
       - "tests/web/**"
       - "package.json"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "web/js/**"
+      - "web/v2/js/**"
       - "tests/web/**"
       - "package.json"
       - ".github/workflows/ci.yml"

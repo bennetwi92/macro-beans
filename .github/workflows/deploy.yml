@@ -90,6 +90,15 @@ jobs:
           python -m src.data.refresh --surface web
           python -m src.data.refresh --surface cockpit
 
+      - name: Refresh simulator universe (S&P 500)
+        # The swing simulator deals random S&P 500 charts, so it needs the 503
+        # constituents cached too. --start bounds a cold seed to ~7 years (the
+        # simulator only reads the last 5 plus warm-up); once the rolling cache
+        # is warm this is a few days per ticker. Failures per ticker are skipped,
+        # and build_sim.py's coverage gate decides if too many are missing.
+        run: |
+          python -m src.data.refresh --tickers-file config/sp500.csv --start 2019-01-01
+
       - name: Build price sheet
         # Reads bars from the cache via MarketStore (no network) and writes
         # web/v2/data/price-sheet.json.
@@ -103,6 +112,11 @@ jobs:
       - name: Build FX rates
         # Daily GBP FX rates (2 yfinance calls) used to value non-GBP holdings.
         run: python scripts/site/build_fx.py
+
+      - name: Build simulator universe
+        # Per-ticker OHLCV files + the universe index for the swing simulator.
+        # Reads only from the cache.
+        run: python scripts/site/build_sim.py
 
       - name: Build reports
         # Renders docs/ markdown research notes to HTML fragments + an index for

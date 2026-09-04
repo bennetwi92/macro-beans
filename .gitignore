@@ -27,6 +27,7 @@ web/data/*.json
 web/data/portfolios/*.json
 web/v2/data/*.json
 web/v2/data/charts/*.json
+web/v2/data/sim/*.json
 web/v2/data/reports/*.html
 
 # Price cache — DuckDB store, regenerable via `python -m src.data.refresh`

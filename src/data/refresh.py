@@ -5,6 +5,7 @@ Usage:
     python -m src.data.refresh --full          # re-fetch full history
     python -m src.data.refresh --tickers AAPL,MSFT
     python -m src.data.refresh --full --tickers AAPL
+    python -m src.data.refresh --tickers-file config/sp500.csv --start 2018-01-01
 
 The cache is a derived, regenerable artifact. This module is the only place
 that opens the DB read-write, and each ticker's upsert runs in its own ACID
@@ -22,7 +23,7 @@ import duckdb
 import pandas as pd
 
 from src.data.paths import DB_PATH
-from src.data.registry import surface_tickers
+from src.data.registry import load_ticker_csv, surface_tickers
 
 # How many days of overlap to re-fetch on an incremental update, so late
 # corrections to recent bars get picked up.
@@ -179,25 +180,37 @@ def _last_date(con: duckdb.DuckDBPyConnection, ticker: str):
     return row[0] if row else None
 
 
-def refresh(tickers: list[str], full: bool = False, db_path=DB_PATH) -> None:
-    """Fetch ``tickers`` from yfinance and upsert into the cache."""
+def refresh(
+    tickers: list[str],
+    full: bool = False,
+    db_path=DB_PATH,
+    start: str | None = None,
+) -> None:
+    """Fetch ``tickers`` from yfinance and upsert into the cache.
+
+    ``start`` is a history floor (ISO date) applied only when a ticker has
+    nothing cached yet: seeding 500 names with ``period="max"`` pulls decades
+    nobody reads, so callers that need a bounded window (the simulator
+    universe wants ~7 years) pass one. Incremental updates ignore it and
+    continue from the last cached bar.
+    """
     db_path = str(db_path)
     con = duckdb.connect(db_path, read_only=False)
     try:
         ensure_schema(con)
         n = len(tickers)
         for i, ticker in enumerate(tickers, 1):
-            start = None
+            fetch_from = start
             if not full:
                 last = _last_date(con, ticker)
                 if last is not None:
-                    start = (last - timedelta(days=INCREMENTAL_OVERLAP_DAYS)).strftime(
-                        "%Y-%m-%d"
-                    )
-            mode = "full" if start is None else f"since {start}"
+                    fetch_from = (
+                        last - timedelta(days=INCREMENTAL_OVERLAP_DAYS)
+                    ).strftime("%Y-%m-%d")
+            mode = "full" if fetch_from is None else f"since {fetch_from}"
             print(f"[{i}/{n}] {ticker:<7} ({mode}) ...", end=" ", flush=True)
             try:
-                raw = _fetch_yfinance(ticker, start)
+                raw = _fetch_yfinance(ticker, fetch_from)
             except Exception as exc:  # network / ticker errors shouldn't abort the run
                 print(f"FETCH ERROR: {exc}")
                 continue
@@ -226,10 +239,24 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="comma-separated tickers (default: the --surface universe from registry)",
     )
+    ap.add_argument(
+        "--tickers-file",
+        type=str,
+        default=None,
+        help="path to a ticker,name,sector CSV universe (e.g. config/sp500.csv)",
+    )
+    ap.add_argument(
+        "--start",
+        type=str,
+        default=None,
+        help="ISO history floor for tickers with nothing cached yet (e.g. 2018-01-01)",
+    )
     args = ap.parse_args(argv)
 
     if args.tickers:
         tickers = [t.strip() for t in args.tickers.split(",") if t.strip()]
+    elif args.tickers_file:
+        tickers = [row.ticker for row in load_ticker_csv(args.tickers_file)]
     elif args.surface == "all":
         # union of every surface, dedup preserving order
         tickers = list(dict.fromkeys(
@@ -244,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"Refreshing {len(tickers)} tickers into {DB_PATH} "
           f"({'full' if args.full else 'incremental'})")
-    refresh(tickers, full=args.full)
+    refresh(tickers, full=args.full, start=args.start)
     print("Done.")
     return 0
 

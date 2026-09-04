@@ -8,6 +8,7 @@ export const PAGES = [
   { label: "Scanner",     file: "scanner.html" },
   { label: "Chart",       file: "chart.html" },
   { label: "Reports",     file: "reports.html" },
+  { label: "Simulator",   file: "simulator.html" },
   { label: "Trades",      file: "trades.html" },
   { label: "Positions",   file: "positions.html" },
   { label: "Portfolio",   file: "portfolio.html" },

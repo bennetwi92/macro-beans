@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-04 - Swing-Trading Simulator (v2 cockpit)
+
+### Added
+- `web/v2/simulator.html` + `web/v2/js/simulator.js` — a chart-reading trainer:
+  a random S&P 500 name on a random date in the last five years, 35 sessions of
+  candles with 9EMA / 22EMA / 200SMA / volume / MACD(12,26,9) histogram /
+  RSI(14), a stop you drag onto the chart, then buy, short or pass. Entry fills
+  at the next open, discretionary exits (half or all) at the close, the stop
+  fills intraday. One mobile screen, no scrolling, nothing scored or stored.
+- `web/v2/js/sim-indicators.js` and `web/v2/js/sim-engine.js` — the indicator
+  math and the trade accounting as pure modules, with
+  `tests/web/sim-indicators.test.js` and `tests/web/sim-engine.test.js`
+  (22 tests) checking them against independently computed values.
+- `config/sp500.csv` — the 503-name constituent universe (Wikipedia snapshot),
+  read by `src.data.registry.load_ticker_csv`.
+- `scripts/site/build_sim.py` — cache -> `web/v2/data/sim/<TICKER>.json`
+  (OHLCV, ~7 years) + `sim-universe.json`, wired into `deploy.yml`.
+
+### Changed
+- `src.data.refresh` takes `--tickers-file` (a ticker CSV universe) and
+  `--start` (a history floor applied only when a ticker has nothing cached),
+  so seeding 500 names does not pull decades per ticker.
+- `ci.yml` also runs the engine tests when `web/v2/js/**` changes.
+
+### Notes
+- The stop is live rather than decorative: a bar that trades through it closes
+  the position at the stop, or at the open when the bar gapped past it. Results
+  are quoted in percent and in R (result / entry-to-stop distance).
+
 ## 2026-08-05 - Portfolio Rebalancing Study
 
 ### Added

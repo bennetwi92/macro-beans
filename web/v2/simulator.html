@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Simulator · Macro Beans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/macro-beans.css">
+<link rel="stylesheet" href="css/cockpit.css">
+</head>
+<body class="sim-page">
+
+<header id="appbar" class="appbar"></header>
+
+<!-- One screen, three bands: state, chart, actions. Never scrolls. -->
+<main class="sim">
+  <div id="sim-status" class="sim-status"></div>
+  <div id="sim-chart" class="sim-chart"><div class="sim-msg">Loading…</div></div>
+  <div id="sim-actions" class="sim-actions"></div>
+</main>
+
+<script type="module" src="js/simulator.js"></script>
+</body>
+</html>

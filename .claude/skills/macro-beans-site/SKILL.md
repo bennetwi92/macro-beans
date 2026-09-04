@@ -51,7 +51,7 @@ engine + tests are shared infrastructure, not dead code).
 - **Data source**: the shared **DuckDB price cache** (`data/market.duckdb`), not
   yfinance directly. Build scripts read the cache via `MarketStore`.
 - **Build scripts** (`scripts/site/`): `build_price_sheet.py`, `build_charts.py`,
-  `build_fx.py`, `build_reports.py`.
+  `build_fx.py`, `build_reports.py`, `build_sim.py`.
 - **Local test**: `cd web && python3 -m http.server 8765`, then open
   `http://localhost:8765/v2/price-sheet.html` (serve from `web/`, not `web/v2/`,
   because cockpit pages load `../css/macro-beans.css`).
@@ -94,6 +94,7 @@ web/v2/
   scanner.html          public — daily long-only BUY shortlist + edge vs baseline
   chart.html            public — full-bleed SVG line chart + search + zoom
   reports.html          public — research library (docs/ markdown → reader)
+  simulator.html        public — swing-trading trainer (random S&P 500 chart)
   trades.html           private — trade blotter (Neon)
   positions.html        private — average-cost positions per account (Neon)
   portfolio.html        private — portfolio roll-up + cash flows (Neon)
@@ -109,6 +110,9 @@ web/v2/
     scanner.js          scanner page (imports v1's strategy-engine.js for MATH)
     chart.js            chart page
     reports.js          reports page (list ↔ reader)
+    simulator.js        simulator page (state machine + candle/indicator SVG)
+    sim-indicators.js   pure indicator math (EMA/SMA/MACD/RSI/ATR), unit-tested
+    sim-engine.js       pure trade accounting (fills, stop, P&L in % and R)
     prices.js           cockpit menu + FX → native-currency-to-GBP helpers
     book.js             pure trading-book accounting (average cost, GBP)
     trades.js / positions.js / portfolio.js / requests.js   private pages
@@ -119,12 +123,15 @@ web/v2/
     fx.json             {built_at, gbpusd, gbpeur}  (units per GBP)
     reports.json        {built_at, reports:[{slug,title,category,summary,…}]}
     reports/<slug>.html rendered markdown fragment per research note
+    sim-universe.json   {built_at, tickers:[{t,n,s,b,f,l}]}  simulator index
+    sim/<TICKER>.json   {ticker,name,sector,bars:[[iso,o,h,l,c,v]]} ~7y OHLCV
 
 scripts/site/
   build_price_sheet.py  cache → web/v2/data/price-sheet.json (800 bars/inst)
   build_charts.py       cache → instruments.json + charts/<ticker>.json (full)
   build_fx.py           yfinance (2 calls) → fx.json (GBP rates)
   build_reports.py      docs/*.md → reports.json + reports/<slug>.html
+  build_sim.py          cache → sim-universe.json + sim/<TICKER>.json (S&P 500)
   _common.py            BuildTally (coverage gate) + write_json (compact)
 
 .github/workflows/deploy.yml   builds v1 + v2, deploys web/ (so v2 is at /v2/)
@@ -264,6 +271,13 @@ refresh seeds both: `python -m src.data.refresh --surface web` then
 `--surface cockpit`. The registry (`config/instruments.toml`) is the single
 source of truth; an instrument's `surfaces` list controls where it appears.
 
+The **simulator** universe is the exception to the registry: 503 S&P 500
+constituents live in `config/sp500.csv` (a flat `ticker,name,sector` list read
+by `load_ticker_csv`), because 503 `[[instrument]]` blocks would drown the
+registry. They are cached like anything else —
+`python -m src.data.refresh --tickers-file config/sp500.csv --start 2019-01-01`
+(`--start` bounds a cold seed; incremental runs continue from the last bar).
+
 Build order (mirrors the deploy workflow), all reading the DuckDB cache:
 
 ```bash
@@ -275,6 +289,7 @@ python -m src.data.refresh --surface cockpit
 /usr/local/bin/python3 scripts/site/build_charts.py        # instruments.json + charts/
 /usr/local/bin/python3 scripts/site/build_fx.py            # fx.json (needs network)
 /usr/local/bin/python3 scripts/site/build_reports.py       # reports.json + reports/
+/usr/local/bin/python3 scripts/site/build_sim.py           # sim-universe.json + sim/
 ```
 
 Each build uses `BuildTally` from `_common.py` as a coverage gate: a flaky
@@ -330,6 +345,27 @@ The Scanner replaces v1's per-strategy pages. To add one:
    reads the DuckDB cache via `MarketStore`, writes compact JSON into
    `web/v2/data/`, and wire it into `deploy.yml`. Update `.gitignore` if it emits
    a new path under `web/v2/data/`.
+
+### Work on the simulator
+
+`simulator.html` is a single-screen app, not a document: the app bar, a status
+strip, the chart and the action bar fill `100dvh` and the page never scrolls.
+Two rules make changes there safe:
+
+1. **Keep the math out of the page module.** Indicator formulas belong in
+   `sim-indicators.js` and fill/P&L rules in `sim-engine.js` — both pure, both
+   covered by `tests/web/sim-*.test.js`. Update the tests in the same commit.
+2. **Lay the bars out before measuring the chart.** `render()` draws the status
+   strip and the action bar first, then the chart, which sizes its SVG to
+   whatever height is left. Drawing the chart first sizes it against a stale
+   box and pushes the RSI panel under the action bar.
+
+The trading model it teaches (decision at the close, entry at the next open,
+close fills for discretionary exits, an intraday stop that fills at the open on
+a gap, results in % and R) is documented at the top of `sim-engine.js`. Change
+it there, not in the page.
+
+`?t=<TICKER>&d=<ISO date>` deals a fixed hand — use it when testing.
 
 ### Publish a research report
 
@@ -479,6 +515,8 @@ without a hosting alternative.
 | **Add a tradeable instrument** | `config/instruments.toml` → `[[instrument]]` (`surfaces=["web"]` public, `["cockpit"]` v2-only) |
 | **Add a scanner strategy (v2)** | `web/js/strategy-engine.js` (math + tests) → register in `web/v2/js/scanner.js` `STRATEGIES` |
 | **Add a cockpit page (v2)** | new `web/v2/<page>.html` + `js/<page>.js`, add to `PAGES` in `nav.js` |
+| **Change the simulator** | `web/v2/js/simulator.js` (page) · `sim-indicators.js` / `sim-engine.js` (math + `tests/web/sim-*.test.js`) |
+| **Change the simulator universe** | `config/sp500.csv`, then `refresh --tickers-file` + `build_sim.py` |
 | **Publish a report (v2)** | drop a `.md` under `docs/<topic>/`; `build_reports.py` indexes it |
 | **Change v2 colors / fonts** | `web/v2/css/cockpit.css` → `:root` |
 | **Change a price-sheet/scanner metric** | `web/v2/js/price-metrics.js` / `scanner.js` (browser-side) |
