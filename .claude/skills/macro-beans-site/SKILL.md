@@ -362,8 +362,17 @@ Two rules make changes there safe:
 
 The trading model it teaches (decision at the close, entry at the next open,
 close fills for discretionary exits, an intraday stop that fills at the open on
-a gap, results in % and R) is documented at the top of `sim-engine.js`. Change
-it there, not in the page.
+a gap, a stop that can be trailed towards the price but never away from it,
+results in % and R) is documented at the top of `sim-engine.js`. Change it
+there, not in the page.
+
+Two invariants in that model are easy to break by accident:
+
+- **`R` is measured off `initialStop`**, frozen when the trade opens. Trailing
+  the stop must never rescale a result that has already been earned.
+- **The stop ratchets one way.** `moveStop` refuses a widening move and a move
+  through the price; the page hands it raw drag positions and lets it decide,
+  rather than reimplementing the rule in the drag handler.
 
 `?t=<TICKER>&d=<ISO date>` deals a fixed hand — use it when testing.
 

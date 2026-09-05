@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-05 - Trailing Stops in the Simulator (v2 cockpit)
+
+### Added
+- The simulator's stop stays draggable **after** the entry, so a trade that has
+  run in your favour can have its stop trailed up behind it and the gain banked
+  — the move the simulator previously made impossible.
+- A `B/E` button (keyboard `e`) in the trade action bar trails the stop to the
+  entry price exactly, the one level worth a tap. It disables itself once the
+  stop is already past the entry or the price has not moved far enough.
+- `moveStop` / `stopMoveAllows` / `stopOutStats` in `web/v2/js/sim-engine.js`,
+  with eight new cases in `tests/web/sim-engine.test.js` (82 tests total).
+
+### Changed
+- The trade-mode `STOP` chip now reads what the stop is *worth*
+  (`STOP 94.47 (+0.68R)`) instead of the static entry-to-stop risk, and the stop
+  line and chip turn green once trailing has carried them past the entry.
+- The chart's drag headroom is applied only while deciding; once the trade is
+  open the drag is fenced between the stop and the current close, both already
+  on the scale, so the candles keep their range.
+
+### Notes
+- The stop only travels **towards** the price — up for a long, down for a short
+  — and may never be dragged through it. Widening a stop to dodge a loss is the
+  one habit the simulator refuses to teach, so the engine rejects the move
+  rather than the page hiding it.
+- `R` stays pinned to the entry-to-**original**-stop distance (`initialStop` is
+  frozen at `openTrade`), so trailing never retroactively rescales a trade's
+  result. A stop trailed to +0.62R that then fills reports exactly +0.62R.
+
 ## 2026-09-04 - Swing-Trading Simulator (v2 cockpit)
 
 ### Added

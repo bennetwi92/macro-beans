@@ -7,9 +7,13 @@
 //   * Discretionary exits (half or all) fill at that day's CLOSE.
 //   * The stop is live from the entry bar onwards and fills intraday: at the
 //     stop price normally, at the open if the bar gapped straight through it.
+//   * The stop can be TRAILED while the trade runs, but only one way: towards
+//     the price, never away from it. Locking in a gain is a decision; widening
+//     a stop to dodge a loss is the habit the simulator refuses to teach.
 //   * Everything is quoted in percent of the notional at entry, plus R — the
-//     result divided by the distance from entry to stop, which is the number
-//     that actually transfers between trades of different sizes.
+//     result divided by the distance from entry to the ORIGINAL stop. R stays
+//     pinned to the risk you actually took, so trailing the stop never
+//     retroactively rescales the trade.
 
 export const LONG = "long";
 export const SHORT = "short";
@@ -21,6 +25,7 @@ export function openTrade({ side, stop, entryIndex, entryPrice }) {
   return {
     side,
     stop,
+    initialStop: stop, // frozen: the R denominator, whatever `stop` becomes
     entryIndex,
     entryPrice,
     open: 1,
@@ -85,8 +90,10 @@ function legPct(trade, price) {
 /**
  * Result so far, marked at `markPrice` for whatever is still open.
  *   realized / unrealized / total — percent of the notional at entry
- *   risk                          — entry-to-stop distance, percent
+ *   risk                          — entry to ORIGINAL stop, percent
  *   r                             — total / risk, the comparable number
+ * Risk deliberately ignores a trailed stop: 1R is the money you put at risk
+ * when you opened the trade, not what is left on the table now.
  */
 export function tradeStats(trade, markPrice) {
   const realized = trade.exits.reduce(
@@ -97,7 +104,8 @@ export function tradeStats(trade, markPrice) {
     ? trade.open * legPct(trade, markPrice)
     : 0;
   const total = realized + unrealized;
-  const risk = Math.abs(trade.entryPrice - trade.stop) / trade.entryPrice * 100;
+  const initial = trade.initialStop ?? trade.stop;
+  const risk = Math.abs(trade.entryPrice - initial) / trade.entryPrice * 100;
   return {
     realized,
     unrealized,
@@ -105,6 +113,35 @@ export function tradeStats(trade, markPrice) {
     risk,
     r: risk > EPS ? total / risk : 0,
   };
+}
+
+/**
+ * May the open trade's stop be moved to `stop`, given the close it is being
+ * moved on? Two rules, both of them the point of the exercise:
+ *   * it has to stay a stop — below the price for a long, above it for a short;
+ *   * it may only travel TOWARDS the price. A stop you can widen is not a stop.
+ */
+export function stopMoveAllows(trade, stop, lastClose) {
+  if (!isOpen(trade)) return false;
+  if (!stopAllows(trade.side, stop, lastClose)) return false;
+  return trade.side === SHORT ? stop < trade.stop - EPS : stop > trade.stop + EPS;
+}
+
+/**
+ * Trail the stop to `stop`. Returns the trade unchanged if the move is not
+ * allowed, so callers can hand it raw drag positions.
+ */
+export function moveStop(trade, stop, lastClose) {
+  return stopMoveAllows(trade, stop, lastClose) ? { ...trade, stop } : trade;
+}
+
+/**
+ * What the trade banks if everything still open fills at the CURRENT stop —
+ * the number that makes trailing legible. Negative while the stop is still
+ * behind the entry, positive once it has been dragged past it.
+ */
+export function stopOutStats(trade) {
+  return tradeStats(trade, trade.stop);
 }
 
 /**
