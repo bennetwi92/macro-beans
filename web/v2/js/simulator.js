@@ -620,8 +620,12 @@ function renderChart() {
   // ---- RSI ----
   const R = panels.rsi;
   const yRsi = (v) => R.bot - (v / 100) * R.h;
-  for (const level of [30, 70]) {
-    out += line(PAD.l, yRsi(level), W - PAD.r, yRsi(level), "sim-grid sim-grid-dash");
+  for (const [level, cls] of [
+    [30, "sim-grid sim-grid-dash"],
+    [50, "sim-grid sim-rsi-mid"],
+    [70, "sim-grid sim-grid-dash"],
+  ]) {
+    out += line(PAD.l, yRsi(level), W - PAD.r, yRsi(level), cls);
     out += text(W - PAD.r + 4, yRsi(level) + 3, String(level), "sim-axis");
   }
   const rsiPts = [];
