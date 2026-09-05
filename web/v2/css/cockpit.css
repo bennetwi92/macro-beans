@@ -701,6 +701,7 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 .sim-lg200{ fill:var(--gold); }
 
 .sim-rsi{ fill:none; stroke:var(--lime); stroke-width:1.2; }
+.sim-rsi-mid{ stroke:var(--line-2); stroke-dasharray:1 4; }
 
 /* decision day + fills */
 .sim-dline{ stroke:var(--line-2); stroke-width:1; stroke-dasharray:3 3; }
