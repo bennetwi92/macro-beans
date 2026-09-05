@@ -6,6 +6,10 @@
 // buy, short or pass. The point is repetition — hundreds of reps at reading a
 // chart cold — not a strategy backtest, so nothing is scored or stored.
 //
+// The stop stays draggable once the trade is open, so you can trail it up
+// behind a move and bank the gain — but only towards the price, never away
+// from it (sim-engine.js owns that rule).
+//
 // Everything below the app bar fits one mobile screen and never scrolls: a
 // status strip, the chart, an action bar. The indicator math lives in
 // sim-indicators.js and the trade accounting in sim-engine.js, both pure and
@@ -16,11 +20,15 @@ import { atr, ema, macd, rsi, sma } from "./sim-indicators.js";
 import {
   LONG,
   SHORT,
+  dirOf,
   exitTrade,
   isOpen,
+  moveStop,
   openTrade,
   stepTrade,
   stopAllows,
+  stopMoveAllows,
+  stopOutStats,
   tradeStats,
 } from "./sim-engine.js";
 
@@ -42,6 +50,7 @@ let universe = [];
 let S = null; // the live session (see newSession)
 let scale = null; // chart geometry from the last render, for the stop drag
 let dragging = false;
+let dragBase = null; // the open trade as it was when this drag started
 
 /* ---------- data ---------- */
 
@@ -153,6 +162,44 @@ function defaultStop(bars, ind, dIdx) {
   const a = ind.atr[dIdx] || close * 0.02;
   return round2(close - STOP_ATR * a);
 }
+
+/* ---------- the stop, before and after the entry ---------- */
+
+/** The stop on screen: the trade owns it once there is one, `S.stop` until then. */
+const liveStop = () => (S.trade ? S.trade.stop : S.stop);
+
+/** Can the stop still be dragged? Yes while deciding, and while the trade runs. */
+const stopIsLive = () => S.mode === "decide" || (S.mode === "trade" && isOpen(S.trade));
+
+/**
+ * Has the stop been trailed to the entry or past it? This is what the stop's
+ * colour means — the LINE no longer sits on the losing side of the entry —
+ * which is a narrower claim than the STOP chip's R, since that also counts
+ * profit already banked by a partial exit.
+ */
+const stopIsFree = () => !!S.trade && dirOf(S.trade) * (S.trade.stop - S.trade.entryPrice) >= 0;
+
+/**
+ * Move the stop to `price`. Before the entry that is a free choice; after it,
+ * `base` (the trade as it was when the drag began) is what the ratchet is
+ * measured against, so a single drag can wander up and back down to where it
+ * started — but never below.
+ */
+function setStop(price, base = S.trade) {
+  if (S.trade) S.trade = moveStop(base, price, S.bars[S.curIdx].c);
+  else S.stop = price;
+}
+
+/** Trail the stop to the entry price: the one-tap "make it free" move. */
+function stopToBreakeven() {
+  if (!canBreakeven()) return;
+  setStop(round2(S.trade.entryPrice));
+  render();
+}
+
+const canBreakeven = () =>
+  S.mode === "trade" &&
+  stopMoveAllows(S.trade, round2(S.trade.entryPrice), S.bars[S.curIdx].c);
 
 /* ---------- actions ---------- */
 
@@ -292,7 +339,12 @@ function renderStatus() {
     );
     chips.push(chip("ENTRY", fmtPx(t.entryPrice)));
     chips.push(chip("OPEN", `${Math.round(t.open * 100)}%`));
-    chips.push(chip("STOP", `${fmtPx(t.stop)} (${st.risk.toFixed(2)}% RISK)`, "sim-chip-stop"));
+    // What the stop is worth, not where it is: negative while it still sits
+    // behind the entry, positive once it has been trailed past it.
+    const atStop = stopOutStats(t).r;
+    chips.push(
+      chip("STOP", `${fmtPx(t.stop)} (${fmtR(atStop)})`, `sim-chip-stop ${sign(atStop)}`)
+    );
     chips.push(chip("P&L", `${fmtPct(st.total)} · ${fmtR(st.r)}`, sign(st.total)));
   } else if (S.mode === "review") {
     const from = S.bars[S.dIdx].c;
@@ -352,6 +404,9 @@ function renderActions() {
     const half = S.trade.open > 0.5 + 1e-9;
     html =
       button("act-next", "+1 DAY", "sim-btn-next") +
+      // Dragging sets any stop; this hits the entry exactly, which is the one
+      // level worth a button — the trade stops costing anything.
+      button("act-be", "B/E", "sim-btn-stop", !canBreakeven()) +
       (half ? button("act-half", "EXIT 50%", "sim-btn-exit") : "") +
       button("act-all", half ? "EXIT ALL" : "EXIT REST", "sim-btn-exit");
   } else {
@@ -363,6 +418,7 @@ function renderActions() {
   wire("act-short", () => takePosition(SHORT));
   wire("act-pass", pass);
   wire("act-next", advanceDay);
+  wire("act-be", stopToBreakeven);
   wire("act-half", () => takeExit(0.5));
   wire("act-all", () => takeExit(1));
   wire("act-new", newSession);
@@ -444,7 +500,7 @@ function renderChart() {
     consider(S.ind.e9[i]);
     consider(S.ind.e22[i]);
   }
-  consider(S.stop);
+  consider(liveStop());
   if (S.trade) {
     consider(S.trade.entryPrice);
     for (const e of S.trade.exits) consider(e.price);
@@ -452,10 +508,14 @@ function renderChart() {
   // Keep a stop's worth of air above and below the decision close whatever the
   // bars did: a short's stop goes ABOVE the price, and in a tight range there
   // is nowhere to drag it to. One default stop distance is enough to grab —
-  // drag further and the release re-renders around the new level.
-  const air = (S.ind.atr[S.dIdx] || S.bars[S.dIdx].c * 0.02) * STOP_ATR;
-  consider(S.bars[S.dIdx].c + air);
-  consider(S.bars[S.dIdx].c - air);
+  // drag further and the release re-renders around the new level. Once the
+  // trade is open the drag is fenced between the stop and the current close,
+  // both already in range, so the air would only flatten the candles.
+  if (S.mode === "decide") {
+    const air = (S.ind.atr[S.dIdx] || S.bars[S.dIdx].c * 0.02) * STOP_ATR;
+    consider(S.bars[S.dIdx].c + air);
+    consider(S.bars[S.dIdx].c - air);
+  }
   const span = hi - lo || hi * 0.02 || 1;
   lo -= span * 0.06;
   hi += span * 0.06;
@@ -470,7 +530,7 @@ function renderChart() {
   )}" width="${W}" height="${P.h.toFixed(1)}"/></clipPath></defs>`;
 
   // ---- price grid + right-hand axis ----
-  const stopY0 = yPrice(S.stop);
+  const stopY0 = yPrice(liveStop());
   for (let g = 0; g <= 3; g++) {
     const v = lo + ((hi - lo) * g) / 3;
     const gy = yPrice(v);
@@ -561,16 +621,30 @@ function renderChart() {
     }
   }
 
-  // ---- stop line (draggable while deciding) ----
-  const stopY = yPrice(S.stop);
-  const live = S.mode === "decide";
-  out += line(PAD.l, stopY, W - PAD.r, stopY, `sim-stop ${live ? "sim-stop-live" : ""}`);
-  out += `<rect class="sim-stop-tag" x="${(W - PAD.r + 1).toFixed(1)}" y="${(
-    stopY - 7
-  ).toFixed(1)}" width="${PAD.r - 2}" height="14" rx="2"/>`;
-  out += text(W - PAD.r + 4, stopY + 4, fmtPx(S.stop), "sim-stop-text");
+  // ---- stop line (draggable while deciding AND while the trade runs) ----
+  const stop = liveStop();
+  const stopY = yPrice(stop);
+  const live = stopIsLive();
+  // Past the entry the stop is no longer a loss — colour says which it is.
+  const free = stopIsFree();
+  out += line(
+    PAD.l,
+    stopY,
+    W - PAD.r,
+    stopY,
+    `sim-stop ${live ? "sim-stop-live" : ""} ${free ? "sim-stop-free" : ""}`
+  );
+  out += `<rect class="sim-stop-tag ${free ? "sim-stop-free" : ""}" x="${(
+    W - PAD.r + 1
+  ).toFixed(1)}" y="${(stopY - 7).toFixed(1)}" width="${PAD.r - 2}" height="14" rx="2"/>`;
+  out += text(W - PAD.r + 4, stopY + 4, fmtPx(stop), "sim-stop-text");
   if (live) {
-    out += text(PAD.l + 3, stopY - 4, "STOP — DRAG TO SET", "sim-stop-hint");
+    out += text(
+      PAD.l + 3,
+      stopY - 4,
+      S.trade ? "STOP — DRAG TO TRAIL" : "STOP — DRAG TO SET",
+      `sim-stop-hint ${free ? "sim-stop-free" : ""}`
+    );
   }
 
   // ---- volume ----
@@ -653,34 +727,61 @@ function renderChart() {
 
 /* ---------- stop dragging ---------- */
 
+const TICK = 0.01; // prices are quoted to the cent, so the fence is one cent wide
+
 function stopFromEvent(ev) {
   const svg = document.querySelector("#sim-chart .sim-svg");
   if (!svg || !scale) return null;
   const rect = svg.getBoundingClientRect();
   const py = ev.clientY - rect.top;
   const clamped = Math.max(scale.panel.top, Math.min(scale.panel.bot, py));
-  return round2(scale.priceAt(clamped));
+  return fenceStop(round2(scale.priceAt(clamped)));
+}
+
+/**
+ * Hold a dragged price inside the levels the stop is allowed to occupy, so the
+ * line parks against the fence instead of snapping back when the engine
+ * refuses the move. Free while deciding; between the trade's stop and today's
+ * close once it is open.
+ */
+function fenceStop(price) {
+  const base = dragBase || S.trade;
+  if (!base) return price;
+  const close = S.bars[S.curIdx].c;
+  return base.side === SHORT
+    ? Math.min(base.stop, Math.max(round2(close + TICK), price))
+    : Math.max(base.stop, Math.min(round2(close - TICK), price));
 }
 
 /** Live feedback while dragging — moving attributes, not a full re-render. */
 function paintStop() {
   const svg = document.querySelector("#sim-chart .sim-svg");
   if (!svg || !scale) return;
-  const y = scale.yPrice(S.stop);
+  const stop = liveStop();
+  const y = scale.yPrice(stop);
   const l = svg.querySelector(".sim-stop");
   const tag = svg.querySelector(".sim-stop-tag");
   const txt = svg.querySelector(".sim-stop-text");
   const hint = svg.querySelector(".sim-stop-hint");
+  // Trailing past the entry flips the stop from red to green mid-drag.
+  const free = stopIsFree();
   if (l) {
     l.setAttribute("y1", y.toFixed(1));
     l.setAttribute("y2", y.toFixed(1));
+    l.classList.toggle("sim-stop-free", free);
   }
-  if (tag) tag.setAttribute("y", (y - 7).toFixed(1));
+  if (tag) {
+    tag.setAttribute("y", (y - 7).toFixed(1));
+    tag.classList.toggle("sim-stop-free", free);
+  }
   if (txt) {
     txt.setAttribute("y", (y + 4).toFixed(1));
-    txt.textContent = fmtPx(S.stop);
+    txt.textContent = fmtPx(stop);
   }
-  if (hint) hint.setAttribute("y", (y - 4).toFixed(1));
+  if (hint) {
+    hint.setAttribute("y", (y - 4).toFixed(1));
+    hint.classList.toggle("sim-stop-free", free);
+  }
   renderStatus();
   renderActions();
 }
@@ -688,33 +789,35 @@ function paintStop() {
 function initDrag() {
   const wrap = document.getElementById("sim-chart");
   const begin = (ev) => {
-    if (!S || S.mode !== "decide" || !scale) return;
+    if (!S || !stopIsLive() || !scale) return;
     const svg = wrap.querySelector(".sim-svg");
     if (!svg) return;
     const py = ev.clientY - svg.getBoundingClientRect().top;
     // Only the price panel grabs the stop; the indicator panels stay inert.
     if (py < scale.panel.top - 10 || py > scale.panel.bot + 10) return;
     dragging = true;
+    // Every move in this gesture is measured against where the stop started,
+    // so an overshoot can be walked back to it — but no further.
+    dragBase = S.trade;
     wrap.setPointerCapture?.(ev.pointerId);
+    drag(ev);
+  };
+  const drag = (ev) => {
     const v = stopFromEvent(ev);
     if (v != null) {
-      S.stop = v;
+      setStop(v, dragBase);
       paintStop();
     }
     ev.preventDefault();
   };
   const move = (ev) => {
     if (!dragging) return;
-    const v = stopFromEvent(ev);
-    if (v != null) {
-      S.stop = v;
-      paintStop();
-    }
-    ev.preventDefault();
+    drag(ev);
   };
   const end = (ev) => {
     if (!dragging) return;
     dragging = false;
+    dragBase = null;
     wrap.releasePointerCapture?.(ev.pointerId);
     render(); // re-render once, so the price scale can grow to fit the new stop
   };
@@ -743,7 +846,12 @@ document.addEventListener("keydown", (ev) => {
   const key = ev.key.toLowerCase();
   const hit = {
     decide: { b: () => takePosition(LONG), s: () => takePosition(SHORT), p: pass },
-    trade: { n: advanceDay, h: () => takeExit(0.5), x: () => takeExit(1) },
+    trade: {
+      n: advanceDay,
+      e: stopToBreakeven,
+      h: () => takeExit(0.5),
+      x: () => takeExit(1),
+    },
     // Deliberately NOT "n": holding the advance key through a close would
     // skip straight past the recap, which is the part worth reading.
     review: { enter: newSession, d: newSession },
@@ -777,7 +885,8 @@ loadUniverse()
 window.__sim = {
   state: () => S,
   setStop: (v) => {
-    S.stop = round2(v);
+    setStop(round2(v));
     render();
   },
+  breakeven: stopToBreakeven,
 };

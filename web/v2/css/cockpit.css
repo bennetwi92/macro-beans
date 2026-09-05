@@ -714,12 +714,16 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 .sim-mark-stopped{ fill:var(--loss); stroke:var(--ink); }
 .sim-mark-label{ fill:var(--ink); font-family:var(--mono); font-size:9px; }
 
-/* the stop line — the one thing you drag */
+/* the stop line — the one thing you drag, before AND after the entry */
 .sim-stop{ stroke:var(--loss); stroke-width:1; stroke-dasharray:5 3; opacity:.75; }
 .sim-stop-live{ stroke-width:1.6; opacity:1; }
 .sim-stop-tag{ fill:var(--loss); }
 .sim-stop-text{ fill:#12121a; font-family:var(--mono); font-size:9px; font-weight:600; }
 .sim-stop-hint{ fill:var(--loss); font-family:var(--mono); font-size:9px; letter-spacing:.06em; }
+/* trailed past the entry: the stop now banks a gain, so it stops reading as a
+   loss. One rule for all three shapes — a line takes the stroke, the tag and
+   the hint take the fill. Must stay after the rules above to win on order. */
+.sim-stop-free{ stroke:var(--win); fill:var(--win); }
 
 /* ---------- action bar ---------- */
 .sim-actions{
@@ -749,6 +753,9 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 .sim-btn-pass{ color:var(--dim); }
 .sim-btn-next{ color:var(--ink); }
 .sim-btn-exit{ color:var(--cyan); }
+/* B/E is one word next to three; it takes only the width it needs so the
+   EXIT buttons keep theirs on a narrow phone. */
+.sim-btn-stop{ color:var(--loss); flex:0 1 auto; padding:0 16px; }
 .sim-btn-new{ color:var(--cyan); }
 
 /* landscape phones: the status strip gives up a row before the chart does */
