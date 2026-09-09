@@ -1,5 +1,18 @@
 # Simulator candlestick patterns — implementation specification
 
+> **Superseded in part.** This document specifies **tier 2** of the design in
+> [`chart_pattern_spec.md`](chart_pattern_spec.md), not a standalone feature.
+> Two things here are overridden by that document:
+>
+> - **§7 (selection)** — candlestick patterns are consulted only when no chart
+>   pattern is found. `chart_pattern_spec.md` §8 owns the tier ladder.
+> - **The module name** — `web/v2/js/sim-patterns.js` becomes
+>   `web/v2/js/sim-candles.js`; `sim-patterns.js` is now the chart catalogue and
+>   the ladder.
+>
+> Everything else — the catalogue, the TA-Lib threshold system, the trend gate,
+> the state machine, the tests — stands as written.
+
 Implementation spec for candlestick pattern recognition on the swing-trading
 simulator (`web/v2/simulator.html`). Written to be handed to an implementing
 agent: every threshold, rule, state transition and file is named, and §14 is a

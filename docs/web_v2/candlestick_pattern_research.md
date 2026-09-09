@@ -1,5 +1,12 @@
 # Candlestick pattern recognition: what the platforms do, and what is true
 
+> **Scope note.** The primary subject of this feature is **chart patterns** —
+> triangles, wedges, flags, channels, double bottoms, support and resistance —
+> covered in [`chart_pattern_research.md`](chart_pattern_research.md). Single-candle
+> patterns are **tier 2**: consulted only when no chart pattern is found. This
+> note stands as the evidence base for that tier; §3 in particular is why it is
+> tier 2 and not tier 1.
+
 Research note behind the simulator's pattern-recognition feature. It answers
 three questions in order: what do comparable platforms actually ship, what are
 the patterns' rules precisely enough to code, and how much are the patterns
