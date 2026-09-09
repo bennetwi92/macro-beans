@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-09-09 - Chart Pattern Recognition: Research + Spec (v2 simulator)
+
+### Added
+- `docs/web_v2/chart_pattern_research.md` — how Autochartist, TrendSpider and
+  the TradingView auto-pattern scripts actually detect and draw **chart**
+  patterns (triangles, wedges, flags, channels, double bottoms,
+  head-and-shoulders, support/resistance); the four-stage pipeline they all
+  share; Lo/Mamaysky/Wang's formal pattern definitions over local extrema;
+  Bulkowski's failure, throwback and target-hit rates; and the 35-session
+  window problem specific to this simulator.
+- `docs/web_v2/chart_pattern_spec.md` — an implementation spec: a pivot/ZigZag
+  engine, one classification table covering eight two-line patterns, flags and
+  pennants, double tops/bottoms, Lo/Mamaysky/Wang head-and-shoulders with
+  ATR-relative tolerances, clustered support/resistance levels, a three-tier
+  selection ladder, a seven-state machine, Autochartist-style forecast zones,
+  the SVG and CSS, a test plan and a calibration script with pass/fail bands.
+- `docs/web_v2/candlestick_pattern_research.md` and
+  `docs/web_v2/candlestick_pattern_spec.md` — single-candle patterns
+  (engulfings, hammers, stars), now scoped as **tier 2** of the above: a
+  17-entry catalogue on TA-Lib's relative-threshold system, a mandatory trend
+  gate, and a six-state machine.
+
+### Notes
+- Documents only — no code changes. All four live under `docs/web_v2/`, which
+  `build_reports.py` excludes from the public research library.
+- **Pivot detection decides everything.** Every implementation surveyed is the
+  same pipeline — pivots, trendlines, geometry, validity — so one sensitivity
+  constant (`PIVOT_K`) determines whether the feature finds three patterns or
+  three hundred. The spec makes it the first thing built and the first thing
+  calibrated.
+- **`forming` is structural, not an edge case.** A pivot cannot be confirmed
+  until N bars have passed, so every pattern touching the right edge is
+  provisional by construction.
+- **Confirmation is the largest effect in the literature.** Double bottoms fail
+  ~64% of the time unconfirmed and ~16% once price closes past the neckline —
+  the same shape, a four-fold difference. That gap is bigger than the gap
+  between the best and worst patterns, so the state machine matters more than
+  the catalogue.
+- The spec draws a forecast **zone** — bounded by Bulkowski's statistical target
+  and the textbook measured move, time-boxed to the pattern's own length —
+  rather than a target line. A zone is an expectation; a line is a promise the
+  data does not support.
+- Two decisions are put to the owner up front: whether to keep `LOOKBACK = 35`
+  (which makes this a flag-and-level window) and the unconditional forward
+  gutter the forecast zone needs.
+
 ## 2026-09-05 - Trailing Stops in the Simulator (v2 cockpit)
 
 ### Added
