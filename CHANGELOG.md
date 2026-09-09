@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-09-09 - Candlestick Pattern Recognition: Research + Spec (v2 simulator)
+
+### Added
+- `docs/web_v2/candlestick_pattern_research.md` — what Finviz, TradingView,
+  Linn Software and TrendSpider actually ship for candlestick pattern
+  detection; TA-Lib's relative-threshold system and four of its rules
+  transcribed from source; Bulkowski's measured reversal rates and performance
+  ranks; and the academic evidence, which is thinner and more negative than the
+  trade literature.
+- `docs/web_v2/candlestick_pattern_spec.md` — an implementation spec for
+  annotating the simulator chart with at most one candlestick pattern: a
+  17-entry catalogue with exact rules, a mandatory trend gate, a six-state
+  machine (`forming` / `complete` / `confirmed` / `failed` / `aborted` /
+  `expired`), Bulkowski measure-rule targets, the SVG and CSS, the hook points
+  in `simulator.js`, a test plan and a calibration script with pass/fail bands.
+
+### Notes
+- Documents only — no code changes. Both live under `docs/web_v2/`, which
+  `build_reports.py` excludes from the public research library.
+- The load-bearing finding: **TA-Lib does not check trend, and says so in its
+  own source comments.** A reversal pattern with no prior trend is not a weak
+  signal, it is not the pattern — so the spec makes an ATR-normalised trend
+  gate part of every directional definition rather than an enhancement.
+- The second: candlestick patterns are a vocabulary for describing what just
+  happened, not a profitable signal in isolation. The spec therefore annotates
+  and never recommends, and draws `failed` exactly as plainly as `confirmed`.
+
 ## 2026-09-05 - Trailing Stops in the Simulator (v2 cockpit)
 
 ### Added
