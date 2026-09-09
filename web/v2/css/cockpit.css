@@ -725,6 +725,55 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
    the hint take the fill. Must stay after the rules above to win on order. */
 .sim-stop-free{ stroke:var(--win); fill:var(--win); }
 
+/* ---- chart patterns ---------------------------------------------------- */
+/* Three layers, and the order matters because most of these selectors have the
+   same specificity and source order is what separates them:
+
+     1. geometry — element-qualified (polyline./rect./line.), so `fill:none`
+        outranks the bare bias class below. An SVG polyline that inherits a
+        fill paints the area under itself, which turns a head-and-shoulders
+        neckline into a solid slab.
+     2. bias — the colour, one plain class.
+     3. state — element AND part qualified, so a rule written for the
+        candlestick bracket cannot also dim the support band or the zone. */
+
+/* 1. geometry */
+polyline.sim-pat-line, line.sim-pat-line{ fill:none; stroke-width:1.2; opacity:.75; }
+polyline.sim-pat-path{ fill:none; stroke-width:1; opacity:.35; stroke-dasharray:2 2; }
+polygon.sim-pat-fill{ stroke:none; opacity:.07; }
+rect.sim-pat-box{ fill:none; stroke-width:1; opacity:.5; }
+rect.sim-pat-band{ stroke:none; opacity:.09; }
+rect.sim-pat-zone{ stroke-width:1; stroke-dasharray:2 3; fill-opacity:.10; opacity:.8; }
+line.sim-pat-brk{ stroke-width:1.6; }
+.sim-pat-label{ font-family:var(--mono); font-size:9px; letter-spacing:.06em; }
+.sim-pat-tgt-text{ font-family:var(--mono); font-size:9px; }
+
+/* 2. bias */
+.sim-pat-bull{ stroke:var(--win);  fill:var(--win);  }
+.sim-pat-bear{ stroke:var(--loss); fill:var(--loss); }
+.sim-pat-either,
+.sim-pat-neutral{ stroke:var(--dim); fill:var(--dim); }
+
+/* 3. state */
+polyline.sim-pat-line.sim-pat-forming{ stroke-dasharray:4 3; opacity:.55; }
+polyline.sim-pat-line.sim-pat-broken-out,
+polyline.sim-pat-line.sim-pat-throwback{ stroke-width:1.6; opacity:1; }
+rect.sim-pat-box.sim-pat-forming{ stroke-dasharray:3 3; opacity:.4; }
+rect.sim-pat-zone.sim-pat-confirmed{ opacity:.4; }
+text.sim-pat-label.sim-pat-forming{ opacity:.75; }
+
+/* A dead claim goes grey and quiet, whatever it was drawn as. Each part keeps
+   its own weight: a shaded pattern body is barely-there at full strength, so
+   one blanket opacity here turns it into a slab at the moment it should be
+   fading out of the way. */
+.sim-pat-failed, .sim-pat-expired, .sim-pat-abandoned{ stroke:var(--dim); fill:var(--dim); }
+polyline.sim-pat-failed, polyline.sim-pat-expired, polyline.sim-pat-abandoned,
+line.sim-pat-failed, line.sim-pat-expired, line.sim-pat-abandoned{
+  opacity:.35; stroke-width:1; stroke-dasharray:none;
+}
+rect.sim-pat-failed, rect.sim-pat-expired, rect.sim-pat-abandoned{ opacity:.3; }
+polygon.sim-pat-failed, polygon.sim-pat-expired, polygon.sim-pat-abandoned{ opacity:.05; }
+
 /* ---------- action bar ---------- */
 .sim-actions{
   flex:0 0 auto;

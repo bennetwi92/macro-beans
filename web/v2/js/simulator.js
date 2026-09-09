@@ -10,6 +10,12 @@
 // behind a move and bank the gain — but only towards the price, never away
 // from it (sim-engine.js owns that rule).
 //
+// At most one chart pattern is annotated per deal — a triangle, a flag, a
+// double bottom, or failing those a candlestick or a support level. It is
+// found once at deal time and then plays out as the hand does. The geometry
+// lives in sim-patterns.js and sim-structure.js; this module only draws what
+// they hand back, and draws nothing at all when they hand back null.
+//
 // Everything below the app bar fits one mobile screen and never scrolls: a
 // status strip, the chart, an action bar. The indicator math lives in
 // sim-indicators.js and the trade accounting in sim-engine.js, both pure and
@@ -17,6 +23,13 @@
 
 import "./nav.js";
 import { atr, ema, macd, rsi, sma } from "./sim-indicators.js";
+import {
+  PATTERN_IDS,
+  detectPattern,
+  lineAt,
+  patternText,
+  resolvePattern,
+} from "./sim-patterns.js";
 import {
   LONG,
   SHORT,
@@ -34,7 +47,11 @@ import {
 
 /* ---------- rules of the game ---------- */
 
-const LOOKBACK = 35; // sessions visible when you decide
+// Sessions VISIBLE when you decide. This is a phone-screen budget and nothing
+// more: the bars, the indicators and the pattern detector all read as far back
+// as they need (sim-patterns.js DETECT_BARS), and a pattern that starts before
+// the left edge is simply drawn from the edge.
+const LOOKBACK = 35;
 const REVIEW_DAYS = 20; // sessions revealed after a pass
 const MAX_HOLD = 60; // hard runway; the trade is closed at the last bar
 const WARMUP = 200 + LOOKBACK; // bars needed before a decision day (200SMA + window)
@@ -102,10 +119,11 @@ function eligibleRange(bars) {
 
 /* ---------- session lifecycle ---------- */
 
-async function newSession() {
+async function newSession(opts = {}) {
   setMessage("Dealing…");
   const wanted = params.get("t");
   const tries = wanted ? [wanted] : pickTickers(6);
+  const hunt = opts.anyPattern ? null : wantedPattern();
   for (const ticker of tries) {
     let data;
     try {
@@ -116,17 +134,20 @@ async function newSession() {
     const bars = (data.bars || []).map(toBar);
     const [lo, hi] = eligibleRange(bars);
     if (hi < lo) continue;
+    const ind = indicatorsFor(bars);
 
     let dIdx;
     const wantedDate = params.get("d");
     if (wantedDate) {
       dIdx = bars.findIndex((b) => b.d >= wantedDate);
       if (dIdx < lo || dIdx > hi) dIdx = lo + Math.floor((hi - lo) / 2);
+    } else if (hunt) {
+      dIdx = huntPattern(bars, ind, lo, hi, hunt);
+      if (dIdx == null) continue; // this name never shows it; try the next
     } else {
       dIdx = lo + Math.floor(Math.random() * (hi - lo + 1));
     }
 
-    const ind = indicatorsFor(bars);
     S = {
       ticker: data.ticker,
       name: data.name,
@@ -140,11 +161,62 @@ async function newSession() {
       trade: null,
       revealed: false,
       note: "",
+      pattern: patternsOff() ? null : patternAt(bars, ind, dIdx),
     };
     render();
     return;
   }
+  if (hunt) {
+    console.warn(`simulator: no ${hunt} found in six deals — dealing normally`);
+    return newSession({ anyPattern: true });
+  }
   setMessage("No playable data yet — the simulator universe has not been built.");
+}
+
+/* ---------- the chart pattern ---------- */
+
+/** `?p=0` turns the annotation off entirely — and is the kill switch. */
+const patternsOff = () => params.get("p") === "0";
+
+/** `?p=<id>` deals until a hand carries that pattern. Unknown ids are ignored. */
+function wantedPattern() {
+  const id = params.get("p");
+  if (!id || id === "0") return null;
+  if (PATTERN_IDS.includes(id)) return id;
+  console.warn(`simulator: unknown pattern id "${id}" — ignoring`);
+  return null;
+}
+
+/**
+ * Detection is pinned to the deal: run once here, over `[0..dIdx]`, and never
+ * again. Only the pattern's STATE moves after this.
+ */
+function patternAt(bars, ind, dIdx) {
+  return detectPattern(bars, ind.atr, dIdx, {
+    visibleFrom: Math.max(0, dIdx - (LOOKBACK - 1)),
+  });
+}
+
+/**
+ * The first decision day on this name that shows `id`, or `null`.
+ *
+ * Probing is strided rather than exhaustive: the eligible range runs to a
+ * thousand-odd sessions and detection is not free, so a dense walk would stall
+ * the deal for seconds on a phone. A pattern spans weeks, so a stride of three
+ * cannot step over one — it only ever lands on a different bar of the same
+ * shape, which is exactly as good a hand.
+ */
+const HUNT_STRIDE = 3;
+const HUNT_PROBES = 400;
+
+function huntPattern(bars, ind, lo, hi, id) {
+  const start = lo + Math.floor(Math.random() * Math.max(1, hi - lo + 1));
+  for (let n = 0; n < HUNT_PROBES; n++) {
+    // Wrap, so a hunt started near the end of the runway still sees the rest.
+    const i = lo + (((start - lo + n * HUNT_STRIDE) % (hi - lo + 1)) + (hi - lo + 1)) % (hi - lo + 1);
+    if (patternAt(bars, ind, i)?.id === id) return i;
+  }
+  return null;
 }
 
 /** A few candidate tickers, so one missing file does not end the session. */
@@ -421,7 +493,7 @@ function renderActions() {
   wire("act-be", stopToBreakeven);
   wire("act-half", () => takeExit(0.5));
   wire("act-all", () => takeExit(1));
-  wire("act-new", newSession);
+  wire("act-new", () => newSession());
 }
 
 function wire(id, fn) {
@@ -433,6 +505,7 @@ function wire(id, fn) {
 
 const PAD = { l: 2, r: 46, t: 4, b: 2 };
 const GAP = 5;
+const FORWARD_SLOTS = 8; // empty slots kept to the right of the last bar
 const WEIGHTS = [
   ["price", 0.555],
   ["vol", 0.1],
@@ -450,16 +523,128 @@ const line = (x1, y1, x2, y2, cls) =>
     1
   )}" y2="${y2.toFixed(1)}"/>`;
 
+// Pattern labels carry an ampersand ("H&S"), and the chart is assembled as a
+// string and assigned to innerHTML, so text content has to be escaped.
+const esc = (str) => String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 const text = (x, y, str, cls, anchor = "start") =>
   `<text class="${cls}" x="${x.toFixed(1)}" y="${y.toFixed(
     1
-  )}" text-anchor="${anchor}">${str}</text>`;
+  )}" text-anchor="${anchor}">${esc(str)}</text>`;
 
 function polyline(pts, cls, clip) {
   if (pts.length < 2) return "";
   return `<polyline class="${cls}" ${clip ? `clip-path="url(#${clip})" ` : ""}points="${pts
     .map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`)
     .join(" ")}"/>`;
+}
+
+/**
+ * Is the pattern's claim still live? A failed, expired or abandoned pattern
+ * draws no zone and no target: the claim is dead, and a band still hanging
+ * there would be a lie. A confirmed one keeps its zone, dimmed by the CSS —
+ * the expectation was met and the reader should see where.
+ */
+const zoneLive = (p) =>
+  p.zoneNear != null &&
+  ["forming", "broken-out", "throwback", "confirmed"].includes(p.state);
+
+/**
+ * The pattern's shape, fill, forecast zone and breakout mark, as SVG.
+ *
+ * The page module knows nothing about what any pattern MEANS: `p.shape` is a
+ * drawing instruction and `p.bias` and `p.state` are class names. Adding a
+ * pattern to the catalogue never touches this function.
+ */
+function patternArt(p, g) {
+  const { W, from, to, cx, yPrice, slot, bodyW, P, lo, hi } = g;
+  const bias = `sim-pat-${p.bias}`;
+  const state = `sim-pat-${p.state}`;
+  const clip = ` clip-path="url(#sim-clip-pat)"`;
+  const sh = p.shape;
+  let out = "";
+
+  // A shape may begin off the left of the window; the clip cuts it there.
+  const i0 = Math.max(sh.x0, from - 1);
+  const i1 = Math.min(sh.x1 ?? to, to);
+
+  if (sh.kind === "level") {
+    const y0 = yPrice(sh.level + sh.band);
+    const y1 = yPrice(sh.level - sh.band);
+    out += `<rect class="sim-pat-band ${bias} ${state}"${clip} x="${PAD.l}" y="${y0.toFixed(
+      1
+    )}" width="${(W - PAD.r - PAD.l).toFixed(1)}" height="${Math.max(2, y1 - y0).toFixed(1)}"/>`;
+    out += line(PAD.l, yPrice(sh.level), W - PAD.r, yPrice(sh.level), `sim-pat-line ${bias} ${state}`);
+  } else if (sh.kind === "box") {
+    // A tier-2 candlestick: a bracket round the candles, never a fill. On this
+    // dark ground a filled box would muddy the very bars it is pointing at.
+    const x0 = cx(sh.x0) - bodyW / 2 - 3;
+    const x1 = cx(sh.x1) + bodyW / 2 + 3;
+    const y0 = yPrice(sh.hi) - 4;
+    const y1 = yPrice(sh.lo) + 4;
+    out += `<rect class="sim-pat-box ${bias} ${state}"${clip} x="${x0.toFixed(1)}" y="${y0.toFixed(
+      1
+    )}" width="${Math.max(3, x1 - x0).toFixed(1)}" height="${Math.max(3, y1 - y0).toFixed(
+      1
+    )}" rx="2"/>`;
+  } else if (i1 > i0) {
+    const xs = [cx(i0), cx(i1)];
+    const ys = sh.lines.map((ln) => [yPrice(lineAt(ln, i0)), yPrice(lineAt(ln, i1))]);
+    if (ys.length === 2) {
+      out += `<polygon class="sim-pat-fill ${bias} ${state}"${clip} points="${xs[0].toFixed(
+        1
+      )},${ys[0][0].toFixed(1)} ${xs[1].toFixed(1)},${ys[0][1].toFixed(1)} ${xs[1].toFixed(
+        1
+      )},${ys[1][1].toFixed(1)} ${xs[0].toFixed(1)},${ys[1][0].toFixed(1)}"/>`;
+    }
+    for (const y of ys) {
+      out += polyline(
+        [
+          [xs[0], y[0]],
+          [xs[1], y[1]],
+        ],
+        `sim-pat-line ${bias} ${state}`,
+        "sim-clip-pat"
+      );
+    }
+  }
+
+  // The defining pivots, so a head-and-shoulders reads as a shape and not as
+  // two stray lines, and a flag reads as sitting on top of a pole.
+  if (sh.path) {
+    out += polyline(
+      sh.path.map(([i, v]) => [cx(i), yPrice(v)]),
+      `sim-pat-path ${bias} ${state}`,
+      "sim-clip-pat"
+    );
+  }
+
+  // The forecast zone, bounded by Bulkowski's statistical target and the
+  // textbook measured move, and time-boxed to the pattern's own length. This
+  // is what the forward gutter exists for.
+  if (zoneLive(p) && p.zoneUntil != null) {
+    const zx0 = cx(p.endIdx) + slot / 2;
+    const zx1 = Math.min(W - PAD.r, cx(p.zoneUntil));
+    const zy0 = yPrice(Math.max(p.zoneNear, p.zoneFar));
+    const zy1 = yPrice(Math.min(p.zoneNear, p.zoneFar));
+    if (zx1 > zx0) {
+      out += `<rect class="sim-pat-zone ${bias} ${state}"${clip} x="${zx0.toFixed(
+        1
+      )}" y="${zy0.toFixed(1)}" width="${(zx1 - zx0).toFixed(1)}" height="${Math.max(
+        2,
+        zy1 - zy0
+      ).toFixed(1)}" rx="2"/>`;
+    }
+  }
+
+  // One tick on the trigger, at the bar that took it out.
+  if (p.breakoutIdx != null && p.breakoutIdx >= from && p.breakoutIdx <= to) {
+    const bx = cx(p.breakoutIdx);
+    const by = yPrice(p.trigger);
+    out += line(bx, by - 5, bx, by + 5, `sim-pat-brk ${bias} ${state}`);
+  }
+
+  return out;
 }
 
 function renderChart() {
@@ -482,7 +667,13 @@ function renderChart() {
   }
 
   const plotW = W - PAD.l - PAD.r;
-  const slot = plotW / n;
+  // Reserved future space. A forecast zone projects forward in time and in
+  // `decide` mode the last bar IS the right edge, so without a gutter there is
+  // nowhere to draw one. It is unconditional — applied whether or not this
+  // deal has a pattern — because a candle width that jumped between deals
+  // would be a worse tell than the gutter costs. Candles narrow by ~18%, which
+  // bodyW's existing clamp absorbs.
+  const slot = plotW / (n + FORWARD_SLOTS);
   const cx = (i) => PAD.l + slot * (i - from + 0.5);
   const bodyW = Math.max(1.4, Math.min(slot * 0.62, 9));
 
@@ -527,7 +718,13 @@ function renderChart() {
   let out = "";
   out += `<defs><clipPath id="sim-clip-price"><rect x="0" y="${P.top.toFixed(
     1
-  )}" width="${W}" height="${P.h.toFixed(1)}"/></clipPath></defs>`;
+  )}" width="${W}" height="${P.h.toFixed(1)}"/></clipPath>`;
+  // A second clip for the pattern art. A shape may start before the visible
+  // window — detection reads further back than the chart shows — so unlike the
+  // price clip this one has to cut horizontally too, at the plot's own edges.
+  out += `<clipPath id="sim-clip-pat"><rect x="${PAD.l}" y="${P.top.toFixed(
+    1
+  )}" width="${plotW.toFixed(1)}" height="${P.h.toFixed(1)}"/></clipPath></defs>`;
 
   // ---- price grid + right-hand axis ----
   const stopY0 = yPrice(liveStop());
@@ -537,6 +734,14 @@ function renderChart() {
     out += line(PAD.l, gy, W - PAD.r, gy, "sim-grid");
     // The stop's own tag wins the gutter where the two would collide.
     if (Math.abs(gy - stopY0) > 9) out += text(W - PAD.r + 4, gy + 3, fmtPx(v), "sim-axis");
+  }
+
+  // ---- chart pattern: the shape, its zone and the breakout mark ----
+  // Emitted after the grid and before the averages, so candles and lines draw
+  // on top of it. Everything here is guarded on S.pattern: null renders as
+  // nothing at all, which is the common case.
+  if (S.pattern) {
+    out += patternArt(S.pattern, { W, from, to, cx, yPrice, slot, bodyW, P, lo, hi });
   }
 
   // ---- moving averages ----
@@ -553,12 +758,19 @@ function renderChart() {
   out += polyline(maPts(S.ind.e9), "sim-ma sim-ma9");
 
   // The 200SMA is often far outside a 35-day window; say where it is instead
-  // of letting the clip hide it silently.
+  // of letting the clip hide it silently. Right-anchored at the top, beside
+  // the price axis where the other numbers live — on the left it overprinted
+  // the 9EMA/22EMA/200SMA legend whenever the average sat above the window.
   const s200 = S.ind.s200[to];
   if (s200 != null && (s200 > hi || s200 < lo)) {
     const away = ((s200 - bars[to].c) / bars[to].c) * 100;
-    const ly = s200 > hi ? P.top + 9 : P.bot - 3;
-    out += text(PAD.l + 3, ly, `200SMA ${s200 > hi ? "▲" : "▼"} ${fmtPx(s200)} (${fmtPct(away)})`, "sim-ma-off");
+    out += text(
+      W - PAD.r - 3,
+      P.top + 9,
+      `200SMA ${s200 > hi ? "▲" : "▼"} ${fmtPx(s200)} (${fmtPct(away)})`,
+      "sim-ma-off",
+      "end"
+    );
   }
 
   // ---- candles ----
@@ -583,7 +795,11 @@ function renderChart() {
   const dx = cx(S.dIdx) + slot / 2;
   if (S.dIdx >= from && S.dIdx <= to) {
     out += line(dx, PAD.t, dx, panels.rsi.bot, "sim-dline");
-    out += text(dx - 3, P.top + 9, "DECISION", "sim-dlabel", "end");
+    // At the FOOT of the price panel. The divider used to sit hard against the
+    // right edge, where a label at the top was out of everything's way; the
+    // forward gutter moved it inboard, into the corner the pattern's target
+    // readout now uses.
+    out += text(dx - 3, P.bot - 3, "DECISION", "sim-dlabel", "end");
   }
 
   // ---- entry / exit markers ----
@@ -716,6 +932,35 @@ function renderChart() {
     "sim-plabel"
   );
 
+  // ---- chart pattern: the label ----
+  // Second row of the top-left corner, under the MA legend. The top-RIGHT
+  // corner cannot hold it: the forward gutter moved the decision divider eight
+  // slots in from the right edge, so its label now sits in the middle of that
+  // corner and a right-anchored pattern name would run straight through it.
+  if (S.pattern) {
+    const p = S.pattern;
+    out += text(
+      PAD.l + 3,
+      P.top + 20,
+      patternText(p, W < 340),
+      `sim-pat-label sim-pat-${p.bias} sim-pat-${p.state}`
+    );
+    // A measured move often lands outside the visible range. The zone bounds
+    // are deliberately NOT in consider() — squashing every candle to fit a
+    // hypothesis is the wrong trade — so say where the target is instead, the
+    // same way the off-scale 200SMA does.
+    if (zoneLive(p) && p.zoneFar != null && (p.zoneFar > hi || p.zoneFar < lo)) {
+      const up = p.zoneFar > hi;
+      out += text(
+        W - PAD.r - 3,
+        P.top + 20,
+        `TGT ${up ? "▲" : "▼"} ${fmtPx(p.zoneNear)}–${fmtPx(p.zoneFar)}`,
+        `sim-pat-tgt-text sim-pat-${p.bias}`,
+        "end"
+      );
+    }
+  }
+
   // ---- legend ----
   out += text(PAD.l + 3, P.top + 9, "9EMA", "sim-plabel sim-lg9");
   out += text(PAD.l + 38, P.top + 9, "22EMA", "sim-plabel sim-lg22");
@@ -831,6 +1076,12 @@ function initDrag() {
 
 function render() {
   if (!S) return;
+  // One hook covers every way the tape moves — taking a position, +1 DAY, and
+  // PASS's twenty-session jump. resolvePattern is idempotent and terminal
+  // states short-circuit, so calling it on every render costs nothing.
+  // paintStop() deliberately does NOT call render(), which is what keeps
+  // dragging the stop from disturbing the annotation.
+  S.pattern = resolvePattern(S.pattern, S.bars, S.curIdx);
   // Both bars are laid out before the chart measures itself: the chart takes
   // the height they leave over, so drawing it first would size it against a
   // stale (taller) box and push the RSI panel under the action bar.
@@ -854,8 +1105,8 @@ document.addEventListener("keydown", (ev) => {
     },
     // Deliberately NOT "n": holding the advance key through a close would
     // skip straight past the recap, which is the part worth reading.
-    review: { enter: newSession, d: newSession },
-    recap: { enter: newSession, d: newSession },
+    review: { enter: () => newSession(), d: () => newSession() },
+    recap: { enter: () => newSession(), d: () => newSession() },
   }[S.mode];
   const fn = hit && hit[key];
   if (!fn) return;
@@ -876,7 +1127,7 @@ window.addEventListener("resize", () => {
 
 initDrag();
 loadUniverse()
-  .then(newSession)
+  .then(() => newSession())
   .catch((err) => setMessage(`Could not load the simulator universe (${err.message})`));
 
 // Debug hook: inspect or drive a deal from the console (or a headless browser)
@@ -889,4 +1140,5 @@ window.__sim = {
     render();
   },
   breakeven: stopToBreakeven,
+  pattern: () => S && S.pattern,
 };
