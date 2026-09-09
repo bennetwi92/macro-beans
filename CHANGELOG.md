@@ -1,5 +1,80 @@
 # Changelog
 
+## 2026-09-09 - Chart Patterns on the Simulator (v2)
+
+Implements `docs/web_v2/chart_pattern_spec.md`. At most **one** pattern is
+annotated per deal, found once at deal time and then played out as the hand
+does. `null` is the common outcome and draws nothing at all.
+
+### Added
+- `web/v2/js/sim-structure.js` — pivots (strict local extrema over `PIVOT_K`
+  bars either side), a ZigZag reduction filtered by an ATR-relative swing
+  threshold, least-squares trendline fitting, and touch-weighted
+  support/resistance clustering. Pure, no DOM, no fetch.
+- `web/v2/js/sim-patterns.js` — the catalogue and everything above it: one
+  classification table covering the eight two-line families (ascending /
+  descending / symmetrical triangles, rising and falling wedges, rectangles,
+  ascending and descending channels), flags and pennants off a pole, double
+  tops and bottoms, Lo/Mamaysky/Wang head-and-shoulders with ATR-relative
+  tolerances, the three-tier selection ladder, Bulkowski-bounded forecast
+  zones, and the seven-state machine (`forming` → `broken-out` ⇄ `throwback`
+  → `confirmed` / `failed` / `expired` / `abandoned`).
+- `web/v2/js/sim-candles.js` — tier 2: the 17-entry candlestick catalogue on
+  TA-Lib's relative-threshold system, with the trend gate TA-Lib leaves to its
+  caller. Consulted only when no chart pattern is found.
+- `tests/web/sim-structure.test.js`, `sim-patterns.test.js`,
+  `sim-candles.test.js` and the `_sim-bars.js` fixture builder — 145 new tests,
+  every fixture stated as the lines or turning points it is supposed to be so a
+  failure localises to one clause.
+- `scripts/tools/pattern_census.mjs` — the calibration harness. Imports the
+  browser modules directly, runs detection at every eligible decision index and
+  resolves each hit to the end of its runway. Not wired into CI.
+
+### Changed
+- `web/v2/js/simulator.js` — five hooks: detect once in `newSession()`, resolve
+  on every `render()`, draw the shape / zone / breakout mark in `renderChart()`,
+  and an unconditional eight-slot forward gutter so a forecast zone has
+  somewhere to go. `?p=<id>` deals a chosen pattern, `?p=0` turns the feature
+  off, `window.__sim.pattern()` inspects the live one.
+- `web/v2/css/cockpit.css` — the pattern art, in three layers (geometry, bias
+  colour, state) whose selector specificity is load-bearing.
+- The decision divider's label moved to the foot of the price panel and the
+  off-scale 200SMA note to the top right. The forward gutter pulled the divider
+  eight slots in from the right edge, into the corner those labels shared; the
+  200SMA note had also been overprinting the moving-average legend whenever the
+  average sat above the window, which predates this change.
+
+### Notes
+- **The 35-session window is a display budget, not a detection one.** The chart
+  still shows 35 bars because that is what reads on a phone; the detector reads
+  back 90, and a shape that starts before the left edge is clipped there. This
+  reverses the spec's §0.1 assumption that the two are the same number, and it
+  is what makes head-and-shoulders and multi-month channels findable at all.
+- **The census caught a detector that was far too loose.** The spec's constants
+  were derived for a 35-bar window; at 90 bars the detector tries ~80 candidate
+  spans per deal, and the first run put a chart pattern on **72.6%** of decision
+  points against a 20-45% band. Eleven constants were tightened — the touch
+  tolerance, the two-line touch rule (3+2 → 3+3), both neckline families' shape
+  tolerances, and the S/R clustering — bringing it to 25.0%. The reasoning and
+  the full output are appended to the spec under `## Calibration results`.
+- **The two-line touch test is close to circular** and this is the thing to
+  remember when tuning: a trendline is fitted *through* the pivots and then
+  checked *against* those same pivots, so its threshold is doing far more work
+  than it looks like it is.
+- **Run against random-walk series, not real prices.** Yahoo Finance is
+  unreachable from the environment this shipped from, so the simulator JSON
+  could not be built. A random walk under-produces every pattern that needs
+  price to respect a line, so the bands must be re-checked against real data;
+  what it does prove is the direction that mattered here, since nothing about
+  real data makes a loose detector tighter.
+- Deviations from the spec, each with its reasoning in the code: flags are
+  triggered off their drawn envelope rather than their extreme high (the drawn
+  boundary and the stated trigger must be the same object); flag-vs-pennant is
+  decided on envelope width rather than a raw range test (which is biased,
+  because a flag's first half always inherits the drop off the pole); tier 2
+  drops its own "forming" candidates and shares tier 1's states and renderer.
+- `build_sim.py`, `deploy.yml`, `.gitignore` and `nav.js` are untouched.
+
 ## 2026-09-09 - Chart Pattern Recognition: Research + Spec (v2 simulator)
 
 ### Added

@@ -113,6 +113,9 @@ web/v2/
     simulator.js        simulator page (state machine + candle/indicator SVG)
     sim-indicators.js   pure indicator math (EMA/SMA/MACD/RSI/ATR), unit-tested
     sim-engine.js       pure trade accounting (fills, stop, P&L in % and R)
+    sim-structure.js    pure price structure: pivots, ZigZag, trendlines, S/R
+    sim-patterns.js     pure chart-pattern catalogue, tier ladder, state machine
+    sim-candles.js      pure tier-2 candlestick catalogue (TA-Lib thresholds)
     prices.js           cockpit menu + FX → native-currency-to-GBP helpers
     book.js             pure trading-book accounting (average cost, GBP)
     trades.js / positions.js / portfolio.js / requests.js   private pages
@@ -374,7 +377,35 @@ Two invariants in that model are easy to break by accident:
   through the price; the page hands it raw drag positions and lets it decide,
   rather than reimplementing the rule in the drag handler.
 
+#### The chart pattern annotation
+
+At most **one** pattern is annotated per deal, chosen by a three-tier ladder:
+a chart pattern (triangle, wedge, flag, channel, double top/bottom,
+head-and-shoulders), failing that a candlestick, failing that a support or
+resistance level, failing that nothing at all. `null` is the common outcome and
+renders as nothing — resist the urge to fill the space.
+
+Four rules bind work here:
+
+1. **The 35-session window is a DISPLAY budget.** `LOOKBACK` is what fits a
+   phone screen; the bars, the indicators and the detector all read back as far
+   as they need (`DETECT_BARS = 90`). A shape that starts before the left edge
+   is clipped there, which is what every charting platform does. Do not narrow
+   detection to match the chart, and do not widen the chart to match detection.
+2. **No look-ahead.** `detectPattern(bars, atr, A)` reads nothing past `A`;
+   `resolvePattern(p, bars, T)` nothing past `T`. There is a mandatory test.
+   A simulator that quietly peeks at tomorrow is worse than one with no
+   patterns, because nothing on screen would say so.
+3. **Detection is pinned to the deal.** It runs once, in `newSession()`. Only
+   the pattern's *state* evolves afterwards. A label that churns as you tap
+   `+1 DAY` teaches nothing.
+4. **Re-run the census after touching any constant.** The gates are calibrated
+   against firing-rate bands (`docs/web_v2/chart_pattern_spec.md` §13), and
+   loosening one by eye is how the feature becomes wallpaper.
+
 `?t=<TICKER>&d=<ISO date>` deals a fixed hand — use it when testing.
+`?p=<id>` deals until a hand carries that pattern, `?p=0` turns the annotation
+off, and `window.__sim.pattern()` returns the live one.
 
 ### Publish a research report
 
@@ -524,7 +555,8 @@ without a hosting alternative.
 | **Add a tradeable instrument** | `config/instruments.toml` → `[[instrument]]` (`surfaces=["web"]` public, `["cockpit"]` v2-only) |
 | **Add a scanner strategy (v2)** | `web/js/strategy-engine.js` (math + tests) → register in `web/v2/js/scanner.js` `STRATEGIES` |
 | **Add a cockpit page (v2)** | new `web/v2/<page>.html` + `js/<page>.js`, add to `PAGES` in `nav.js` |
-| **Change the simulator** | `web/v2/js/simulator.js` (page) · `sim-indicators.js` / `sim-engine.js` (math + `tests/web/sim-*.test.js`) |
+| **Change the simulator** | `web/v2/js/simulator.js` (page) · `sim-indicators.js` / `sim-engine.js` / `sim-structure.js` / `sim-patterns.js` / `sim-candles.js` (math + `tests/web/sim-*.test.js`) |
+| **Tune the simulator's pattern detection** | constants in `sim-structure.js` / `sim-patterns.js`, then `node scripts/tools/pattern_census.mjs` against the bands in `docs/web_v2/chart_pattern_spec.md` §13 |
 | **Change the simulator universe** | `config/sp500.csv`, then `refresh --tickers-file` + `build_sim.py` |
 | **Publish a report (v2)** | drop a `.md` under `docs/<topic>/`; `build_reports.py` indexes it |
 | **Change v2 colors / fonts** | `web/v2/css/cockpit.css` → `:root` |

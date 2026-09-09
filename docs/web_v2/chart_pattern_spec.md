@@ -861,6 +861,151 @@ too close, not that the detector is good.
 
 ---
 
+## Calibration results — 2026-09-09
+
+Run on generated random-walk series, not on the built simulator JSON. Yahoo
+Finance is unreachable from the environment this shipped from (the egress proxy
+cuts the tunnel mid-handshake), so `web/v2/data/sim/*.json` could not be
+produced. `pattern_census.mjs --synthetic` is the fallback, and the bands below
+have to be re-checked against real data before the constants are settled:
+
+    python -m src.data.refresh --tickers-file config/sp500.csv --start 2018-01-01
+    /usr/local/bin/python3 scripts/site/build_sim.py
+    node scripts/tools/pattern_census.mjs
+
+A random walk is a weak proxy in one direction and a strong one in the other. It
+has no trends, no real support and no genuine trendlines, so every pattern that
+depends on price *respecting* something is under-produced — a low tier-1 share
+here proves little. But nothing about real data makes a loose detector tighter,
+so a HIGH share here is a real failure, and that is what the first run showed:
+**72.6%** of decision points carried a chart pattern, against a 20-45% band.
+
+### What the census changed
+
+The spec's constants were derived for a 35-session detection window. §0.1's
+premise no longer holds — the owner's instruction is that the 35 sessions are a
+phone-screen budget and detection should read back as far as it needs (now
+`DETECT_BARS = 90`) — and at that width the per-candidate gates do not hold up:
+the detector tries ~80 candidate spans per deal, so a test that merely looks
+plausible fires somewhere almost every time.
+
+| constant | spec | shipped | why |
+|---|---|---|---|
+| `TOUCH_ATR` | 0.35 | **0.20** | a line is fitted through the pivots and then checked against those same pivots; at 0.35 ATR that is close to circular |
+| two-line touches | 3 + 2 | **3 + 3** | two points always lie on their own line — not a finding when 80 spans are tried |
+| `HS_TOL_ATR` | 0.7 | **0.35** | at 0.7 the two head-and-shoulders forms alone took 32% of tier 1 |
+| `HS_HEAD_ATR` | 1.5 | **2.0** | " |
+| `DB_TOL_ATR` | 0.6 | **0.35** | doubles took a further 16% |
+| `DB_RISE_ATR` | 1.5 | **2.0** | " |
+| `NECK_RECENCY` | new | **10** | at 20, a neckline pattern has usually already broken by the decision bar, which pushed `forming` below its band |
+| `SR_TOL_ATR` | 0.5 | **0.35** | three pivots cluster near almost any price over 90 sessions |
+| `SR_MIN_TOUCHES` | 3 | **4** | " |
+| `SR_NEAR_ATR` | 1.5 | **1.0** | " |
+| `CANDLE_RECENCY` | 3 | **2** | tier 2 is a fallback now, not the subject |
+
+`PIVOT_K` and `MIN_SWING_ATR` were swept first, as §13 directs, and moved the
+tier-1 share by only 9 and 3 points respectively. They are left at 2 and 0.75.
+
+### The one band still failing
+
+`bear-pennant` reaches 0.1% of tier-1 hits against a >= 0.3% floor, and
+`bull-pennant` / `bull-flag` sit just over it. All three need a **pole** — a
+clean directional run of 3+ ATR — which is exactly the structure a random walk
+does not produce. This is where the synthetic proxy is least informative, so the
+flag rules were left alone rather than loosened to chase the number. Re-run
+against real data before cutting the pennants.
+
+### Reading the terminal split
+
+Confirmation rates are low across the board (0% for the ascending triangle, 5%
+for the double bottom). The spec warns about the opposite failure — 90%
+confirming would mean `zoneNear` is trivially reachable — and this is its
+mirror: on a driftless series a measured move is rarely reached. The three
+**assumed** `hitRate` values in §7.3 (`falling-wedge`, `rectangle`, and both
+head-and-shoulders forms) therefore remain unrevisited; a synthetic run cannot
+settle them.
+
+### Full output
+
+## Pattern census
+
+Source: SYNTHETIC random walks (200 names)
+Decision points: 48,200 (stride 5) in 3.2s
+
+#### Tier reach
+
+| tier | share | band | verdict |
+|---|---|---|---|
+| 1 — chart pattern | 25.0% | 20–45% | PASS |
+| 2 — candlestick | 26.4% | — | — |
+| 3 — S/R level | 16.4% | — | — |
+| any pattern | 67.9% | ≤ 75% | PASS |
+| no pattern | 32.1% | — | — |
+
+#### Tier 1 by id
+
+| id | count | share of tier 1 | ≥ 0.3% |
+|---|---|---|---|
+| double-bottom | 2451 | 20.3% | PASS |
+| inverse-head-and-shoulders | 2099 | 17.4% | PASS |
+| head-and-shoulders | 2017 | 16.7% | PASS |
+| double-top | 1701 | 14.1% | PASS |
+| falling-wedge | 859 | 7.1% | PASS |
+| ascending-channel | 538 | 4.5% | PASS |
+| descending-channel | 533 | 4.4% | PASS |
+| bear-flag | 494 | 4.1% | PASS |
+| rising-wedge | 442 | 3.7% | PASS |
+| symmetrical-triangle | 359 | 3.0% | PASS |
+| ascending-triangle | 154 | 1.3% | PASS |
+| rectangle | 119 | 1.0% | PASS |
+| descending-triangle | 118 | 1.0% | PASS |
+| bull-pennant | 111 | 0.9% | PASS |
+| bull-flag | 37 | 0.3% | PASS |
+| bear-pennant | 14 | 0.1% | **FAIL** |
+
+Largest single id: 20.3% (band ≤ 30%) — PASS
+
+#### State at the decision bar (tier 1)
+
+| state | share |
+|---|---|
+| forming | 59.0% |
+| broken-out | 15.2% |
+| throwback | 9.3% |
+| abandoned | 9.2% |
+| confirmed | 5.7% |
+| failed | 1.1% |
+| expired | 0.6% |
+
+`forming` at the decision bar: 59.0% (band 50–85%) — PASS
+
+#### Terminal state after the 60-session runway
+
+| id | confirmed | failed | expired | abandoned | still open |
+|---|---|---|---|---|---|
+| double-bottom |   5% |   2% |  54% |  39% |   0% |
+| inverse-head-and-shoulders |  27% |  10% |  36% |  26% |   0% |
+| head-and-shoulders |  35% |  11% |  39% |  15% |   0% |
+| double-top |   3% |   2% |  57% |  38% |   0% |
+| falling-wedge |  31% |  15% |  11% |  43% |   0% |
+| ascending-channel |   0% |  11% |  30% |  58% |   0% |
+| descending-channel |   0% |  20% |  22% |  57% |   0% |
+| bear-flag |  12% |  35% |  28% |  25% |   0% |
+| rising-wedge |  48% |  17% |   1% |  34% |   0% |
+| symmetrical-triangle |  48% |  47% |   6% |   0% |   0% |
+| ascending-triangle |   0% |  36% |   8% |  56% |   0% |
+| rectangle |  16% |  15% |  69% |   0% |   0% |
+| descending-triangle |  62% |  19% |   0% |  19% |   0% |
+| bull-pennant |   0% |  32% |   0% |  68% |   0% |
+| bull-flag |   8% |  76% |   0% |  16% |   0% |
+| bear-pennant |   0% |  29% |   0% |  71% |   0% |
+
+> Read against a random walk. Structure-free series under-produce every
+> pattern that needs repeated respect for a line, so treat a LOW tier-1
+> share here as uninformative and a HIGH one as a real failure.
+
+---
+
 ## 14. Acceptance checklist
 
 - [ ] `sim-structure.js` and its tests land and pass **before** the catalogue is written.
