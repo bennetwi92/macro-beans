@@ -200,6 +200,17 @@ function isTerminal(p) {
 }
 
 /**
+ * Has this pattern nothing left to say? The same question `isTerminal` answers,
+ * asked from outside the module, with `null` — no pattern at all — counting as
+ * over. The simulator uses it to decide whether a decision day that has moved
+ * (WAIT) is entitled to a fresh look, without the page module having to know
+ * what any state name means.
+ */
+export function isPatternOver(p) {
+  return !p || isTerminal(p);
+}
+
+/**
  * How each state is worded, per tier. The raw state names are right for a
  * chart pattern and wrong for the other two: a completed engulfing is not
  * "forming", it is an unconfirmed setup, and a support level is never

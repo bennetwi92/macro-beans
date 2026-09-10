@@ -17,6 +17,7 @@ import {
   DETECT_BARS,
   PATTERN_IDS,
   detectPattern,
+  isPatternOver,
   patternText,
   resolvePattern,
 } from "../../web/v2/js/sim-patterns.js";
@@ -601,6 +602,40 @@ test("state: a level is broken, never failed or confirmed", () => {
 
 test("state: null resolves to null", () => {
   assert.equal(resolvePattern(null, [], 0), null);
+});
+
+// The simulator's WAIT button asks this question every time it rolls the
+// decision day forward: may I take a fresh look, or is a claim still live?
+test("state: isPatternOver separates a live claim from a spent one", () => {
+  const d = deal(TWO_LINE_FIXTURES["ascending-triangle"]);
+  const p = find(d);
+
+  assert.equal(isPatternOver(null), true, "no pattern is over by definition");
+  assert.equal(p.state, "forming");
+  assert.equal(isPatternOver(p), false);
+
+  const brokenOut = stateAfter(d, p, [p.trigger + 1]);
+  assert.equal(brokenOut.state, "broken-out");
+  assert.equal(isPatternOver(brokenOut), false, "a running breakout is still a claim");
+
+  for (const [closes, state] of [
+    [[p.trigger + 1, p.zoneNear + 0.2], "confirmed"],
+    [[p.trigger + 1, p.invalidate - 2], "failed"],
+  ]) {
+    const r = stateAfter(d, p, closes);
+    assert.equal(r.state, state);
+    assert.equal(isPatternOver(r), true, `${state} is spent`);
+  }
+});
+
+test("state: a broken level is over, even though 'broken-out' is not terminal", () => {
+  const d = deal(LEVEL_FIXTURE);
+  const p = find(d, { tiers: [3] });
+  assert.equal(isPatternOver(p), false);
+  const broken = stateAfter(d, p, [p.trigger + 2]);
+  assert.equal(broken.state, "broken-out");
+  assert.equal(broken.tier, 3);
+  assert.equal(isPatternOver(broken), true, "a level has nothing to say past its break");
 });
 
 /* ---------- the label ---------- */

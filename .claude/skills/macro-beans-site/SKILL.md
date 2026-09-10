@@ -369,6 +369,15 @@ a gap, a stop that can be trailed towards the price but never away from it,
 results in % and R) is documented at the top of `sim-engine.js`. Change it
 there, not in the page.
 
+A decision has **four** answers, not three: BUY, SHORT, PASS, and **WAIT**,
+which rolls the decision day forward one session and re-deals the same hand one
+bar wiser. WAIT costs a session off a `MAX_WAIT` budget and the status chip
+prices it (`WAITED nD ±x%`), because standing aside for a confirmation that
+never comes is its own bad habit. Two details it owns: a random deal is placed
+with a full wait budget in front of it (so the button is never dead on arrival),
+and an **untouched** stop re-anchors to the new close while a **dragged** one
+stays exactly where it was put.
+
 Two invariants in that model are easy to break by accident:
 
 - **`R` is measured off `initialStop`**, frozen when the trade opens. Trailing
@@ -398,7 +407,11 @@ Four rules bind work here:
    patterns, because nothing on screen would say so.
 3. **Detection is pinned to the deal.** It runs once, in `newSession()`. Only
    the pattern's *state* evolves afterwards. A label that churns as you tap
-   `+1 DAY` teaches nothing.
+   `+1 DAY` teaches nothing. The single exception is **WAIT**, which moves the
+   decision day itself: `refreshPattern()` may take a fresh look, but *only*
+   under a claim that is already spent (`isPatternOver`), and it discards a
+   fresh look that is spent too. A live pattern is never re-detected under, and
+   once a position is open nothing re-detects at all.
 4. **Re-run the census after touching any constant.** The gates are calibrated
    against firing-rate bands (`docs/web_v2/chart_pattern_spec.md` §13), and
    loosening one by eye is how the feature becomes wallpaper.
@@ -555,7 +568,7 @@ without a hosting alternative.
 | **Add a tradeable instrument** | `config/instruments.toml` → `[[instrument]]` (`surfaces=["web"]` public, `["cockpit"]` v2-only) |
 | **Add a scanner strategy (v2)** | `web/js/strategy-engine.js` (math + tests) → register in `web/v2/js/scanner.js` `STRATEGIES` |
 | **Add a cockpit page (v2)** | new `web/v2/<page>.html` + `js/<page>.js`, add to `PAGES` in `nav.js` |
-| **Change the simulator** | `web/v2/js/simulator.js` (page) · `sim-indicators.js` / `sim-engine.js` / `sim-structure.js` / `sim-patterns.js` / `sim-candles.js` (math + `tests/web/sim-*.test.js`) |
+| **Change the simulator** | `web/v2/js/simulator.js` (page, incl. the BUY/WAIT/PASS/SHORT bar) · `sim-indicators.js` / `sim-engine.js` / `sim-structure.js` / `sim-patterns.js` / `sim-candles.js` (math + `tests/web/sim-*.test.js`) |
 | **Tune the simulator's pattern detection** | constants in `sim-structure.js` / `sim-patterns.js`, then `node scripts/tools/pattern_census.mjs` against the bands in `docs/web_v2/chart_pattern_spec.md` §13 |
 | **Change the simulator universe** | `config/sp500.csv`, then `refresh --tickers-file` + `build_sim.py` |
 | **Publish a report (v2)** | drop a `.md` under `docs/<topic>/`; `build_reports.py` indexes it |
