@@ -1,5 +1,64 @@
 # Changelog
 
+## 2026-09-10 - Market confluence on the Simulator (v2)
+
+The simulator graded the chart and ignored the tide. A long taken into a market
+below its own 50-day average is a different trade from the same chart in a bull
+tape, and nothing on the screen said so. It does now: a one-line **market
+strip** between the status chips and the chart carries the trend of SPY, QQQ and
+IWM (daily and weekly), the stock's sector ETF rank, its relative strength
+against SPY, the VIX, and the **Market Tailwinds Score out of 35** those add up
+to — and, in Strict Mode, takes the button away when the tailwind is not there.
+
+### Added
+- `web/v2/js/sim-market.js` — the math, pure and tested: index trend states
+  (price > 21EMA > 50SMA bullish, price < 50SMA bearish, else neutral) on the
+  daily and on a **running** weekly bar, 20-day relative strength, sector
+  ranking over 1 / 5 / 20 sessions, and the 35-point score (trend 20 / sector
+  15, minus 5 when the VIX is over 30).
+  - **The score is for a side.** A bear tape is worth the full 20 to a short and
+    a bottom-ranked sector the full 15 — a gate that only fires on longs is one
+    tap from being decorative. The VIX haircut is the one thing not mirrored.
+  - `compositePct(blocks)` scores the points as a percentage of the points that
+    were *on offer*, so an unavailable block leaves both sides of the fraction.
+    It takes a list because the epic's remaining blocks land in the same
+    composite later.
+- `web/v2/js/simulator.js` — the strip, the gate and two rule modes.
+  **Learning** (default) allows every trade, costs a counter-trend entry one
+  extra tap (`BUY` → `BUY ANYWAY`) behind the warning banner, and prices the
+  forgone points in the recap. **Strict** disables the button for any side under
+  75% of the available points — which, by the arithmetic, is every
+  counter-trend entry. Toggle on the strip, `localStorage`, or `?rules=strict`.
+- `web/v2/css/cockpit.css` — the `.sim-market` strip: 18px, one line, glyphs
+  over words, segments shed by width (VIX below 500px, QQQ/IWM below 440px) so
+  the score, SPY, the sector and RS always survive on a phone.
+- `config/market_context.csv` + `scripts/site/build_sim_market.py` →
+  `web/v2/data/sim-market.json`: SPY / QQQ / IWM, the eleven GICS sector SPDRs
+  and the VIX, closes only, reindexed onto SPY's calendar. One ~200 KB fetch a
+  session. Wired into `deploy.yml` (refresh + build).
+- `docs/web_v2/market_confluence.md` — the spec.
+
+### Notes
+- **No look-ahead**, same rule the patterns live under: every reading resolves
+  to the last market session ON OR BEFORE the date asked for, and the current
+  week is closed with today's close rather than Friday's. Both have tests.
+- **Fail open.** A missing feed, a date before the history, or a ticker with no
+  sector ETF marks its block unavailable and rescales the composite — it never
+  scores zero, so no gate can fire on the build's own failure. An unmapped
+  ticker benchmarks against SPY and says so with a `⚠` on the strip.
+- The strip is one line and stays one line: the warning and the Strict-Mode
+  block take it over rather than opening a second row, and the recap's
+  entry-time read (`MKT @ENTRY ▲0/35 −35`) rides there rather than becoming a
+  sixth status chip — a sixth is what pushes `RESULT` past the 52px cap.
+
+### Tests
+- `tests/web/sim-market.test.js` — 13 tests: the three trend states daily and
+  weekly, the running-week rule, RS and sector ranking, the 35-point allocation
+  on both sides, the VIX haircut, the composite rescale, every fail-open path,
+  a look-ahead test that truncates the feed and asserts the read is unchanged,
+  and a leading-gap guard (a series that listed after the window starts reads
+  as no reading, not as a quiet neutral). Suite: 191 → 204.
+
 ## 2026-09-10 - WAIT on the Simulator (v2)
 
 A decision now has four answers instead of three. Some setups are not a buy, a

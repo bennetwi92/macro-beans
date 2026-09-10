@@ -17,6 +17,13 @@
 // behind a move and bank the gain — but only towards the price, never away
 // from it (sim-engine.js owns that rule).
 //
+// A one-line MARKET strip sits under the status chips: the trend of SPY, QQQ
+// and IWM (daily and weekly), where this stock's sector ETF ranks, its 20-day
+// relative strength, the VIX, and the tailwind score those add up to. It reads
+// as of the day on screen and never past it. Take a long into a market below
+// its 50-day and the strip becomes the warning instead; in Strict Mode it
+// takes the button away. The math is sim-market.js, also pure and tested.
+//
 // At most one chart pattern is annotated per deal — a triangle, a flag, a
 // double bottom, or failing those a candlestick or a support level. It is
 // found once at deal time and then plays out as the hand does. The geometry
@@ -38,6 +45,17 @@ import {
   patternText,
   resolvePattern,
 } from "./sim-patterns.js";
+import {
+  BENCHMARK,
+  INDICES,
+  STRICT_MIN,
+  VIX_PENALTY,
+  VIX_SPIKE,
+  compositePct,
+  marketStatus,
+  prepareMarket,
+  scoreFor,
+} from "./sim-market.js";
 import {
   LONG,
   SHORT,
@@ -76,6 +94,8 @@ const params = new URLSearchParams(location.search);
 /* ---------- state ---------- */
 
 let universe = [];
+let market = null; // prepared market-context feed, or null (the feature fails open)
+let rules = loadRules(); // "learn" | "strict" — see the rule modes section
 let S = null; // the live session (see newSession)
 let scale = null; // chart geometry from the last render, for the stop drag
 let dragging = false;
@@ -99,6 +119,24 @@ async function loadTicker(ticker) {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
+}
+
+/**
+ * The market-context feed, or nothing.
+ *
+ * Deliberately not awaited by the deal: a missing or slow sim-market.json must
+ * never stop a hand being played. The strip renders "MARKET SCORE UNAVAILABLE"
+ * and every gate stands down — fail open is the rule the whole feature obeys.
+ */
+async function loadMarket() {
+  try {
+    const res = await fetch("data/sim-market.json", { cache: "no-cache" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    market = prepareMarket(await res.json());
+  } catch (err) {
+    market = null;
+    console.warn(`simulator: no market context (${err.message})`);
+  }
 }
 
 /** Indicator set drawn on every chart, aligned bar-for-bar with `bars`. */
@@ -170,6 +208,7 @@ async function newSession(opts = {}) {
       name: data.name,
       sector: data.sector,
       bars,
+      closes: bars.map((b) => b.c), // the RS line's numerator; kept once, not per render
       ind,
       dIdx,
       dIdx0: dIdx, // the day this hand was dealt on, so WAIT can price itself
@@ -182,6 +221,10 @@ async function newSession(opts = {}) {
       trade: null,
       revealed: false,
       note: "",
+      mkt: null, // market status as of the day on screen; refreshed every render
+      mktEntry: null, // ...frozen at the entry, so the recap grades the decision
+      armed: null, // a counter-trend side whose warning has been shown once
+      penalty: 0, // Learning Mode: tailwind points forgone by taking it anyway
       pattern: patternsOff() ? null : patternAt(bars, ind, dIdx),
     };
     render();
@@ -277,6 +320,83 @@ function defaultStop(bars, ind, dIdx) {
   return round2(close - STOP_ATR * a);
 }
 
+/* ---------- market confluence ---------- */
+
+// Rule modes. LEARN lets you take anything and prices the mistake afterwards;
+// STRICT takes the button away below the gate. The choice is remembered per
+// browser and `?rules=strict|learn` overrides it for a link you want to share.
+const RULES_KEY = "mb.sim.rules";
+
+function loadRules() {
+  const q = new URLSearchParams(location.search).get("rules");
+  if (q === "strict" || q === "learn") return q;
+  try {
+    return localStorage.getItem(RULES_KEY) === "strict" ? "strict" : "learn";
+  } catch {
+    return "learn"; // private mode / storage blocked — the permissive default
+  }
+}
+
+function toggleRules() {
+  rules = rules === "strict" ? "learn" : "strict";
+  try {
+    localStorage.setItem(RULES_KEY, rules);
+  } catch {
+    /* not persisting is fine; the session still honours the choice */
+  }
+  if (S) S.armed = null; // a warning acknowledged under the old rules is spent
+  render();
+}
+
+/** The day the strip reports on: the decision day, or the tape once it moves. */
+const shownIdx = () => (S.mode === "decide" ? S.dIdx : S.curIdx);
+
+/**
+ * Market status as of a bar. Everything it reads is dated ON OR BEFORE that
+ * bar (sim-market.js `asOf`), so the strip can never leak a session the chart
+ * has not shown yet.
+ */
+function marketAt(idx) {
+  if (!market || !S) return null;
+  return marketStatus(market, {
+    sector: S.sector,
+    date: S.bars[idx].d,
+    stock: { closes: S.closes, index: idx },
+  });
+}
+
+/**
+ * May `side` be taken, and what should be said about it?
+ *
+ *   pct      the composite — today the market block alone, rescaled to a
+ *            percentage of the points that were actually on offer, so a
+ *            missing feed reads as `null` rather than as a failing grade
+ *   counter  taking this side against the broad market's own trend
+ *   blocked  Strict Mode, below the gate
+ *
+ * `null` pct means nothing was scoreable: nothing is blocked and nothing is
+ * warned. Fail open, every time.
+ */
+function gateFor(side) {
+  const st = S.mkt;
+  const score = st?.available ? scoreFor(st, side) : null;
+  const pct = compositePct([score]);
+  return {
+    score,
+    pct,
+    counter: !!st?.available && st.regime === (side === LONG ? "bear" : "bull"),
+    blocked: rules === "strict" && pct != null && pct < STRICT_MIN,
+  };
+}
+
+// The story's copy, verbatim for the long case and mirrored for the short —
+// the button exists, so the rule has to cover it or Strict Mode is one tap
+// away from being decorative.
+const counterText = (side) =>
+  side === LONG
+    ? "Warning: Taking a long position against a broad market downtrend reduces win-rate by ~40%."
+    : "Warning: Taking a short position against a broad market uptrend reduces win-rate by ~40%.";
+
 /* ---------- the stop, before and after the entry ---------- */
 
 /** The stop on screen: the trade owns it once there is one, `S.stop` until then. */
@@ -324,6 +444,24 @@ const canBreakeven = () =>
 /* ---------- actions ---------- */
 
 function takePosition(side) {
+  const gate = gateFor(side);
+  // Strict Mode: the trade simply does not happen. The button is already
+  // disabled, so this only catches the keyboard — but it catches it.
+  if (gate.blocked) return;
+  // Counter-trend, in Learning Mode: the first tap buys the warning, the
+  // second buys the stock. One acknowledgement per side per hand — the strip
+  // keeps saying it, but it stops standing in the way.
+  if (gate.counter && S.armed !== side) {
+    S.armed = side;
+    render();
+    return;
+  }
+  // Taken below the gate anyway: log what it cost in tailwind points. Learning
+  // Mode's whole claim is that it lets you make the mistake and shows you the
+  // bill in the recap.
+  S.penalty =
+    gate.pct != null && gate.pct < STRICT_MIN && gate.score ? gate.score.max - gate.score.total : 0;
+  S.mktEntry = S.mkt;
   const entryIdx = S.dIdx + 1;
   const bar = S.bars[entryIdx];
   S.curIdx = entryIdx;
@@ -404,6 +542,9 @@ function waitDay() {
   S.dIdx += 1;
   S.curIdx = S.dIdx;
   S.waited += 1;
+  // A new decision day is a new decision: the counter-trend warning has to be
+  // acknowledged again, on whatever the market looks like now.
+  S.armed = null;
   // Resolve the pinned pattern onto the new bar FIRST, so a claim that died on
   // it is dead before the fresh look decides whether to replace it.
   S.pattern = resolvePattern(S.pattern, S.bars, S.curIdx);
@@ -531,6 +672,9 @@ function renderStatus() {
       )
     );
     chips.push(chip("RESULT", `${fmtPct(st.total)} · ${fmtR(st.r)}`, sign(st.total)));
+    // The market read at the entry is NOT a sixth chip: two rows is the whole
+    // budget and RESULT is what a sixth one pushes off the bottom. The strip
+    // below rewinds to the entry instead — it is the market's own line.
   }
 
   el.innerHTML = chips.join("");
@@ -541,6 +685,143 @@ function renderStatus() {
       renderStatus();
     });
   }
+}
+
+/* ---------- render: market strip ---------- */
+
+// One glyph per trend state, used for the indices and for the sector band. The
+// strip is a single line of 9px mono on a phone; a word where a glyph will do
+// is a word that pushes something else off the end.
+const TREND_GLYPH = { bull: "▲", neutral: "▬", bear: "▼" };
+const glyph = (t) => `<i class="mk-${t || "na"}">${TREND_GLYPH[t] || "·"}</i>`;
+
+/** A sector band drawn in the same alphabet as a trend: leading, middling, lagging. */
+const bandTrend = (b) =>
+  b === "top" ? "bull" : b === "bottom" ? "bear" : b === "mid" ? "neutral" : null;
+
+/** One strip segment. `title` carries the long version — nothing here is ONLY a glyph. */
+const seg = (cls, title, body) => `<span class="mk-seg ${cls}" title="${title}">${body}</span>`;
+
+// The two fixed titles. Written out here rather than inline so the segment
+// list below stays a list of what is on the strip.
+const TREND_TITLE =
+  "Trend on the daily and weekly: price &gt; 21EMA &gt; 50SMA is bullish, price &lt; 50SMA bearish.";
+const UNMAPPED_TITLE =
+  "No sector ETF for this ticker — benchmarked against SPY, and the sector points are excluded from the score.";
+
+/** Colour band for a confluence percentage: at the gate, near it, or under. */
+const scoreBand = (pct) =>
+  pct == null ? "mk-na" : pct >= STRICT_MIN ? "mk-bull" : pct >= 45 ? "mk-neutral" : "mk-bear";
+
+/**
+ * The banner that REPLACES the read-out, or null to keep the read-out.
+ *
+ * Both cases are moments where the numbers have already made their point and
+ * what is left to say is a sentence. Sharing the strip rather than opening a
+ * second row is deliberate: this page has no spare vertical space, and the
+ * warning is about the very market the strip was describing.
+ */
+function marketBanner() {
+  if (S.mode !== "decide") return null;
+  if (S.armed) {
+    const btn = S.armed === LONG ? "BUY" : "SHORT";
+    return { cls: "mk-warn", text: `⚠ ${counterText(S.armed)} TAP ${btn} AGAIN TO CONFIRM.` };
+  }
+  const l = gateFor(LONG);
+  const sh = gateFor(SHORT);
+  if (!l.blocked && !sh.blocked) return null;
+  const pct = (g) => `${Math.round(g.pct)}%`;
+  const text =
+    l.blocked && sh.blocked
+      ? `STRICT MODE — NO TRADE HERE: LONG ${pct(l)}, SHORT ${pct(sh)}, gate ${STRICT_MIN}%. WAIT or PASS.`
+      : l.blocked
+        ? `STRICT MODE — LONG BLOCKED: ${pct(l)} confluence is under the ${STRICT_MIN}% gate.`
+        : `STRICT MODE — SHORT BLOCKED: ${pct(sh)} confluence is under the ${STRICT_MIN}% gate.`;
+  return { cls: "mk-block", text };
+}
+
+/** The rule-mode toggle: the one control on the strip, and the last thing on it. */
+const modeButton = () =>
+  `<button type="button" id="mk-mode" class="mk-mode ${rules === "strict" ? "mk-strict" : ""}" title="${
+    rules === "strict"
+      ? `Strict Mode: trades under ${STRICT_MIN}% confluence are blocked. Tap for Learning Mode.`
+      : "Learning Mode: the trade is allowed and the forgone points are shown in the recap. Tap for Strict Mode."
+  }">${rules === "strict" ? "STRICT" : "LEARN"}</button>`;
+
+function renderMarket() {
+  const el = document.getElementById("sim-market");
+  if (!el || !S) return;
+  // In the recap the strip rewinds to the day you committed: the tape has moved
+  // on by then, and what is worth grading is the market you actually bought
+  // into. Every other mode reads the day on screen.
+  const recap = S.mode === "recap" && !!S.mktEntry?.available;
+  const st = recap ? S.mktEntry : S.mkt;
+  let cls = "sim-market";
+  let html;
+
+  if (!st?.available) {
+    // Fail open, and say so. The points drop out of the composite entirely
+    // (sim-market.js `compositePct` rescales), so no gate can fire.
+    cls += " mk-off";
+    html = `<span class="mk-seg">MARKET SCORE UNAVAILABLE — CONFLUENCE RESCALED</span>`;
+  } else {
+    const banner = marketBanner();
+    if (banner) {
+      cls += ` ${banner.cls}`;
+      html = `<span class="mk-seg mk-msg">${esc(banner.text)}</span>`;
+    } else {
+      // The score is always FOR A SIDE — the arrow says which — because a bear
+      // tape is a tailwind to a short and reading one number two ways is how a
+      // trader talks themselves into anything.
+      const side = S.trade ? S.trade.side : LONG;
+      const sc = scoreFor(st, side);
+      const pct = compositePct([sc]);
+      const sec = st.sector;
+      const idx = (sym) => `${sym} ${glyph(st.indices[sym]?.d)}${glyph(st.indices[sym]?.w)}`;
+      html =
+        seg(
+          `mk-score ${scoreBand(pct)}`,
+          `Market tailwinds for a ${side}: ${sc.trend ?? "–"} trend + ${sc.sector ?? "–"} sector` +
+            `${sc.vix ? ` ${sc.vix} VIX` : ""} = ${sc.total}/${sc.max}` +
+            `${pct == null ? "" : ` (${Math.round(pct)}%)`}`,
+          `MKT ${recap ? "@ENTRY " : ""}${side === SHORT ? "▼" : "▲"}${sc.total}/${sc.max}` +
+            `${recap && S.penalty ? ` −${S.penalty}` : ""}`
+        ) +
+        // SPY is never the segment that gets dropped: it is the one the score
+        // reads, so QQQ and IWM travel in their own, droppable, segment.
+        seg("", TREND_TITLE, idx(BENCHMARK)) +
+        seg("mk-opt", TREND_TITLE, INDICES.filter((sym) => sym !== BENCHMARK).map(idx).join(" ")) +
+        (sec.unmapped
+          ? seg("mk-unmapped", UNMAPPED_TITLE, "⚠ SECTOR ? · BENCH SPY")
+          : seg(
+              "",
+              `${sec.name} over 20 sessions: rank ${sec.rank}/${sec.of} ` +
+                `(${fmtPct(sec.ret ?? 0)}). 5-day rank ${sec.rank5 ?? "–"}, ` +
+                `1-day rank ${sec.rank1 ?? "–"}.`,
+              `${sec.etf} #${sec.rank ?? "?"}/${sec.of} ${glyph(bandTrend(sec.band))}`
+            )) +
+        (st.rs == null
+          ? ""
+          : seg(
+              st.rs >= 0 ? "mk-bull" : "mk-bear",
+              `20-day relative strength against SPY: the stock's RS line, ` +
+                `${st.rs >= 0 ? "up" : "down"} ${Math.abs(st.rs).toFixed(2)}% over the window.`,
+              `RS ${st.rs >= 0 ? "+" : ""}${st.rs.toFixed(1)}%`
+            )) +
+        (st.vix == null
+          ? ""
+          : seg(
+              `mk-opt2 ${st.vix > VIX_SPIKE ? "mk-bear" : ""}`,
+              `CBOE volatility index. Above ${VIX_SPIKE} the score takes a ` +
+                `${VIX_PENALTY}-point systemic-risk haircut.`,
+              `VIX ${st.vix.toFixed(1)}${st.vix > VIX_SPIKE ? ` −${VIX_PENALTY}` : ""}`
+            ));
+    }
+  }
+
+  el.className = cls;
+  el.innerHTML = html + modeButton();
+  wire("mk-mode", toggleRules);
 }
 
 /* ---------- render: action bar ---------- */
@@ -557,13 +838,27 @@ function renderActions() {
   let html = "";
 
   if (S.mode === "decide") {
+    // Strict Mode speaks the same language an illegal stop does: the button
+    // goes dead and the strip says why.
+    const gl = gateFor(LONG);
+    const gs = gateFor(SHORT);
     html =
-      button("act-buy", "BUY", "sim-btn-buy", !stopAllows(LONG, S.stop, close)) +
+      button(
+        "act-buy",
+        S.armed === LONG ? "BUY ANYWAY" : "BUY",
+        "sim-btn-buy",
+        !stopAllows(LONG, S.stop, close) || gl.blocked
+      ) +
       // Between the two entries and the discard, because that is what it is:
       // not taking the trade, but not throwing the hand away either.
       button("act-wait", "WAIT 1D", "sim-btn-wait", !canWait()) +
       button("act-pass", "PASS", "sim-btn-pass") +
-      button("act-short", "SHORT", "sim-btn-short", !stopAllows(SHORT, S.stop, close));
+      button(
+        "act-short",
+        S.armed === SHORT ? "SHORT ANYWAY" : "SHORT",
+        "sim-btn-short",
+        !stopAllows(SHORT, S.stop, close) || gs.blocked
+      );
   } else if (S.mode === "trade") {
     const half = S.trade.open > 0.5 + 1e-9;
     html =
@@ -1175,10 +1470,15 @@ function render() {
   // paintStop() deliberately does NOT call render(), which is what keeps
   // dragging the stop from disturbing the annotation.
   S.pattern = resolvePattern(S.pattern, S.bars, S.curIdx);
-  // Both bars are laid out before the chart measures itself: the chart takes
+  // One read of the market per render, shared by the strip, the gate on the
+  // buttons and the recap chip. Cheap (two array lookups and eleven returns)
+  // but not free, and paintStop() re-renders the chips on every drag frame.
+  S.mkt = marketAt(shownIdx());
+  // Every band is laid out before the chart measures itself: the chart takes
   // the height they leave over, so drawing it first would size it against a
   // stale (taller) box and push the RSI panel under the action bar.
   renderStatus();
+  renderMarket();
   renderActions();
   renderChart();
 }
@@ -1225,7 +1525,10 @@ window.addEventListener("resize", () => {
 });
 
 initDrag();
-loadUniverse()
+// The market feed is fetched alongside the universe, never in front of it: it
+// resolves either way (loadMarket swallows its own errors) so a dead
+// sim-market.json costs the strip, not the hand.
+Promise.all([loadUniverse(), loadMarket()])
   .then(() => newSession())
   .catch((err) => setMessage(`Could not load the simulator universe (${err.message})`));
 
@@ -1241,4 +1544,9 @@ window.__sim = {
   breakeven: stopToBreakeven,
   wait: waitDay,
   pattern: () => S && S.pattern,
+  market: () => S && S.mkt,
+  rules: () => rules,
+  setRules: (v) => {
+    if (v !== rules) toggleRules();
+  },
 };

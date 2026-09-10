@@ -25,6 +25,7 @@
   --cyan:   #4fe3ef;   /* active accent */
   --win:    #3ec07e;   /* up (slightly desaturated) */
   --loss:   #f06673;   /* down (slightly desaturated) */
+  --loss-bg:#2a1220;   /* loss, dropped onto --inset: alert grounds */
 }
 
 /* app-like: zero page chrome, dense base size.
@@ -656,6 +657,82 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
   color:var(--dim);
 }
 .sim-reveal:hover{ color:var(--gold); }
+
+/* ---------- market confluence strip ----------
+   One line, always there, between the status chips and the chart: the trend of
+   SPY/QQQ/IWM (daily + weekly), the sector rank, relative strength, the VIX,
+   the tailwind score, and the rule-mode toggle. 18px of a screen that has none
+   to spare, so everything in it is a glyph or a number and the low-priority
+   segments drop out by width rather than by measurement. When a warning or a
+   Strict-Mode block has something to say it takes over this same line instead
+   of opening a second one. */
+.sim-market{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 6px;
+  min-height:18px;
+  font-size:9.5px;
+  line-height:1.2;
+  letter-spacing:.04em;
+  color:var(--dim);
+  background:var(--inset);
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+  overflow:hidden;
+}
+.sim-market:empty{ display:none; }
+/* a segment is plain inline text, NOT a flex row: the strip's own 10px gap
+   separates segments, and a gap inside one would push the daily and weekly
+   glyphs apart into two readings when they are meant to read as one. */
+.mk-seg{ white-space:nowrap; }
+.mk-seg i{ font-style:normal; }
+.mk-score{ color:var(--ink); font-weight:600; letter-spacing:.06em; }
+/* the banner cases: one sentence, allowed to wrap onto a second line and no
+   further — a red strip that pushed the chart around would be its own bug */
+.mk-msg{ white-space:normal; display:block; }
+.sim-market.mk-warn, .sim-market.mk-block{
+  color:var(--loss);
+  background:var(--loss-bg);
+  border-bottom-color:var(--loss);
+  white-space:normal;
+  align-items:flex-start;
+  padding:3px 6px;
+  max-height:40px;       /* three lines of the sentence on the narrowest phone */
+}
+.sim-market.mk-off{ color:var(--line-2); }
+.mk-unmapped{ color:var(--gold); }
+
+/* trend / band glyphs, and anything else that carries a direction */
+.mk-bull{ color:var(--win); }
+.mk-bear{ color:var(--loss); }
+.mk-neutral{ color:var(--gold); }
+.mk-na{ color:var(--line-2); }
+
+/* the rule-mode toggle: last on the line, pinned right */
+.mk-mode{
+  margin-left:auto;
+  flex:0 0 auto;
+  padding:1px 5px;
+  font-family:var(--mono);
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:.08em;
+  color:var(--dim);
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:2px;
+  cursor:pointer;
+}
+.mk-mode:hover{ color:var(--ink); }
+.mk-mode.mk-strict{ color:var(--cyan); border-color:var(--cyan); }
+
+/* narrow screens shed the strip's least-load-bearing segments, in order: the
+   VIX first (a number you notice once a quarter), then the QQQ/IWM row (SPY is
+   the one the score reads). The score, the sector and RS always survive. */
+@media (max-width:500px){ .mk-opt2{ display:none; } }
+@media (max-width:440px){ .mk-opt{ display:none; } }
 
 /* ---------- chart ---------- */
 .sim-chart{

@@ -99,6 +99,13 @@ jobs:
         run: |
           python -m src.data.refresh --tickers-file config/sp500.csv --start 2019-01-01
 
+      - name: Refresh simulator market context
+        # SPY/QQQ/IWM, the eleven sector SPDRs and the VIX — what the simulator
+        # reads to say what the market was doing on the day it dealt. Fifteen
+        # tickers, so this is seconds even on a cold cache.
+        run: |
+          python -m src.data.refresh --tickers-file config/market_context.csv --start 2018-01-01
+
       - name: Build price sheet
         # Reads bars from the cache via MarketStore (no network) and writes
         # web/v2/data/price-sheet.json.
@@ -117,6 +124,11 @@ jobs:
         # Per-ticker OHLCV files + the universe index for the swing simulator.
         # Reads only from the cache.
         run: python scripts/site/build_sim.py
+
+      - name: Build simulator market context
+        # One closes-only file covering every index, sector ETF and the VIX,
+        # aligned onto SPY's calendar. Reads only from the cache.
+        run: python scripts/site/build_sim_market.py
 
       - name: Build reports
         # Renders docs/ markdown research notes to HTML fragments + an index for
