@@ -51,7 +51,7 @@ engine + tests are shared infrastructure, not dead code).
 - **Data source**: the shared **DuckDB price cache** (`data/market.duckdb`), not
   yfinance directly. Build scripts read the cache via `MarketStore`.
 - **Build scripts** (`scripts/site/`): `build_price_sheet.py`, `build_charts.py`,
-  `build_fx.py`, `build_reports.py`, `build_sim.py`.
+  `build_fx.py`, `build_reports.py`, `build_sim.py`, `build_sim_market.py`.
 - **Local test**: `cd web && python3 -m http.server 8765`, then open
   `http://localhost:8765/v2/price-sheet.html` (serve from `web/`, not `web/v2/`,
   because cockpit pages load `../css/macro-beans.css`).
@@ -116,6 +116,7 @@ web/v2/
     sim-structure.js    pure price structure: pivots, ZigZag, trendlines, S/R
     sim-patterns.js     pure chart-pattern catalogue, tier ladder, state machine
     sim-candles.js      pure tier-2 candlestick catalogue (TA-Lib thresholds)
+    sim-market.js       pure market confluence: index trend, sector rank, RS, score
     prices.js           cockpit menu + FX → native-currency-to-GBP helpers
     book.js             pure trading-book accounting (average cost, GBP)
     trades.js / positions.js / portfolio.js / requests.js   private pages
@@ -128,6 +129,7 @@ web/v2/
     reports/<slug>.html rendered markdown fragment per research note
     sim-universe.json   {built_at, tickers:[{t,n,s,b,f,l}]}  simulator index
     sim/<TICKER>.json   {ticker,name,sector,bars:[[iso,o,h,l,c,v]]} ~7y OHLCV
+    sim-market.json     {built_at,dates,close:{SYM:[…]},sectors:{GICS:ETF}} market context
 
 scripts/site/
   build_price_sheet.py  cache → web/v2/data/price-sheet.json (800 bars/inst)
@@ -135,6 +137,7 @@ scripts/site/
   build_fx.py           yfinance (2 calls) → fx.json (GBP rates)
   build_reports.py      docs/*.md → reports.json + reports/<slug>.html
   build_sim.py          cache → sim-universe.json + sim/<TICKER>.json (S&P 500)
+  build_sim_market.py   cache → sim-market.json (SPY/QQQ/IWM + 11 sector ETFs + VIX)
   _common.py            BuildTally (coverage gate) + write_json (compact)
 
 .github/workflows/deploy.yml   builds v1 + v2, deploys web/ (so v2 is at /v2/)
@@ -281,6 +284,12 @@ registry. They are cached like anything else —
 `python -m src.data.refresh --tickers-file config/sp500.csv --start 2019-01-01`
 (`--start` bounds a cold seed; incremental runs continue from the last bar).
 
+The simulator's **market context** is a second such list: `config/market_context.csv`
+holds SPY / QQQ / IWM, the eleven GICS sector SPDRs and `^VIX`. Its `sector`
+column carries the GICS sector name **exactly as `config/sp500.csv` spells it** —
+that string is the entire stock → sector-ETF mapping, so the two files have to
+agree or a stock silently reads as unmapped.
+
 Build order (mirrors the deploy workflow), all reading the DuckDB cache:
 
 ```bash
@@ -293,6 +302,7 @@ python -m src.data.refresh --surface cockpit
 /usr/local/bin/python3 scripts/site/build_fx.py            # fx.json (needs network)
 /usr/local/bin/python3 scripts/site/build_reports.py       # reports.json + reports/
 /usr/local/bin/python3 scripts/site/build_sim.py           # sim-universe.json + sim/
+/usr/local/bin/python3 scripts/site/build_sim_market.py    # sim-market.json
 ```
 
 Each build uses `BuildTally` from `_common.py` as a coverage gate: a flaky
@@ -415,6 +425,32 @@ Four rules bind work here:
 4. **Re-run the census after touching any constant.** The gates are calibrated
    against firing-rate bands (`docs/web_v2/chart_pattern_spec.md` §13), and
    loosening one by eye is how the feature becomes wallpaper.
+
+#### The market confluence strip
+
+A one-line strip between the status chips and the chart says what the broad
+market was doing on the day dealt: SPY / QQQ / IWM trend (daily and weekly), the
+stock's sector ETF rank, its 20-day relative strength against SPY, the VIX, and
+the **Market Tailwinds Score out of 35** those add up to. Full spec:
+`docs/web_v2/market_confluence.md`. Four rules bind work here:
+
+1. **No look-ahead, same as the patterns.** Every reading resolves to the last
+   market session ON OR BEFORE the date asked for (`asOf`), and the current
+   week is closed with today's close, not Friday's. Both have mandatory tests.
+2. **Fail open, always.** A missing feed, a date before the history, a ticker
+   with no sector ETF: each marks its block unavailable, and an unavailable
+   block leaves BOTH sides of the composite fraction (`compositePct` rescales)
+   rather than scoring zero. Nothing is ever blocked because the build failed.
+3. **The score is for a SIDE.** A bear tape is worth the full 20 points to a
+   short. A gate that only fires on longs is one tap from being decorative.
+4. **The strip is one line and stays one line.** There is no spare vertical
+   space on this page: the counter-trend warning and the Strict-Mode block take
+   over the same strip rather than opening a second row, and the recap's
+   entry-time read rides in the strip rather than becoming a sixth status chip
+   (a sixth is what pushes `RESULT` off the bottom of the 52px cap).
+
+`?rules=strict` / `?rules=learn` pins the rule mode for a link; the toggle
+otherwise persists in `localStorage` (`mb.sim.rules`).
 
 `?t=<TICKER>&d=<ISO date>` deals a fixed hand — use it when testing.
 `?p=<id>` deals until a hand carries that pattern, `?p=0` turns the annotation
@@ -571,6 +607,7 @@ without a hosting alternative.
 | **Change the simulator** | `web/v2/js/simulator.js` (page, incl. the BUY/WAIT/PASS/SHORT bar) · `sim-indicators.js` / `sim-engine.js` / `sim-structure.js` / `sim-patterns.js` / `sim-candles.js` (math + `tests/web/sim-*.test.js`) |
 | **Tune the simulator's pattern detection** | constants in `sim-structure.js` / `sim-patterns.js`, then `node scripts/tools/pattern_census.mjs` against the bands in `docs/web_v2/chart_pattern_spec.md` §13 |
 | **Change the simulator universe** | `config/sp500.csv`, then `refresh --tickers-file` + `build_sim.py` |
+| **Change the simulator's market confluence** | `web/v2/js/sim-market.js` (math + `tests/web/sim-market.test.js`) · the strip/gate in `simulator.js` · `docs/web_v2/market_confluence.md` is the spec |
 | **Publish a report (v2)** | drop a `.md` under `docs/<topic>/`; `build_reports.py` indexes it |
 | **Change v2 colors / fonts** | `web/v2/css/cockpit.css` → `:root` |
 | **Change a price-sheet/scanner metric** | `web/v2/js/price-metrics.js` / `scanner.js` (browser-side) |
