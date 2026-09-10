@@ -536,6 +536,22 @@ frozen for the hand; only its *state* evolves. A label that churns as you tap
 `+1 DAY` teaches nothing, and the pattern you acted on is the one whose fate
 you want to watch.
 
+**The one exception is WAIT**, which moves the decision day itself rather than
+running a trade out — the hand is being re-dealt one bar forward, so `[0..dIdx]`
+is a different window and pinning to the old one would be pinning to a day the
+player has left. The rule is narrowed, not dropped, by `refreshPattern()` in
+`simulator.js`:
+
+* a **live** claim is never re-detected under — pinning still holds for every
+  pattern that has something left to say, so the shape you are waiting on plays
+  out as it would have;
+* only once it is spent (`isPatternOver` — the four terminal states, plus a
+  broken tier-3 level) may the next session take a fresh look;
+* a fresh look that is *itself* already spent by the time it reaches today is
+  discarded, so the annotation cannot flicker between two dead shapes.
+
+Once a position is open the exception is gone: `+1 DAY` never re-detects.
+
 ### Hard invariant: no look-ahead
 
 `detectPattern(bars, atr, A)` may read only `j <= A`; the returned `endIdx`
@@ -1019,7 +1035,7 @@ Largest single id: 20.3% (band ≤ 30%) — PASS
 - [ ] All seven states reachable, `broken-out` ⇄ `throwback` included, demonstrated by tests.
 - [ ] `bias: "either"` carries no zone until breakout.
 - [ ] `null` renders as nothing at all.
-- [ ] Detection is pinned at deal time; the shape does not change mid-hand.
+- [ ] Detection is pinned at deal time; the shape does not change mid-hand — WAIT re-looks only under a spent claim (§8, `isPatternOver`).
 - [ ] Zone bounds are **not** in `consider()`; off-scale zones use the edge label.
 - [ ] `FORWARD_SLOTS` applied unconditionally; the page still fills `100dvh` and never scrolls, portrait and landscape.
 - [ ] No new status chips; `.sim-status` unchanged.

@@ -800,6 +800,10 @@ polygon.sim-pat-failed, polygon.sim-pat-expired, polygon.sim-pat-abandoned{ opac
 .sim-btn-buy{ color:var(--win); }
 .sim-btn-short{ color:var(--loss); }
 .sim-btn-pass{ color:var(--dim); }
+/* WAIT advances the tape rather than taking a side, so it wears the neutral
+   ink of +1 DAY — not BUY's green, not SHORT's red, and not PASS's dim, which
+   would read as the same "no" twice over. */
+.sim-btn-wait{ color:var(--ink); }
 .sim-btn-next{ color:var(--ink); }
 .sim-btn-exit{ color:var(--cyan); }
 /* B/E is one word next to three; it takes only the width it needs so the

@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-09-10 - WAIT on the Simulator (v2)
+
+A decision now has four answers instead of three. Some setups are not a buy, a
+short or a discard — they are "not yet". **WAIT** rolls the decision day forward
+a single session and deals the same hand one bar wiser, so an emerging signal
+can be watched into focus instead of being guessed at or thrown away.
+
+### Added
+- `web/v2/js/simulator.js` — `waitDay()` and a `WAIT 1D` button between BUY and
+  PASS (keyboard `w`, `window.__sim.wait()`). It advances the decision day and
+  the 35-session window together; no position is opened and nothing is scored.
+  - Budgeted: `MAX_WAIT = 10` sessions, and fenced by the trade runway. A
+    random deal is now placed with a full budget in front of it, so the button
+    is never disabled just because the hand landed near the end of the data.
+  - Priced: the mode chip becomes `WAITED nD ±x%` — sessions stood aside and
+    what the price did meanwhile. No new chip; the strip still collapses to one
+    row in landscape.
+  - The stop follows the price only if you never touched it. A stop you dragged
+    is a level you chose, and WAIT leaves it exactly where you put it (which
+    can leave BUY or SHORT disabled — the same language every other illegal
+    stop speaks).
+- `web/v2/js/sim-patterns.js` — `isPatternOver(p)`, the terminal test as a
+  public predicate (`null` counts as over), so the page can ask whether a claim
+  is spent without knowing what any state name means.
+- `web/v2/css/cockpit.css` — `.sim-btn-wait`, neutral ink: WAIT advances the
+  tape rather than taking a side.
+
+### Changed
+- **Pattern pinning is narrowed, not dropped.** WAIT moves the decision day, so
+  `[0..dIdx]` is a different window; `refreshPattern()` may re-detect, but only
+  under a claim that has already failed, expired, been abandoned or confirmed,
+  and it discards a fresh look that is itself already spent. A live pattern is
+  never re-detected under, and once a position is open `+1 DAY` never
+  re-detects at all. `docs/web_v2/chart_pattern_spec.md` §8 documents the
+  exception.
+
+### Tests
+- `tests/web/sim-patterns.test.js` — two tests for `isPatternOver`, covering
+  `null`, the live states (`forming`, `broken-out`), the terminal four, and a
+  broken tier-3 level (over, despite `broken-out` not being terminal). 191 pass.
+
 ## 2026-09-09 - Chart Patterns on the Simulator (v2)
 
 Implements `docs/web_v2/chart_pattern_spec.md`. At most **one** pattern is

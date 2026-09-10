@@ -3,8 +3,15 @@
 // Deals you a random S&P 500 name on a random date in the last five years,
 // shows 35 sessions of history with the indicators a swing trader actually
 // reads, and makes you commit: set a stop by dragging it on the chart, then
-// buy, short or pass. The point is repetition — hundreds of reps at reading a
-// chart cold — not a strategy backtest, so nothing is scored or stored.
+// buy, short, wait or pass. The point is repetition — hundreds of reps at
+// reading a chart cold — not a strategy backtest, so nothing is scored or
+// stored.
+//
+// WAIT is the fourth answer, and the one most setups deserve: it rolls the
+// decision day forward a single session and deals the same hand again, one bar
+// wiser. It is not free — the chip counts the sessions you have stood aside
+// and what the price did while you did — because standing aside for a
+// confirmation that never comes is its own bad habit.
 //
 // The stop stays draggable once the trade is open, so you can trail it up
 // behind a move and bank the gain — but only towards the price, never away
@@ -26,6 +33,7 @@ import { atr, ema, macd, rsi, sma } from "./sim-indicators.js";
 import {
   PATTERN_IDS,
   detectPattern,
+  isPatternOver,
   lineAt,
   patternText,
   resolvePattern,
@@ -53,6 +61,10 @@ import {
 // the left edge is simply drawn from the edge.
 const LOOKBACK = 35;
 const REVIEW_DAYS = 20; // sessions revealed after a pass
+// Sessions you may stand aside before the deal is called. Two trading weeks:
+// long enough for a triangle to break or a base to give way, short enough that
+// waiting stays a decision rather than a way of never taking one.
+const MAX_WAIT = 10;
 const MAX_HOLD = 60; // hard runway; the trade is closed at the last bar
 const WARMUP = 200 + LOOKBACK; // bars needed before a decision day (200SMA + window)
 const RUNWAY = MAX_HOLD + 2; // bars needed after it
@@ -145,7 +157,12 @@ async function newSession(opts = {}) {
       dIdx = huntPattern(bars, ind, lo, hi, hunt);
       if (dIdx == null) continue; // this name never shows it; try the next
     } else {
-      dIdx = lo + Math.floor(Math.random() * (hi - lo + 1));
+      // A random deal keeps a full WAIT budget behind it, so the button is
+      // never disabled just because the deal landed near the end of the
+      // runway. A pinned (`?d=`) or hunted deal takes the day it asked for and
+      // makes do with whatever room is left.
+      const top = Math.max(lo, hi - MAX_WAIT);
+      dIdx = lo + Math.floor(Math.random() * (top - lo + 1));
     }
 
     S = {
@@ -155,9 +172,13 @@ async function newSession(opts = {}) {
       bars,
       ind,
       dIdx,
+      dIdx0: dIdx, // the day this hand was dealt on, so WAIT can price itself
+      hiIdx: hi, // last bar that still leaves a full trade runway in front of it
+      waited: 0,
       curIdx: dIdx,
       mode: "decide",
       stop: defaultStop(bars, ind, dIdx),
+      stopTouched: false, // an untouched stop re-anchors when the day moves
       trade: null,
       revealed: false,
       note: "",
@@ -188,13 +209,34 @@ function wantedPattern() {
 }
 
 /**
- * Detection is pinned to the deal: run once here, over `[0..dIdx]`, and never
- * again. Only the pattern's STATE moves after this.
+ * Detection over `[0..dIdx]`. Pinned to the deal: run once at deal time and,
+ * once a position is open, never again — only the pattern's STATE moves, so a
+ * label cannot churn as you tap `+1 DAY`. WAIT is the one exception, and a
+ * narrow one: see `refreshPattern`.
  */
 function patternAt(bars, ind, dIdx) {
   return detectPattern(bars, ind.atr, dIdx, {
     visibleFrom: Math.max(0, dIdx - (LOOKBACK - 1)),
   });
+}
+
+/**
+ * Re-look for a pattern after WAIT has moved the decision day.
+ *
+ * A LIVE claim is left strictly alone — re-detecting under one is exactly the
+ * churn that pinning exists to prevent, and the shape you are waiting on is
+ * the one whose fate you want to watch. But once it has failed, expired or
+ * been abandoned — or was never there — the next session is entitled to a
+ * fresh look, because "the signal is not clear yet, but something is forming"
+ * is the whole reason WAIT exists.
+ *
+ * A fresh look that is already spent by the time it reaches today is
+ * discarded, so the annotation cannot flicker between two dead shapes.
+ */
+function refreshPattern() {
+  if (patternsOff() || !isPatternOver(S.pattern)) return;
+  const p = resolvePattern(patternAt(S.bars, S.ind, S.dIdx), S.bars, S.curIdx);
+  if (!isPatternOver(p)) S.pattern = p;
 }
 
 /**
@@ -258,8 +300,14 @@ const stopIsFree = () => !!S.trade && dirOf(S.trade) * (S.trade.stop - S.trade.e
  * started — but never below.
  */
 function setStop(price, base = S.trade) {
-  if (S.trade) S.trade = moveStop(base, price, S.bars[S.curIdx].c);
-  else S.stop = price;
+  if (S.trade) {
+    S.trade = moveStop(base, price, S.bars[S.curIdx].c);
+  } else {
+    S.stop = price;
+    // A stop you chose is a level; a stop you never touched is just the ATR
+    // default. WAIT re-anchors the second and respects the first.
+    S.stopTouched = true;
+  }
 }
 
 /** Trail the stop to the entry price: the one-tap "make it free" move. */
@@ -344,6 +392,38 @@ function takeExit(fraction) {
   render();
 }
 
+/**
+ * Stand aside for one session: the decision day rolls forward a bar, the
+ * window slides with it, and the same hand is dealt again one bar wiser. No
+ * position is opened and nothing is scored — the only cost is a session off
+ * the WAIT budget and whatever the price did in the meantime, both of which
+ * the status strip shows.
+ */
+function waitDay() {
+  if (!canWait()) return;
+  S.dIdx += 1;
+  S.curIdx = S.dIdx;
+  S.waited += 1;
+  // Resolve the pinned pattern onto the new bar FIRST, so a claim that died on
+  // it is dead before the fresh look decides whether to replace it.
+  S.pattern = resolvePattern(S.pattern, S.bars, S.curIdx);
+  refreshPattern();
+  // An untouched stop follows the price; a dragged one stays where it was put,
+  // even if the wait has left it on the wrong side (the BUY/SHORT button goes
+  // dead, which is the same language every other illegal stop speaks).
+  if (!S.stopTouched) S.stop = defaultStop(S.bars, S.ind, S.dIdx);
+  render();
+}
+
+/** Sessions still available to stand aside: the budget, fenced by the runway. */
+const waitsLeft = () => Math.min(MAX_WAIT - S.waited, S.hiIdx - S.dIdx);
+
+const canWait = () => S.mode === "decide" && waitsLeft() > 0;
+
+/** What standing aside has cost so far, in percent off the day you were dealt. */
+const waitDrift = () =>
+  ((S.bars[S.dIdx].c - S.bars[S.dIdx0].c) / S.bars[S.dIdx0].c) * 100;
+
 function pass() {
   S.mode = "review";
   S.curIdx = Math.min(S.bars.length - 1, S.dIdx + REVIEW_DAYS);
@@ -397,7 +477,16 @@ function renderStatus() {
   const chips = [identityChip()];
 
   if (S.mode === "decide") {
-    chips.push(chip("DECIDE", `${LOOKBACK}D CHART`, "sim-chip-mode"));
+    // The wait rides in the mode chip rather than a sixth one: the strip
+    // collapses to a single row in landscape, and a chip that only sometimes
+    // exists is the one that gets clipped.
+    chips.push(
+      chip(
+        "DECIDE",
+        S.waited ? `WAITED ${S.waited}D ${fmtPct(waitDrift())}` : `${LOOKBACK}D CHART`,
+        "sim-chip-mode"
+      )
+    );
     chips.push(chip("CLOSE", fmtPx(bar.c)));
     chips.push(
       chip("STOP", `${fmtPx(S.stop)} (${fmtPct(stopPct)})`, "sim-chip-stop")
@@ -470,6 +559,9 @@ function renderActions() {
   if (S.mode === "decide") {
     html =
       button("act-buy", "BUY", "sim-btn-buy", !stopAllows(LONG, S.stop, close)) +
+      // Between the two entries and the discard, because that is what it is:
+      // not taking the trade, but not throwing the hand away either.
+      button("act-wait", "WAIT 1D", "sim-btn-wait", !canWait()) +
       button("act-pass", "PASS", "sim-btn-pass") +
       button("act-short", "SHORT", "sim-btn-short", !stopAllows(SHORT, S.stop, close));
   } else if (S.mode === "trade") {
@@ -488,6 +580,7 @@ function renderActions() {
   el.innerHTML = html;
   wire("act-buy", () => takePosition(LONG));
   wire("act-short", () => takePosition(SHORT));
+  wire("act-wait", waitDay);
   wire("act-pass", pass);
   wire("act-next", advanceDay);
   wire("act-be", stopToBreakeven);
@@ -1096,7 +1189,12 @@ document.addEventListener("keydown", (ev) => {
   if (!S) return;
   const key = ev.key.toLowerCase();
   const hit = {
-    decide: { b: () => takePosition(LONG), s: () => takePosition(SHORT), p: pass },
+    decide: {
+      b: () => takePosition(LONG),
+      s: () => takePosition(SHORT),
+      w: waitDay,
+      p: pass,
+    },
     trade: {
       n: advanceDay,
       e: stopToBreakeven,
@@ -1113,6 +1211,7 @@ document.addEventListener("keydown", (ev) => {
   // A disabled button means an illegal move; the keyboard must respect it too.
   if (S.mode === "decide" && key === "b" && !stopAllows(LONG, S.stop, S.bars[S.dIdx].c)) return;
   if (S.mode === "decide" && key === "s" && !stopAllows(SHORT, S.stop, S.bars[S.dIdx].c)) return;
+  if (S.mode === "decide" && key === "w" && !canWait()) return;
   ev.preventDefault();
   fn();
 });
@@ -1140,5 +1239,6 @@ window.__sim = {
     render();
   },
   breakeven: stopToBreakeven,
+  wait: waitDay,
   pattern: () => S && S.pattern,
 };
