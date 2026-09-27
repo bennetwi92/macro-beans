@@ -727,12 +727,23 @@ body{ padding:0; font-family:var(--mono); font-size:12px; color-scheme:dark; }
 }
 .mk-mode:hover{ color:var(--ink); }
 .mk-mode.mk-strict{ color:var(--cyan); border-color:var(--cyan); }
+/* the timeframe toggle rides just before it: the pair is pinned right together */
+.mk-mode + .mk-mode{ margin-left:4px; }
+.mk-mode.mk-tf-w{ color:var(--gold); border-color:var(--gold); }
 
 /* narrow screens shed the strip's least-load-bearing segments, in order: the
    VIX first (a number you notice once a quarter), then the QQQ/IWM row (SPY is
-   the one the score reads). The score, the sector and RS always survive. */
-@media (max-width:500px){ .mk-opt2{ display:none; } }
-@media (max-width:440px){ .mk-opt{ display:none; } }
+   the one the score reads). The score, the sector and RS always survive. The
+   breakpoints include the room the two toggles take at the end of the line. */
+@media (max-width:545px){ .mk-opt2{ display:none; } }
+@media (max-width:485px){ .mk-opt{ display:none; } }
+/* ...and on the narrowest phones the two toggles have to fit beside the score,
+   SPY, the sector and RS, so the gaps and the buttons tighten instead */
+@media (max-width:380px){
+  .sim-market{ gap:5px; letter-spacing:0; }
+  .mk-mode{ padding:1px 3px; letter-spacing:.02em; }
+  .mk-mode + .mk-mode{ margin-left:3px; }
+}
 
 /* ---------- chart ---------- */
 .sim-chart{

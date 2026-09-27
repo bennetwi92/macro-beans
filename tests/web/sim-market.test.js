@@ -17,6 +17,7 @@ import test from "node:test";
 import {
   BENCHMARK,
   MARKET_MAX,
+  MARKET_TF,
   SECTOR_PTS,
   STRICT_MIN,
   TREND_PTS,
@@ -312,4 +313,66 @@ test("a leading gap is no reading at all, not a quiet neutral", () => {
   // ...and the bands still split 3 / 4 / 3 over the ten that remain.
   assert.equal(rows.filter((r) => r.band === "top").length, 3);
   assert.equal(rows.filter((r) => r.band === "bottom").length, 3);
+});
+
+/* ---------- the weekly timeframe ---------- */
+
+test("weekly: the score reads the WEEKLY trend, and the strip says which", () => {
+  // Eighty weeks up, then six weeks of a sharp pullback: under the daily
+  // 50-day (bear), still above the 50-week (not bear) on the weekly.
+  const pullback = feed({ close: { SPY: ramp(300, 0.001, 370) } });
+  const d = marketStatus(pullback, { sector: SECTOR_OF.XLI, date: DATES[LAST] });
+  const w = marketStatus(pullback, { sector: SECTOR_OF.XLI, date: DATES[LAST], tf: "w" });
+
+  assert.equal(d.tf, "d");
+  assert.equal(w.tf, "w");
+  assert.equal(d.regime, "bear");
+  assert.notEqual(w.regime, "bear");
+  // Both reads are published either way; only the scored one differs.
+  assert.deepEqual(w.indices, d.indices);
+  assert.equal(w.regime, w.indices[BENCHMARK].w);
+  assert.equal(d.score.trend, TREND_PTS.bear);
+  assert.equal(w.score.trend, TREND_PTS[w.regime]);
+});
+
+test("weekly: sector ranks and RS look back 1 / 4 / 13 weeks", () => {
+  assert.deepEqual(MARKET_TF.w.lookbacks, [5, 20, 65]);
+  assert.equal(MARKET_TF.w.score, 65);
+  assert.equal(MARKET_TF.w.rs, 65);
+
+  const stock = { closes: ramp(50, 0.0015), index: LAST };
+  const w = marketStatus(M, { sector: SECTOR_OF.XLB, date: DATES[LAST], stock, tf: "w" });
+  assert.deepEqual(w.lookbacks, [5, 20, 65]);
+  const rows = rankSectors(M, LAST, 65);
+  assert.equal(w.sector.rank, rows.find((r) => r.etf === "XLB").rank);
+  assert.equal(w.sector.ret, rows.find((r) => r.etf === "XLB").ret);
+  assert.equal(w.rs, relStrength(stock.closes, LAST, M.close.SPY, LAST, 65));
+  // An unknown timeframe is read as daily, not as an error.
+  const x = marketStatus(M, { sector: SECTOR_OF.XLB, date: DATES[LAST], tf: "?" });
+  assert.equal(x.tf, "d");
+});
+
+test("weekly: no look-ahead, same as the daily", () => {
+  const cut = 320;
+  const full = feed();
+  const truncated = prepareMarket({
+    built_at: "x",
+    dates: DATES.slice(0, cut + 1),
+    close: Object.fromEntries(Object.entries(full.close).map(([k, v]) => [k, v.slice(0, cut + 1)])),
+    sectors: Object.fromEntries(SECTORS.map((etf, k) => [`Sector ${k}`, etf])),
+  });
+  const closes = ramp(50, 0.0015);
+  const a = marketStatus(full, {
+    sector: SECTOR_OF.XLB,
+    date: DATES[cut],
+    stock: { closes, index: cut },
+    tf: "w",
+  });
+  const b = marketStatus(truncated, {
+    sector: SECTOR_OF.XLB,
+    date: DATES[cut],
+    stock: { closes: closes.slice(0, cut + 1), index: cut },
+    tf: "w",
+  });
+  assert.deepEqual(b, a, "the weekly market read leaked a future session");
 });

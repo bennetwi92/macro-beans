@@ -117,6 +117,7 @@ web/v2/
     sim-patterns.js     pure chart-pattern catalogue, tier ladder, state machine
     sim-candles.js      pure tier-2 candlestick catalogue (TA-Lib thresholds)
     sim-market.js       pure market confluence: index trend, sector rank, RS, score
+    sim-timeframe.js    pure timeframe profiles (daily / weekly), weekly resampler, default stop
     prices.js           cockpit menu + FX → native-currency-to-GBP helpers
     book.js             pure trading-book accounting (average cost, GBP)
     trades.js / positions.js / portfolio.js / requests.js   private pages
@@ -128,7 +129,7 @@ web/v2/
     reports.json        {built_at, reports:[{slug,title,category,summary,…}]}
     reports/<slug>.html rendered markdown fragment per research note
     sim-universe.json   {built_at, tickers:[{t,n,s,b,f,l}]}  simulator index
-    sim/<TICKER>.json   {ticker,name,sector,bars:[[iso,o,h,l,c,v]]} ~7y OHLCV
+    sim/<TICKER>.json   {ticker,name,sector,bars:[[iso,o,h,l,c,v]]} full-history daily OHLCV
     sim-market.json     {built_at,dates,close:{SYM:[…]},sectors:{GICS:ETF}} market context
 
 scripts/site/
@@ -281,8 +282,11 @@ The **simulator** universe is the exception to the registry: 503 S&P 500
 constituents live in `config/sp500.csv` (a flat `ticker,name,sector` list read
 by `load_ticker_csv`), because 503 `[[instrument]]` blocks would drown the
 registry. They are cached like anything else —
-`python -m src.data.refresh --tickers-file config/sp500.csv --start 2019-01-01`
-(`--start` bounds a cold seed; incremental runs continue from the last bar).
+`python -m src.data.refresh --tickers-file config/sp500.csv` — whole history
+(`period="max"`), because the simulator deals from all of it. `--start` would
+bound a cold seed, but nothing reads backwards afterwards: incremental runs
+continue from the last bar, so a floor can only be lifted by a cold cache
+(the `deploy.yml` cache-key bump).
 
 The simulator's **market context** is a second such list: `config/market_context.csv`
 holds SPY / QQQ / IWM, the eleven GICS sector SPDRs and `^VIX`. Its `sector`
@@ -366,7 +370,8 @@ strip, the chart and the action bar fill `100dvh` and the page never scrolls.
 Two rules make changes there safe:
 
 1. **Keep the math out of the page module.** Indicator formulas belong in
-   `sim-indicators.js` and fill/P&L rules in `sim-engine.js` — both pure, both
+   `sim-indicators.js`, fill/P&L rules in `sim-engine.js`, and anything that
+   differs between daily and weekly in `sim-timeframe.js` — all pure, all
    covered by `tests/web/sim-*.test.js`. Update the tests in the same commit.
 2. **Lay the bars out before measuring the chart.** `render()` draws the status
    strip and the action bar first, then the chart, which sizes its SVG to
@@ -374,10 +379,48 @@ Two rules make changes there safe:
    box and pushes the RSI panel under the action bar.
 
 The trading model it teaches (decision at the close, entry at the next open,
-close fills for discretionary exits, an intraday stop that fills at the open on
-a gap, a stop that can be trailed towards the price but never away from it,
-results in % and R) is documented at the top of `sim-engine.js`. Change it
-there, not in the page.
+close fills for discretionary exits — next-open fills on the weekly chart —
+an intraday stop that fills at the open on a gap, a stop that can be trailed
+towards the price but never away from it, results in % and R) is documented
+at the top of `sim-engine.js`. Change it there, not in the page.
+
+#### Daily and weekly
+
+The simulator plays on two timeframes, toggled by the `1D`/`1W` chip at the
+end of the market strip (`?tf=w|d`, remembered in `localStorage` as
+`mb.sim.tf`). Weekly is the **Sunday routine**: decide on Friday's close, get
+filled at Monday's open, and leave a resting stop for the week. Three rules
+bind work here:
+
+1. **Every bar-counted rule comes from the profile.** `DAILY` and `WEEKLY` in
+   `sim-timeframe.js` hold the window, review, `maxWait`, `maxHold`, the
+   moving averages (daily 9/22 EMA + 200 SMA; weekly Weinstein's 10- and
+   30-week SMAs), RSI bands (30/70 vs 40/60), the default-stop rule (1.5 ATR
+   vs one tick under the decision week's low, falling back to 0.5 ATR), the
+   exit fill (`close` vs `nextOpen`), the pattern tiers, and the copy
+   (`+1 DAY` / `+1 WEEK`). The page reads `S.tf.*`. A `LOOKBACK`-style
+   constant in the page is a regression.
+2. **Weekly bars are resampled in the browser** from the daily file
+   (`toWeekly`), bucketed by ISO week with the same `weekKey` the market feed
+   uses, dated on the week's last session, and carrying `di` (that session's
+   daily index) so the market strip and relative strength read the daily feed
+   as of the same moment. An unfinished final week is dropped. Never add a
+   second weekly build artefact.
+3. **Flipping the timeframe deals a new hand.** A daily hand on a Wednesday
+   has no completed week, and the weekly bar containing it would reveal
+   Thursday and Friday.
+
+Weekly runs the pattern ladder with **S/R only** (`detect.tiers: [3]`): the
+chart-pattern and candlestick gates were calibrated on daily bars and their
+bar-counted constants have not been through a weekly census. Turn tiers on
+only after running `scripts/tools/pattern_census.mjs` on weekly bars.
+
+Deals come from each name's **whole** history (`years: null`), back to 1962
+for the oldest listings. Split-adjusted prices under a dollar are kept to four
+significant figures (`priceDecimals`, twinned in `build_sim.py`), and the page
+quotes each hand at its own precision (`S.dp`) — never hard-code cents. A deal
+before the market feed starts (SPY, 1993) has no market strip; that is the
+fail-open rule, not a bug.
 
 A decision has **four** answers, not three: BUY, SHORT, PASS, and **WAIT**,
 which rolls the decision day forward one session and re-deals the same hand one
@@ -431,7 +474,9 @@ Four rules bind work here:
 A one-line strip between the status chips and the chart says what the broad
 market was doing on the day dealt: SPY / QQQ / IWM trend (daily and weekly), the
 stock's sector ETF rank, its 20-day relative strength against SPY, the VIX, and
-the **Market Tailwinds Score out of 35** those add up to. Full spec:
+the **Market Tailwinds Score out of 35** those add up to. On a weekly hand it
+scores the weekly trend and reads 1/4/13-week ranks and 13-week RS
+(`MARKET_TF` in `sim-market.js`). Full spec:
 `docs/web_v2/market_confluence.md`. Four rules bind work here:
 
 1. **No look-ahead, same as the patterns.** Every reading resolves to the last
@@ -443,7 +488,9 @@ the **Market Tailwinds Score out of 35** those add up to. Full spec:
    rather than scoring zero. Nothing is ever blocked because the build failed.
 3. **The score is for a SIDE.** A bear tape is worth the full 20 points to a
    short. A gate that only fires on longs is one tap from being decorative.
-4. **The strip is one line and stays one line.** There is no spare vertical
+4. **The strip is one line and stays one line**, including the `1D`/`1W` and
+   `LEARN`/`STRICT` toggles at its end — re-measure 320–550px after adding
+   anything to it. There is no spare vertical
    space on this page: the counter-trend warning and the Strict-Mode block take
    over the same strip rather than opening a second row, and the recap's
    entry-time read rides in the strip rather than becoming a sixth status chip

@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-09-27 - Weekly mode for the Simulator (v2)
+
+The simulator only dealt daily charts, which suits a trader who can watch the
+close every day. It now also plays **weekly**, built for a Sunday routine:
+decide on Friday's close, get filled at Monday's open, and leave a resting stop
+for the week. A `1D` / `1W` chip at the end of the market strip flips between
+the two (`?tf=w`, remembered per browser). Deals now come from each stock's
+**whole** history on both timeframes, back to 1962 for the oldest names.
+
+### Added
+- `web/v2/js/sim-timeframe.js`: the `DAILY` and `WEEKLY` profiles. They hold
+  every rule that counts in bars, plus the indicator set, the default-stop
+  rule, the exit fill and the copy. Also `toWeekly` (ISO-week resampling
+  from the daily file, dated on the week's last session, unfinished final
+  week dropped), `defaultStop`, and `priceDecimals`. Pure and tested
+  (`tests/web/sim-timeframe.test.js`).
+- Weekly profile: Weinstein's **10- and 30-week SMAs**, MACD 12/26/9, RSI 14
+  with **40/60** bands, the default stop **one tick under the decision
+  week's low** (0.5 ATR fallback when that low hugs the close), a 35-week
+  chart, WAIT up to 4 weeks, a 26-week runway, and 12 weeks revealed after
+  a pass.
+- `sim-engine.js` `decideExit`: discretionary and time exits fill at the
+  bar's close (daily) or the **next bar's open** (weekly). Anything still
+  open after a next-open fill lives through that bar against its stop.
+- `sim-market.js` `MARKET_TF`: a weekly hand scores the **weekly** SPY trend
+  and ranks sectors and RS over **13 weeks** (1 / 4 / 13 published). There
+  is a weekly no-look-ahead test.
+
+### Changed
+- `build_sim.py` / `build_sim_market.py` ship the cache's whole history (no
+  `MAX_BARS`). Sub-dollar split-adjusted prices keep four significant
+  figures, and the page quotes each hand at its own precision.
+- `deploy.yml`: the S&P 500 and market-context refreshes drop `--start`, and
+  the cache key moves to `market-duckdb-v3-` so the next deploy seeds
+  full history once.
+- Weekly hands annotate support/resistance only. The chart-pattern and
+  candlestick tiers stay off until a weekly census calibrates them.
+- The market strip's shedding breakpoints moved to 545px / 485px, and it
+  tightens under 380px, so both toggles fit from 320px up.
+
 ## 2026-09-10 - Market confluence on the Simulator (v2)
 
 The simulator graded the chart and ignored the tide. A long taken into a market

@@ -57,9 +57,13 @@ jobs:
           # (see src/data/refresh.py _calendar_dates); incremental refresh alone
           # would leave the mis-dated rows in place. Bump again only to force
           # another clean rebuild.
-          key: market-duckdb-v2-${{ github.run_id }}
+          # `-v3`: the simulator now deals from each stock's WHOLE history, but
+          # the v2 caches hold the S&P 500 only from 2019 (the old --start
+          # floor), and incremental refresh never reaches backwards. A cold
+          # cache seeds every name with period="max" once.
+          key: market-duckdb-v3-${{ github.run_id }}
           restore-keys: |
-            market-duckdb-v2-
+            market-duckdb-v3-
 
       - name: Build instrument data
         run: python scripts/site/build_data.py
@@ -92,19 +96,21 @@ jobs:
 
       - name: Refresh simulator universe (S&P 500)
         # The swing simulator deals random S&P 500 charts, so it needs the 503
-        # constituents cached too. --start bounds a cold seed to ~7 years (the
-        # simulator only reads the last 5 plus warm-up); once the rolling cache
-        # is warm this is a few days per ticker. Failures per ticker are skipped,
-        # and build_sim.py's coverage gate decides if too many are missing.
+        # constituents cached too. No --start: the simulator deals from each
+        # name's whole history (daily and weekly), so a cold seed takes all of
+        # it; once the rolling cache is warm this is a few days per ticker.
+        # Failures per ticker are skipped, and build_sim.py's coverage gate
+        # decides if too many are missing.
         run: |
-          python -m src.data.refresh --tickers-file config/sp500.csv --start 2019-01-01
+          python -m src.data.refresh --tickers-file config/sp500.csv
 
       - name: Refresh simulator market context
         # SPY/QQQ/IWM, the eleven sector SPDRs and the VIX — what the simulator
         # reads to say what the market was doing on the day it dealt. Fifteen
-        # tickers, so this is seconds even on a cold cache.
+        # tickers, so this is seconds even on a cold cache. Whole history, to
+        # match the simulator's deals (SPY starts in 1993).
         run: |
-          python -m src.data.refresh --tickers-file config/market_context.csv --start 2018-01-01
+          python -m src.data.refresh --tickers-file config/market_context.csv
 
       - name: Build price sheet
         # Reads bars from the cache via MarketStore (no network) and writes

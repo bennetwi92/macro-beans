@@ -19,11 +19,12 @@ Everything comes from one build artefact, `web/v2/data/sim-market.json`, which
 | **Indices** | SPY, QQQ, IWM — closes |
 | **Sectors** | the eleven GICS sector SPDRs (XLB XLC XLE XLF XLI XLK XLP XLRE XLU XLV XLY) |
 | **Volatility** | ^VIX, as `VIX` |
-| **Span** | 1700 sessions (~6.5 years), matching the simulator's own window |
+| **Span** | SPY's whole history (from 1993), matching the simulator's whole-history deals |
 
 Closes only — the market panel draws no candles — and every series is reindexed
 onto SPY's trading calendar and forward-filled, so `dates[i]` addresses all
-fifteen at once. One file, ~200 KB, fetched once a session. The universe lives
+fifteen at once. One file, ~800 KB, fetched once a session. A deal from before
+the feed starts has no market read and fails open (§8). The universe lives
 in `config/market_context.csv`, whose `sector` column carries the **GICS sector
 name exactly as `config/sp500.csv` spells it**: that string is the whole
 stock → ETF mapping, so the two files have to agree.
@@ -133,7 +134,26 @@ tape has moved on by then, and what is worth grading is the market you actually
 bought into. It is not a sixth status chip because two rows is the whole chip
 budget and a sixth is what pushes `RESULT` off the bottom.
 
-## 7. The two rules that bind changes here
+## 7. On a weekly chart
+
+A weekly hand (`?tf=w`, the `1W` chip) reads the same daily feed over longer
+horizons, set per timeframe in `MARKET_TF`:
+
+| | Daily hand | Weekly hand |
+|---|---|---|
+| Trend that scores the 20 points | SPY daily | SPY **weekly** |
+| Glyph order on the strip | daily, weekly | **weekly, daily** |
+| Sector ranks published | 1 / 5 / 20 sessions | 1 / 4 / 13 weeks (5 / 20 / 65 sessions) |
+| Sector rank that scores | 20 sessions | **13 weeks** |
+| Relative strength vs SPY | 20 sessions | **13 weeks** |
+
+Everything else, the points, the VIX haircut and the Strict gate, is unchanged.
+A weekly decision is always on a week's last session, so its "running" weekly
+bar is a completed week. The stock side of relative strength reads the
+stock's **daily** closes through the weekly bar's `di`, so both legs of the
+ratio are taken on the same day.
+
+## 8. The two rules that bind changes here
 
 **No look-ahead.** Every reading is taken as of a date, and a date only ever
 resolves to the last market session **on or before** it (`asOf`) — a market
@@ -152,7 +172,7 @@ it`) that truncates the feed and asserts the read is byte-identical.
 
 A simulator that punishes you for its own build failing teaches nothing.
 
-## 8. Where the code is
+## 9. Where the code is
 
 | | |
 |---|---|

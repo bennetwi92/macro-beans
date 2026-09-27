@@ -7,7 +7,10 @@ ranked against the other ten, and whether the VIX was spiking.
 
 One file, not fifteen: it is fetched once per session and read at every bar,
 so a per-ticker split would cost fourteen extra round trips to save nothing.
-Closes only (~200 KB) — the market panel draws no candles.
+Closes only — the market panel draws no candles. The whole of SPY's history
+is kept (it starts in 1993), because the simulator deals from the whole of
+each stock's history. A deal from before the feed starts simply has no market
+strip; the simulator fails open on it.
 
 Every series is reindexed onto SPY's trading calendar and forward-filled, so
 `dates[i]` addresses every symbol at once and the browser never has to align
@@ -17,7 +20,7 @@ window starts) stays `null` and the browser treats it as "no reading".
 Reads the DuckDB price cache via MarketStore (no yfinance here — the cache is
 the single reader). Seed/refresh it first:
 
-    python -m src.data.refresh --tickers-file config/market_context.csv --start 2018-01-01
+    python -m src.data.refresh --tickers-file config/market_context.csv
 
 Run:
     /usr/local/bin/python3 scripts/site/build_sim_market.py
@@ -44,11 +47,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import BuildTally, write_json  # noqa: E402
 
 UNIVERSE_CSV = CONFIG_DIR / "market_context.csv"
-
-# Same window the simulator itself keeps (~6.5 years): decision dates come from
-# the last five, and the weekly 50-week average behind the earliest of them
-# needs about a year of run-up.
-MAX_BARS = 1700
 
 # Sector column values that are not GICS sectors, so never part of the map.
 NON_SECTORS = {"Benchmark", "Volatility"}
@@ -82,7 +80,7 @@ def main() -> None:
     except FileNotFoundError as exc:
         print(
             f"\n{exc}\nRun:  python -m src.data.refresh "
-            f"--tickers-file config/market_context.csv --start 2018-01-01",
+            f"--tickers-file config/market_context.csv",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -94,7 +92,7 @@ def main() -> None:
             print(f"  {row.ticker:<6s} SKIP (nothing cached)")
             tally.record_failure(row.ticker, RuntimeError("nothing cached"))
             continue
-        frames[row.ticker] = df["Close"].tail(MAX_BARS).astype(float)
+        frames[row.ticker] = df["Close"].astype(float)
         tally.record_ok()
 
     if BENCHMARK not in frames:
