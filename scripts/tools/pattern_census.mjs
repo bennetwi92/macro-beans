@@ -24,6 +24,11 @@
 //   --synthetic       force the generated series even if real data exists
 //   --names <n>       how many tickers / synthetic names to sample (default 120)
 //   --stride <n>      sample every nth eligible decision day (default 5)
+//   --weekly          census WEEKLY bars (resampled with sim-timeframe.js
+//                     `toWeekly`, exactly as the simulator and the scorecard
+//                     build do) under the WEEKLY profile's warm-up, hold and
+//                     detection window. This is the gate on turning tiers 1-2
+//                     on for weekly charts (scorecard_strategy_spec.md §3.4).
 
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -31,18 +36,24 @@ import { fileURLToPath } from "node:url";
 
 import { atr } from "../../web/v2/js/sim-indicators.js";
 import { detectPattern, resolvePattern } from "../../web/v2/js/sim-patterns.js";
+import { WEEKLY, toWeekly, warmupBars } from "../../web/v2/js/sim-timeframe.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SIM_DIR = join(ROOT, "web", "v2", "data", "sim");
 
-// Mirrors simulator.js. A census run against different numbers would be
-// measuring a different feature.
-const LOOKBACK = 35;
-const WARMUP = 200 + LOOKBACK;
-const MAX_HOLD = 60;
-const RUNWAY = MAX_HOLD + 2;
-
 const args = process.argv.slice(2);
+const WEEKLY_MODE = args.includes("--weekly");
+
+// Mirrors simulator.js. A census run against different numbers would be
+// measuring a different feature. Weekly mirrors the WEEKLY profile.
+const LOOKBACK = 35;
+const WARMUP = WEEKLY_MODE ? warmupBars(WEEKLY) : 200 + LOOKBACK;
+const MAX_HOLD = WEEKLY_MODE ? WEEKLY.maxHold : 60;
+const RUNWAY = MAX_HOLD + 2;
+// Weekly detection reads the profile's own window (60 weeks); daily keeps
+// the module default (DETECT_BARS = 90 sessions).
+const DETECT_OPTS = WEEKLY_MODE ? { detectBars: WEEKLY.detect.detectBars } : {};
+
 const flag = (name, dflt) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 && args[i + 1] ? Number(args[i + 1]) : dflt;
@@ -64,7 +75,8 @@ function realSeries() {
   const out = [];
   for (const f of files.slice(0, NAMES)) {
     const d = JSON.parse(readFileSync(join(SIM_DIR, f), "utf8"));
-    const bars = (d.bars || []).map((r) => ({ d: r[0], o: r[1], h: r[2], l: r[3], c: r[4], v: r[5] }));
+    const daily = (d.bars || []).map((r) => ({ d: r[0], o: r[1], h: r[2], l: r[3], c: r[4], v: r[5] }));
+    const bars = WEEKLY_MODE ? toWeekly(daily) : daily;
     if (bars.length >= WARMUP + RUNWAY) out.push({ ticker: d.ticker, bars });
   }
   return out.length ? out : null;
@@ -111,7 +123,9 @@ function syntheticSeries(n, len = 1500) {
 
 const real = FORCE_SYNTH ? null : realSeries();
 const universe = real ?? syntheticSeries(NAMES);
-const source = real ? `built simulator JSON (${universe.length} names)` : `SYNTHETIC random walks (${universe.length} names)`;
+const source =
+  (real ? `built simulator JSON (${universe.length} names)` : `SYNTHETIC random walks (${universe.length} names)`) +
+  (WEEKLY_MODE ? " — WEEKLY bars" : " — daily bars");
 
 const tierCount = { 1: 0, 2: 0, 3: 0, none: 0 };
 const byId = new Map();
@@ -128,7 +142,7 @@ for (const { bars } of universe) {
   const hi = bars.length - 1 - RUNWAY;
   for (let A = lo; A <= hi; A += STRIDE) {
     points++;
-    const p = detectPattern(bars, atrArr, A, { visibleFrom: Math.max(0, A - (LOOKBACK - 1)) });
+    const p = detectPattern(bars, atrArr, A, { ...DETECT_OPTS, visibleFrom: Math.max(0, A - (LOOKBACK - 1)) });
     if (!p) {
       tierCount.none++;
       continue;
@@ -191,7 +205,7 @@ for (const [st, n] of [...stateAtDecision.entries()].sort((a, b) => b[1] - a[1])
 }
 console.log(`\n\`forming\` at the decision bar: ${(forming * 100).toFixed(1)}% (band 50–85%) — ${band(forming >= 0.5 && forming <= 0.85)}`);
 
-console.log(`\n## Terminal state after the 60-session runway\n`);
+console.log(`\n## Terminal state after the ${MAX_HOLD}-${WEEKLY_MODE ? "week" : "session"} runway\n`);
 console.log(`| id | confirmed | failed | expired | abandoned | still open |`);
 console.log(`|---|---|---|---|---|---|`);
 for (const [id] of idRows) {
