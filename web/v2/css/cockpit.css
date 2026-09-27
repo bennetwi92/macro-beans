@@ -1023,6 +1023,12 @@ polygon.sim-pat-failed, polygon.sim-pat-expired, polygon.sim-pat-abandoned{ opac
 /* shortlist grid */
 #sl-grid{ height:calc(100vh - 52px - 27px); }
 .tabulator .tabulator-cell.sl-why{ color:var(--dim); }
+/* Phone: the ticker leads (it is what you trade), the name trails small and
+   ellipsises inside the capped frozen column. */
+@media (max-width:600px){
+  .tabulator .tabulator-cell.sl-name .ps-tkr{ color:var(--ink); font-size:12px; font-weight:600; }
+  .tabulator .tabulator-cell.sl-name .ps-name{ color:var(--dim); font-size:10px; }
+}
 
 /* the CARD */
 .cd-head{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin:0 0 10px; }

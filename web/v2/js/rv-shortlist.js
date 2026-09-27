@@ -28,6 +28,11 @@ let built = false;
 // The blocks that can carry weight somewhere. Pattern is weightless in every
 // profile (see PROFILES) and would be a column of dots.
 const COLS = BLOCKS.filter((k) => Object.values(PROFILES).some((p) => p.weights[k] > 0));
+// On a phone the frozen NAME column must not eat the screen: `fitData` sizes it
+// to the longest company name, which leaves the status and grades a sliver to
+// swipe through. Cap it, and let long names ellipsise (full name on hover).
+const NARROW = window.matchMedia("(max-width: 600px)");
+const nameWidth = () => (NARROW.matches ? { minWidth: 70, maxWidth: 118 } : { minWidth: 150, maxWidth: 240 });
 const SHORT = { market: "MKT", stage: "STG", rs: "RS", structure: "STR", momentum: "MOM", analogue: "LWK", earnings: "ERN", fundamental: "FND" };
 
 createOptionsBar("optbar", {
@@ -133,7 +138,9 @@ function build() {
         title: "NAME",
         field: "t",
         frozen: true,
-        minWidth: 150,
+        ...nameWidth(),
+        cssClass: "sl-name",
+        tooltip: (e, c) => `${c.getRow().getData().t} · ${c.getRow().getData().n}`,
         formatter: (c) => {
           const r = c.getRow().getData();
           return `<span class="ps-tkr">${esc(r.t)}</span> <span class="ps-name">${esc(r.n)}</span>`;
@@ -218,5 +225,11 @@ function build() {
   grid.on("tableBuilt", () => {
     built = true;
     apply();
+  });
+  // Rotating a phone crosses the breakpoint — re-cap the name column.
+  NARROW.addEventListener("change", () => {
+    const col = grid.getColumn("t");
+    const w = nameWidth();
+    col.updateDefinition(w);
   });
 }
