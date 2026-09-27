@@ -1,0 +1,94 @@
+name: Weekly fundamentals + ledger
+
+# The weekly review's two pieces of evidence that CANNOT be rebuilt later, and
+# so are committed to the repo rather than left in the rolling CI cache:
+#
+#   * data/fundamentals/snapshots/<date>.csv  yfinance `.info` has no history.
+#     A week not written down is gone for good; in a year these snapshots are
+#     the only way to test the fundamental block at all.
+#   * data/scorecard/ledger/<week>.csv        every card the scorecard issued,
+#     as it stood. The forward test of the strategy, free of survivorship: a
+#     name recorded this week stays recorded if it later leaves the index.
+#     Graded by scripts/scorecard/grade_ledger.mjs.
+#
+# Plus the earnings calendar (data/fundamentals/earnings.csv), which only
+# ever grows. Runs on Saturday morning, after Friday's close is in the data.
+
+on:
+  schedule:
+    - cron: "0 6 * * 6"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # commit the snapshot, calendar and ledger
+  actions: write    # dispatch the deploy (a GITHUB_TOKEN push does not trigger it)
+
+concurrency:
+  group: fundamentals
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --quiet "yfinance>=0.2.40" "pandas>=2.0" "numpy>=1.26" "duckdb>=1.0"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore price cache
+        # Read-only use of the deploy workflow's rolling DuckDB cache: restore
+        # the newest, never save (the deploy owns it).
+        uses: actions/cache/restore@v4
+        with:
+          path: data/market.duckdb
+          key: market-duckdb-v3-none
+          restore-keys: |
+            market-duckdb-v3-
+
+      - name: Refresh prices (S&P 500 + market context)
+        run: |
+          python -m src.data.refresh --tickers-file config/sp500.csv
+          python -m src.data.refresh --tickers-file config/market_context.csv
+
+      - name: Build simulator data (the scorecards' input)
+        run: |
+          python scripts/site/build_sim.py
+          python scripts/site/build_sim_market.py
+
+      - name: Snapshot fundamentals + earnings calendar
+        # ~500 names x 2 yfinance calls, paced; coverage-gated (refuses to
+        # write a snapshot that is mostly holes).
+        run: python -u -m src.data.fundamentals
+
+      - name: Score the week and write the ledger
+        run: node scripts/site/build_scorecards.mjs --ledger
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/fundamentals data/scorecard/ledger
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit."
+          else
+            git commit -m "Weekly fundamentals snapshot + scorecard ledger ($(date -u +%Y-%m-%d))"
+            git pull --rebase --autostash
+            git push
+          fi
+
+      - name: Redeploy the site with the new snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main

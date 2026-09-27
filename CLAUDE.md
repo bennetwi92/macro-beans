@@ -53,20 +53,25 @@ scripts/
   vix_options/      # Streamlit calculator (pages/ subdir for multipage)
   storage_model/    # Gas storage dashboard
   site/             # Build scripts for the public web platform (see below)
+  scorecard/        # Weekly strategy research: backtest.mjs, grade_ledger.mjs (Node)
   tools/            # Generic market tools (incl. seed_duckdb.py migration)
   archive/          # Deprecated scripts
 src/
-  data/             # Unified data layer: paths, registry, MarketStore, refresh
+  data/             # Unified data layer: paths, registry, MarketStore, refresh,
+                    #   fundamentals (weekly .info snapshots + earnings calendar)
   models/           # Mean-reversion model package
   storage_model/    # Gas storage valuation engine
   vix_analysis/     # VIX options analysis components
 docs/
   mean_reversion/   event_studies/   reference/   vix_options/
+  scorecard/        # weekly strategy backtest report (generated)
+  web_v2/           # cockpit specs (scorecard_strategy_spec.md = the weekly review)
 data/
   event_studies/    backtests/        # CSV/PNG analysis outputs (committed)
+  fundamentals/  scorecard/ledger/   # COMMITTED weekly evidence — append-only, never refetchable
   market.duckdb                       # Price cache (gitignored, regenerable)
 web/                # Public static site (Macro Beans web platform)
-.github/workflows/  # CI/CD for the web platform (deploy.yml)
+.github/workflows/  # CI/CD: deploy.yml (site), ci.yml (tests), fundamentals.yml (weekly evidence)
 ```
 
 ### Data layer (`src/data/`)
@@ -74,6 +79,12 @@ web/                # Public static site (Macro Beans web platform)
 Market prices live in a single DuckDB file (`data/market.duckdb`), **not**
 per-symbol CSVs. It is gitignored and regenerable — there is no precious
 state. The instrument universe is defined once in `config/instruments.toml`.
+
+**The exception is fundamentals.** yfinance's `.info` has no history, so
+`python -m src.data.fundamentals` writes dated snapshots (plus an earnings
+calendar that only grows) to `data/fundamentals/` as **committed** CSVs, not to
+the cache. The weekly scorecard ledger (`data/scorecard/ledger/`) is committed
+for the same reason. Both are append-only: never rewrite or delete a past file.
 
 - **Read prices:** `from src.data.store import MarketStore` →
   `MarketStore().get_prices("AAPL")` returns a Date-indexed OHLCV frame.

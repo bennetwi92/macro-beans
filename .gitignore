@@ -47,3 +47,8 @@ node_modules/
 data/scanner_strategy/*.parquet
 # Scanner-strategy v2 caches — regenerable via scripts/scanner_strategy_v2/fetch_prices.py
 data/scanner_strategy_v2/*.parquet
+
+# Scorecard backtest's per-setup dump (5–6 MB, regenerable in a minute by
+# scripts/scorecard/backtest.mjs). The summary, trades and equity curve are
+# small and committed; the weekly ledger is committed and must never be ignored.
+data/scorecard/calibration.csv

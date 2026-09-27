@@ -50,3 +50,37 @@ export function tradeCashGBP(t, currency) {
   const q = +t.quantity, pr = toGBP(+t.price, currency), fee = +t.fees || 0;
   return t.side === "sell" ? pr * q - fee : -(pr * q + fee);
 }
+
+// The OPEN lot of a position in its native currency: quantity, average cost,
+// and the date of the first buy since the position was last flat. The weekly
+// strategy replays its rules from that date (construct.js manageHolding), so
+// a name bought, sold out and bought again is judged on the current trade.
+export function openLot(posTrades) {
+  const ts = [...posTrades].sort(byDate);
+  let qty = 0, avg = 0, firstBuy = null;
+  for (const t of ts) {
+    const q = +t.quantity, pr = +t.price;
+    if (t.side === "sell") {
+      qty -= q;
+      if (qty < 1e-9) { qty = 0; avg = 0; firstBuy = null; }
+    } else {
+      if (qty < 1e-9) firstBuy = t.traded_at;
+      avg = (avg * qty + pr * q) / (qty + q);
+      qty += q;
+    }
+  }
+  return { qty, avg, firstBuy, open: qty > 1e-9 };
+}
+
+// Cash balance of an account in GBP: its cash flows plus the settlement of
+// every trade in it. The same arithmetic as the Portfolio page.
+export function accountCashGBP(accountId, positions, trades, cashFlows) {
+  const posById = Object.fromEntries(positions.map((p) => [p.id, p]));
+  let bal = 0;
+  for (const cf of cashFlows) if (cf.account_id === accountId) bal += +cf.amount;
+  for (const t of trades) {
+    const p = posById[t.position_id];
+    if (p && p.account_id === accountId) bal += tradeCashGBP(t, p.currency || "GBP");
+  }
+  return bal;
+}
