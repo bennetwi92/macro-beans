@@ -5,7 +5,8 @@ Usage:
     python -m src.data.refresh --full          # re-fetch full history
     python -m src.data.refresh --tickers AAPL,MSFT
     python -m src.data.refresh --full --tickers AAPL
-    python -m src.data.refresh --tickers-file config/sp500.csv --start 2018-01-01
+    python -m src.data.refresh --tickers-file config/sp500.csv
+    python -m src.data.refresh --tickers-file some.csv --start 2018-01-01  # bounded cold seed
 
 The cache is a derived, regenerable artifact. This module is the only place
 that opens the DB read-write, and each ticker's upsert runs in its own ACID

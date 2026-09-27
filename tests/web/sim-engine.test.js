@@ -1,7 +1,7 @@
 // Unit tests for the simulator's trade accounting (web/v2/js/sim-engine.js).
 //
 // These encode the rules the simulator trains against — next-open entry, close
-// fills for discretionary exits, an intraday stop that fills at the open when
+// fills for discretionary exits (next-open fills on the weekly chart), an intraday stop that fills at the open when
 // the bar gaps through it, a stop that trails one way only, and results quoted
 // in percent and in R.
 
@@ -11,6 +11,7 @@ import test from "node:test";
 import {
   LONG,
   SHORT,
+  decideExit,
   exitTrade,
   isOpen,
   moveStop,
@@ -196,4 +197,61 @@ test("stopOutStats: counts what is already realized on a scaled-out trade", () =
   t = exitTrade(t, { index: 3, price: 108, fraction: 0.5 }); // +4% banked
   t = moveStop(t, 104, 110);
   close(stopOutStats(t).r, 1.5); // +4% realized, +2% if the rest stops out
+});
+
+/* ---------- decideExit: close fills (daily) vs next-open fills (weekly) ---------- */
+
+const tape = [bar(100, 102, 99, 101), bar(101, 104, 100, 103), bar(106, 108, 97, 98)];
+
+test("decideExit: a close fill exits on the bar it was decided on", () => {
+  const t = openTrade({ side: LONG, stop: 95, entryIndex: 0, entryPrice: 100 });
+  const res = decideExit(t, tape, 1, { fill: "close" });
+  assert.equal(res.index, 1);
+  assert.equal(res.stopped, false);
+  assert.ok(!isOpen(res.trade));
+  assert.deepEqual(res.trade.exits, [{ index: 1, price: 103, fraction: 1, reason: "manual" }]);
+});
+
+test("decideExit: a next-open fill exits at the NEXT bar's open, not this close", () => {
+  // Decided on Sunday after bar 1 closed at 103; Monday opens at 106. The
+  // weekly trader gets 106, not the 103 they could not have sold at.
+  const t = openTrade({ side: LONG, stop: 95, entryIndex: 0, entryPrice: 100 });
+  const res = decideExit(t, tape, 1, { fill: "nextOpen" });
+  assert.equal(res.index, 2);
+  assert.equal(res.trade.exits[0].price, 106);
+  assert.equal(res.trade.exits[0].index, 2);
+  close(tradeStats(res.trade, null).total, 6);
+});
+
+test("decideExit: the half still open lives through the fill bar against its stop", () => {
+  // Half sold at the open (106); the bar then trades down to 97 through the
+  // 98 stop, which takes the other half at the stop price.
+  const t = openTrade({ side: LONG, stop: 98, entryIndex: 0, entryPrice: 100 });
+  const res = decideExit(t, tape, 1, { fill: "nextOpen", fraction: 0.5 });
+  assert.equal(res.stopped, true);
+  assert.ok(!isOpen(res.trade));
+  assert.deepEqual(
+    res.trade.exits.map((e) => [e.price, e.fraction, e.reason]),
+    [
+      [106, 0.5, "manual"],
+      [98, 0.5, "stop"],
+    ]
+  );
+});
+
+test("decideExit: with no next bar, a next-open exit falls back to the close", () => {
+  const t = openTrade({ side: SHORT, stop: 110, entryIndex: 0, entryPrice: 100 });
+  const res = decideExit(t, tape, 2, { fill: "nextOpen", reason: "time" });
+  assert.equal(res.index, 2);
+  assert.deepEqual(res.trade.exits, [{ index: 2, price: 98, fraction: 1, reason: "time" }]);
+});
+
+test("decideExit: a closed trade is left alone", () => {
+  const t = exitTrade(openTrade({ side: LONG, stop: 95, entryIndex: 0, entryPrice: 100 }), {
+    index: 0,
+    price: 101,
+  });
+  const res = decideExit(t, tape, 1, { fill: "nextOpen" });
+  assert.equal(res.trade, t);
+  assert.equal(res.index, 1);
 });

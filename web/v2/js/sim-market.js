@@ -12,6 +12,9 @@
 //   * the stock's 20-day relative strength against SPY;
 //   * a MARKET TAILWINDS SCORE out of 35, side-aware, VIX-penalised.
 //
+// On a weekly chart the same reads stretch out (MARKET_TF): the weekly trend
+// is the one scored, and ranks and RS look back 13 weeks, not 20 days.
+//
 // Two rules bind everything below:
 //
 // 1. **No look-ahead.** Every reading is taken as of a date, and a date only
@@ -26,6 +29,7 @@
 //    simulator that punishes you for its own build failing teaches nothing.
 
 import { ema, sma } from "./sim-indicators.js";
+import { weekKey } from "./sim-timeframe.js";
 
 /* ---------- the scoring model ---------- */
 
@@ -58,6 +62,19 @@ export const SCORE_LOOKBACK = 20;
 
 // 20 sessions of relative strength: the same horizon as the scoring rank.
 export const RS_LOOKBACK = 20;
+
+// What the market strip reads on each chart timeframe. The feed is DAILY
+// closes either way; a weekly deal just reads it over longer horizons and
+// scores the weekly trend. Weekly lookbacks are whole weeks in sessions: 1,
+// 4 and 13 weeks, with the points (and RS) riding on the quarter, because a
+// weekly trade is held for months, not weeks.
+//
+// `trend` is which of the two trend reads the SCORE uses. Both are always
+// published; the strip shows the scored one first.
+export const MARKET_TF = Object.freeze({
+  d: Object.freeze({ trend: "d", lookbacks: SECTOR_LOOKBACKS, score: SCORE_LOOKBACK, rs: RS_LOOKBACK }),
+  w: Object.freeze({ trend: "w", lookbacks: [5, 20, 65], score: 65, rs: 65 }),
+});
 
 // Weekly trend needs 50 completed weeks behind it; daily needs 50 sessions.
 const EMA_P = 21;
@@ -137,14 +154,6 @@ function trendSeries(dates, closes) {
     wEma: ema(wClose, EMA_P),
     wCum,
   };
-}
-
-/** ISO-week bucket key. Thursday's week owns the year, per ISO 8601. */
-function weekKey(iso) {
-  const d = new Date(`${iso}T00:00:00Z`);
-  const day = (d.getUTCDay() + 6) % 7; // Monday = 0
-  d.setUTCDate(d.getUTCDate() - day + 3); // the week's Thursday
-  return d.toISOString().slice(0, 10);
 }
 
 /* ---------- reading it, as of a date ---------- */
@@ -270,7 +279,9 @@ export function scoreFor(status, side = "long") {
     return { trend: 0, sector: 0, vix: 0, total: 0, max: MARKET_MAX, available: false };
   }
   const short = side === "short";
-  const regime = status.indices[BENCHMARK]?.d ?? null;
+  // The benchmark's trend on the timeframe being traded (`marketStatus` sets
+  // `regime` from MARKET_TF): daily on a daily chart, weekly on a weekly one.
+  const regime = status.regime ?? null;
   const trendKey = short ? flip(regime) : regime;
   const band = status.sector.band;
   const bandKey = short ? flipBand(band) : band;
@@ -322,11 +333,17 @@ export function compositePct(blocks) {
  * a pure function over a file the nightly build already wrote; the response
  * shape is the endpoint's, and a real HTTP route could serve it unchanged.
  *
- * `stock` is `{closes, index}` — the stock's own closes and the bar being
- * decided on — and is optional: without it everything but relative strength
- * still reads.
+ * `stock` is `{closes, index}` — the stock's own DAILY closes and the daily
+ * bar being decided on — and is optional: without it everything but relative
+ * strength still reads.
+ *
+ * `tf` is the chart's timeframe, `"d"` or `"w"` (see MARKET_TF). It changes
+ * which trend is scored and how far back the sector ranks and RS look; it
+ * never changes the no-look-ahead rule. A weekly decision is on a week's last
+ * session, so its weekly trend is a completed week.
  */
-export function marketStatus(market, { sector, date, stock = null } = {}) {
+export function marketStatus(market, { sector, date, stock = null, tf = "d" } = {}) {
+  const cfg = MARKET_TF[tf] || MARKET_TF.d;
   if (!market) return { available: false, reason: "no-data" };
   const i = asOf(market.dates, date);
   if (i < 0) return { available: false, reason: "before-history" };
@@ -345,8 +362,8 @@ export function marketStatus(market, { sector, date, stock = null } = {}) {
   // sector points and, crucially, is not scored ZERO for them either.
   const etf = market.sectors[sector] || null;
   const ranks = {};
-  for (const lb of SECTOR_LOOKBACKS) ranks[lb] = rankSectors(market, i, lb);
-  const scored = ranks[SCORE_LOOKBACK] || [];
+  for (const lb of cfg.lookbacks) ranks[lb] = rankSectors(market, i, lb);
+  const scored = ranks[cfg.score] || [];
   const row = etf ? scored.find((r) => r.etf === etf) : null;
 
   const status = {
@@ -354,7 +371,9 @@ export function marketStatus(market, { sector, date, stock = null } = {}) {
     date: market.dates[i],
     index: i,
     indices,
-    regime: indices[BENCHMARK]?.d ?? null,
+    tf: cfg.trend,
+    lookbacks: cfg.lookbacks,
+    regime: indices[BENCHMARK]?.[cfg.trend] ?? null,
     sector: {
       name: sector || null,
       etf: etf || BENCHMARK,
@@ -365,12 +384,13 @@ export function marketStatus(market, { sector, date, stock = null } = {}) {
       ret: row?.ret ?? null,
       // The short lookbacks are published for the reader, not the score: a
       // sector that is top-3 over 20 days and bottom-3 over 1 is rolling over.
-      rank1: rankIn(ranks[1], etf),
-      rank5: rankIn(ranks[5], etf),
+      // `rankShort` is over `lookbacks[0]`, `rankMid` over `lookbacks[1]`.
+      rankShort: rankIn(ranks[cfg.lookbacks[0]], etf),
+      rankMid: rankIn(ranks[cfg.lookbacks[1]], etf),
     },
     rs:
       stock && market.close[BENCHMARK]
-        ? relStrength(stock.closes, stock.index, market.close[BENCHMARK], i)
+        ? relStrength(stock.closes, stock.index, market.close[BENCHMARK], i, cfg.rs)
         : null,
     vix: market.vix ? market.vix[i] ?? null : null,
   };

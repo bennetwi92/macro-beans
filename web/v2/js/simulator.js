@@ -1,8 +1,7 @@
 // Swing-trading simulator — the page module.
 //
-// Deals you a random S&P 500 name on a random date in the last five years,
-// shows 35 sessions of history with the indicators a swing trader actually
-// reads, and makes you commit: set a stop by dragging it on the chart, then
+// Deals you a random S&P 500 name on a random date from its whole history,
+// shows 35 bars with the indicators a swing trader actually reads, and makes you commit: set a stop by dragging it on the chart, then
 // buy, short, wait or pass. The point is repetition — hundreds of reps at
 // reading a chart cold — not a strategy backtest, so nothing is scored or
 // stored.
@@ -30,6 +29,13 @@
 // lives in sim-patterns.js and sim-structure.js; this module only draws what
 // they hand back, and draws nothing at all when they hand back null.
 //
+// It plays on two timeframes, DAILY and WEEKLY, toggled on the market strip
+// (`1D` / `1W`, `?tf=w`). Weekly is built for a trader who checks in once a
+// week, on Sunday: Weinstein's 10- and 30-week averages, a default stop under
+// the decision week's low, and exits that fill at Monday's open. Every rule
+// that counts in bars comes from the timeframe profile (sim-timeframe.js), so
+// nothing below asks which timeframe it is in; it reads `S.tf`.
+//
 // Everything below the app bar fits one mobile screen and never scrolls: a
 // status strip, the chart, an action bar. The indicator math lives in
 // sim-indicators.js and the trade accounting in sim-engine.js, both pure and
@@ -48,6 +54,7 @@ import {
 import {
   BENCHMARK,
   INDICES,
+  MARKET_TF,
   STRICT_MIN,
   VIX_PENALTY,
   VIX_SPIKE,
@@ -59,8 +66,8 @@ import {
 import {
   LONG,
   SHORT,
+  decideExit,
   dirOf,
-  exitTrade,
   isOpen,
   moveStop,
   openTrade,
@@ -70,24 +77,32 @@ import {
   stopOutStats,
   tradeStats,
 } from "./sim-engine.js";
+import {
+  defaultStop as stopFor,
+  priceDecimals,
+  runwayBars,
+  timeframe,
+  toWeekly,
+  warmupBars,
+} from "./sim-timeframe.js";
 
 /* ---------- rules of the game ---------- */
 
-// Sessions VISIBLE when you decide. This is a phone-screen budget and nothing
-// more: the bars, the indicators and the pattern detector all read as far back
-// as they need (sim-patterns.js DETECT_BARS), and a pattern that starts before
-// the left edge is simply drawn from the edge.
-const LOOKBACK = 35;
-const REVIEW_DAYS = 20; // sessions revealed after a pass
-// Sessions you may stand aside before the deal is called. Two trading weeks:
-// long enough for a triangle to break or a base to give way, short enough that
-// waiting stays a decision rather than a way of never taking one.
-const MAX_WAIT = 10;
-const MAX_HOLD = 60; // hard runway; the trade is closed at the last bar
-const WARMUP = 200 + LOOKBACK; // bars needed before a decision day (200SMA + window)
-const RUNWAY = MAX_HOLD + 2; // bars needed after it
-const YEARS = 5; // decision dates come from the last N years
-const STOP_ATR = 1.5; // default stop distance, in ATR(14)
+// The rules that count in bars live in the timeframe profiles
+// (sim-timeframe.js): how many bars are VISIBLE when you decide (a
+// phone-screen budget and nothing more; the bars, the indicators and the
+// pattern detector all read as far back as they need), how many a pass
+// reveals, how long WAIT may stand aside, and how long a trade may run.
+// Read them from `S.tf`.
+
+// Air kept above and below the decision close while deciding, in ATR(14), so
+// a short's stop has somewhere to be dragged to (see renderChart).
+const AIR_ATR = 1.5;
+
+// Daily bars a ticker needs before it is worth fetching on a timeframe: its
+// warm-up and runway in that timeframe's bars, in days.
+const DAYS_PER_BAR = { d: 1, w: 5 };
+const minDailyBars = (tf) => (warmupBars(tf) + runwayBars(tf)) * DAYS_PER_BAR[tf.id];
 
 const params = new URLSearchParams(location.search);
 
@@ -96,6 +111,7 @@ const params = new URLSearchParams(location.search);
 let universe = [];
 let market = null; // prepared market-context feed, or null (the feature fails open)
 let rules = loadRules(); // "learn" | "strict" — see the rule modes section
+let tf = loadTf(); // the timeframe profile the next deal is played on
 let S = null; // the live session (see newSession)
 let scale = null; // chart geometry from the last render, for the stop drag
 let dragging = false;
@@ -109,7 +125,10 @@ async function loadUniverse() {
   const res = await fetch("data/sim-universe.json", { cache: "no-cache" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const d = await res.json();
-  universe = (d.tickers || []).filter((t) => t.b >= WARMUP + RUNWAY);
+  // Kept if it is playable on EITHER timeframe; `pickTickers` narrows it to
+  // the one in play.
+  const need = Math.min(minDailyBars(timeframe("d")), minDailyBars(timeframe("w")));
+  universe = (d.tickers || []).filter((t) => t.b >= need);
   if (!universe.length) throw new Error("universe is empty");
 }
 
@@ -139,13 +158,19 @@ async function loadMarket() {
   }
 }
 
-/** Indicator set drawn on every chart, aligned bar-for-bar with `bars`. */
-function indicatorsFor(bars) {
+/**
+ * Indicator set drawn on every chart, aligned bar-for-bar with `bars`. The
+ * moving averages are whatever the timeframe draws (`tf.lines`), keyed by
+ * role (`fast`, `mid`, `slow`) so the chart never cares which periods they are.
+ */
+function indicatorsFor(bars, prof) {
   const closes = bars.map((b) => b.c);
+  const lines = {};
+  for (const l of prof.lines) {
+    lines[l.key] = l.kind === "ema" ? ema(closes, l.period) : sma(closes, l.period);
+  }
   return {
-    e9: ema(closes, 9),
-    e22: ema(closes, 22),
-    s200: sma(closes, 200),
+    lines,
     hist: macd(closes).hist,
     rsi: rsi(closes, 14),
     atr: atr(bars, 14),
@@ -153,17 +178,20 @@ function indicatorsFor(bars) {
 }
 
 /**
- * Every bar that can serve as a decision day: late enough to have a 200-day
+ * Every bar that can serve as a decision day: late enough to have the longest
  * average behind it, early enough to run a trade out in front of it, and
- * inside the last five years.
+ * inside the timeframe's `years` window if it has one. `years: null` deals
+ * from the whole history the build shipped.
  */
-function eligibleRange(bars) {
-  const cutoff = new Date();
-  cutoff.setFullYear(cutoff.getFullYear() - YEARS);
-  const iso = cutoff.toISOString().slice(0, 10);
-  let lo = WARMUP;
-  while (lo < bars.length && bars[lo].d < iso) lo++;
-  const hi = bars.length - 1 - RUNWAY;
+function eligibleRange(bars, prof) {
+  let lo = warmupBars(prof);
+  if (prof.years) {
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - prof.years);
+    const iso = cutoff.toISOString().slice(0, 10);
+    while (lo < bars.length && bars[lo].d < iso) lo++;
+  }
+  const hi = bars.length - 1 - runwayBars(prof);
   return [lo, hi];
 }
 
@@ -181,10 +209,12 @@ async function newSession(opts = {}) {
     } catch {
       continue; // a missing file just means the next deal
     }
-    const bars = (data.bars || []).map(toBar);
-    const [lo, hi] = eligibleRange(bars);
+    const prof = tf;
+    const daily = (data.bars || []).map(toBar);
+    const bars = prof.id === "w" ? toWeekly(daily) : daily;
+    const [lo, hi] = eligibleRange(bars, prof);
     if (hi < lo) continue;
-    const ind = indicatorsFor(bars);
+    const ind = indicatorsFor(bars, prof);
 
     let dIdx;
     const wantedDate = params.get("d");
@@ -192,23 +222,30 @@ async function newSession(opts = {}) {
       dIdx = bars.findIndex((b) => b.d >= wantedDate);
       if (dIdx < lo || dIdx > hi) dIdx = lo + Math.floor((hi - lo) / 2);
     } else if (hunt) {
-      dIdx = huntPattern(bars, ind, lo, hi, hunt);
+      dIdx = huntPattern(bars, ind, lo, hi, hunt, prof);
       if (dIdx == null) continue; // this name never shows it; try the next
     } else {
       // A random deal keeps a full WAIT budget behind it, so the button is
       // never disabled just because the deal landed near the end of the
       // runway. A pinned (`?d=`) or hunted deal takes the day it asked for and
       // makes do with whatever room is left.
-      const top = Math.max(lo, hi - MAX_WAIT);
+      const top = Math.max(lo, hi - prof.maxWait);
       dIdx = lo + Math.floor(Math.random() * (top - lo + 1));
     }
 
+    // Price precision for this hand: cents, unless a split-adjusted history
+    // has taken the price under a dollar (see priceDecimals).
+    const dp = priceDecimals(bars[dIdx].c);
     S = {
+      tf: prof,
+      dp,
       ticker: data.ticker,
       name: data.name,
       sector: data.sector,
       bars,
-      closes: bars.map((b) => b.c), // the RS line's numerator; kept once, not per render
+      // The RS line's numerator, kept once, not per render. Always DAILY: the
+      // market feed is daily, and a weekly bar reads it through `bar.di`.
+      closes: daily.map((b) => b.c),
       ind,
       dIdx,
       dIdx0: dIdx, // the day this hand was dealt on, so WAIT can price itself
@@ -216,7 +253,7 @@ async function newSession(opts = {}) {
       waited: 0,
       curIdx: dIdx,
       mode: "decide",
-      stop: defaultStop(bars, ind, dIdx),
+      stop: defaultStop(prof, bars, ind, dIdx, dp),
       stopTouched: false, // an untouched stop re-anchors when the day moves
       trade: null,
       revealed: false,
@@ -225,7 +262,7 @@ async function newSession(opts = {}) {
       mktEntry: null, // ...frozen at the entry, so the recap grades the decision
       armed: null, // a counter-trend side whose warning has been shown once
       penalty: 0, // Learning Mode: tailwind points forgone by taking it anyway
-      pattern: patternsOff() ? null : patternAt(bars, ind, dIdx),
+      pattern: patternsOff() ? null : patternAt(bars, ind, dIdx, prof),
     };
     render();
     return;
@@ -257,9 +294,10 @@ function wantedPattern() {
  * label cannot churn as you tap `+1 DAY`. WAIT is the one exception, and a
  * narrow one: see `refreshPattern`.
  */
-function patternAt(bars, ind, dIdx) {
+function patternAt(bars, ind, dIdx, prof) {
   return detectPattern(bars, ind.atr, dIdx, {
-    visibleFrom: Math.max(0, dIdx - (LOOKBACK - 1)),
+    ...prof.detect,
+    visibleFrom: Math.max(0, dIdx - (prof.lookback - 1)),
   });
 }
 
@@ -278,46 +316,56 @@ function patternAt(bars, ind, dIdx) {
  */
 function refreshPattern() {
   if (patternsOff() || !isPatternOver(S.pattern)) return;
-  const p = resolvePattern(patternAt(S.bars, S.ind, S.dIdx), S.bars, S.curIdx);
+  const p = resolvePattern(patternAt(S.bars, S.ind, S.dIdx, S.tf), S.bars, S.curIdx);
   if (!isPatternOver(p)) S.pattern = p;
 }
 
 /**
  * The first decision day on this name that shows `id`, or `null`.
  *
- * Probing is strided rather than exhaustive: the eligible range runs to a
- * thousand-odd sessions and detection is not free, so a dense walk would stall
- * the deal for seconds on a phone. A pattern spans weeks, so a stride of three
- * cannot step over one — it only ever lands on a different bar of the same
- * shape, which is exactly as good a hand.
+ * Probing is strided rather than exhaustive: the eligible range runs to
+ * thousands of sessions and detection is not free, so a dense walk would
+ * stall the deal for seconds on a phone. A pattern spans weeks, so a stride of
+ * three days cannot step over one — it only ever lands on a different bar of
+ * the same shape, which is exactly as good a hand. A weekly bar is already a
+ * week wide, so weekly probes every bar.
  */
-const HUNT_STRIDE = 3;
+const HUNT_STRIDE = { d: 3, w: 1 };
 const HUNT_PROBES = 400;
 
-function huntPattern(bars, ind, lo, hi, id) {
+function huntPattern(bars, ind, lo, hi, id, prof) {
+  const stride = HUNT_STRIDE[prof.id];
   const start = lo + Math.floor(Math.random() * Math.max(1, hi - lo + 1));
   for (let n = 0; n < HUNT_PROBES; n++) {
     // Wrap, so a hunt started near the end of the runway still sees the rest.
-    const i = lo + (((start - lo + n * HUNT_STRIDE) % (hi - lo + 1)) + (hi - lo + 1)) % (hi - lo + 1);
-    if (patternAt(bars, ind, i)?.id === id) return i;
+    const i = lo + (((start - lo + n * stride) % (hi - lo + 1)) + (hi - lo + 1)) % (hi - lo + 1);
+    if (patternAt(bars, ind, i, prof)?.id === id) return i;
   }
   return null;
 }
 
-/** A few candidate tickers, so one missing file does not end the session. */
+/**
+ * A few candidate tickers, so one missing file does not end the session —
+ * drawn from the names with enough history for the timeframe in play.
+ */
 function pickTickers(n) {
+  const need = minDailyBars(tf);
+  const pool = universe.filter((t) => t.b >= need);
   const out = [];
-  for (let i = 0; i < n && universe.length; i++) {
-    out.push(universe[Math.floor(Math.random() * universe.length)].t);
+  for (let i = 0; i < n && pool.length; i++) {
+    out.push(pool[Math.floor(Math.random() * pool.length)].t);
   }
   return out;
 }
 
-/** Default stop: 1.5 ATR below the decision close — a starting point to drag. */
-function defaultStop(bars, ind, dIdx) {
-  const close = bars[dIdx].c;
-  const a = ind.atr[dIdx] || close * 0.02;
-  return round2(close - STOP_ATR * a);
+/**
+ * The stop a hand starts with — a starting point to drag. Daily: 1.5 ATR under
+ * the close. Weekly: a tick under the decision week's low, or half an ATR when
+ * that low hugs the close. The rule is sim-timeframe.js `defaultStop`.
+ */
+function defaultStop(prof, bars, ind, dIdx, dp) {
+  const tick = 10 ** -dp;
+  return roundTo(stopFor(prof, bars, ind.atr, dIdx, tick), dp);
 }
 
 /* ---------- market confluence ---------- */
@@ -348,6 +396,32 @@ function toggleRules() {
   render();
 }
 
+// The timeframe. Remembered per browser like the rule mode, and `?tf=w|d`
+// pins it for a link. Flipping it deals a NEW hand rather than redrawing this
+// one: a daily hand dealt on a Wednesday has no completed week to show, and
+// the weekly bar that contains it would reveal Thursday and Friday.
+const TF_KEY = "mb.sim.tf";
+
+function loadTf() {
+  const q = new URLSearchParams(location.search).get("tf");
+  if (q === "w" || q === "d") return timeframe(q);
+  try {
+    return timeframe(localStorage.getItem(TF_KEY) === "w" ? "w" : "d");
+  } catch {
+    return timeframe("d");
+  }
+}
+
+function toggleTf() {
+  tf = timeframe(tf.id === "w" ? "d" : "w");
+  try {
+    localStorage.setItem(TF_KEY, tf.id);
+  } catch {
+    /* not persisting is fine; this session still plays the choice */
+  }
+  newSession();
+}
+
 /** The day the strip reports on: the decision day, or the tape once it moves. */
 const shownIdx = () => (S.mode === "decide" ? S.dIdx : S.curIdx);
 
@@ -358,10 +432,13 @@ const shownIdx = () => (S.mode === "decide" ? S.dIdx : S.curIdx);
  */
 function marketAt(idx) {
   if (!market || !S) return null;
+  const bar = S.bars[idx];
   return marketStatus(market, {
     sector: S.sector,
-    date: S.bars[idx].d,
-    stock: { closes: S.closes, index: idx },
+    date: bar.d,
+    // A weekly bar carries the index of its last session in the daily array.
+    stock: { closes: S.closes, index: bar.di ?? idx },
+    tf: S.tf.id,
   });
 }
 
@@ -433,13 +510,13 @@ function setStop(price, base = S.trade) {
 /** Trail the stop to the entry price: the one-tap "make it free" move. */
 function stopToBreakeven() {
   if (!canBreakeven()) return;
-  setStop(round2(S.trade.entryPrice));
+  setStop(roundPx(S.trade.entryPrice));
   render();
 }
 
 const canBreakeven = () =>
   S.mode === "trade" &&
-  stopMoveAllows(S.trade, round2(S.trade.entryPrice), S.bars[S.curIdx].c);
+  stopMoveAllows(S.trade, roundPx(S.trade.entryPrice), S.bars[S.curIdx].c);
 
 /* ---------- actions ---------- */
 
@@ -475,7 +552,7 @@ function takePosition(side) {
   const stepped = stepTrade(S.trade, bar, entryIdx);
   S.trade = stepped.trade;
   if (stepped.stopped) {
-    S.note = stopNote(bar, "STOPPED DAY 1");
+    S.note = stopNote(bar, `STOPPED ${S.tf.unit} 1`);
     S.mode = "recap";
   } else {
     S.mode = "trade";
@@ -501,33 +578,53 @@ function advanceDay() {
   if (stepped.stopped) {
     S.note = stopNote(bar, "STOPPED OUT");
     S.mode = "recap";
-  } else if (S.curIdx - S.trade.entryIndex >= MAX_HOLD) {
-    // The runway ends; whatever is left is closed on this close.
-    S.trade = exitTrade(S.trade, {
-      index: S.curIdx,
-      price: bar.c,
-      fraction: S.trade.open,
-      reason: "time",
-    });
-    S.note = `TIME EXIT ${MAX_HOLD}D`;
-    S.mode = "recap";
+  } else {
+    checkRunway();
   }
   render();
 }
 
+/**
+ * EXIT 50% / EXIT ALL. Fills per the timeframe (sim-engine.js `decideExit`):
+ * at this bar's close on the daily, at the next bar's open on the weekly — in
+ * which case the tape moves on a bar, and whatever half is still open lives
+ * through that week against its stop.
+ */
 function takeExit(fraction) {
-  const bar = S.bars[S.curIdx];
-  S.trade = exitTrade(S.trade, {
-    index: S.curIdx,
-    price: bar.c,
+  const res = decideExit(S.trade, S.bars, S.curIdx, {
     fraction,
+    fill: S.tf.exitFill,
     reason: "manual",
   });
-  if (!isOpen(S.trade)) {
+  S.trade = res.trade;
+  S.curIdx = res.index;
+  if (res.stopped) {
+    S.note = stopNote(S.bars[S.curIdx], "STOPPED OUT");
+    S.mode = "recap";
+  } else if (!isOpen(S.trade)) {
     S.note = "CLOSED";
     S.mode = "recap";
+  } else {
+    checkRunway();
   }
   render();
+}
+
+/**
+ * The runway ends at `maxHold` bars: whatever is left is closed the way any
+ * exit on this timeframe fills (the close, or the next open).
+ */
+function checkRunway() {
+  if (!isOpen(S.trade) || S.curIdx - S.trade.entryIndex < S.tf.maxHold) return;
+  const res = decideExit(S.trade, S.bars, S.curIdx, {
+    fraction: S.trade.open,
+    fill: S.tf.exitFill,
+    reason: "time",
+  });
+  S.trade = res.trade;
+  S.curIdx = res.index;
+  S.note = `TIME EXIT ${S.tf.maxHold}${S.tf.short}`;
+  S.mode = "recap";
 }
 
 /**
@@ -552,12 +649,12 @@ function waitDay() {
   // An untouched stop follows the price; a dragged one stays where it was put,
   // even if the wait has left it on the wrong side (the BUY/SHORT button goes
   // dead, which is the same language every other illegal stop speaks).
-  if (!S.stopTouched) S.stop = defaultStop(S.bars, S.ind, S.dIdx);
+  if (!S.stopTouched) S.stop = defaultStop(S.tf, S.bars, S.ind, S.dIdx, S.dp);
   render();
 }
 
 /** Sessions still available to stand aside: the budget, fenced by the runway. */
-const waitsLeft = () => Math.min(MAX_WAIT - S.waited, S.hiIdx - S.dIdx);
+const waitsLeft = () => Math.min(S.tf.maxWait - S.waited, S.hiIdx - S.dIdx);
 
 const canWait = () => S.mode === "decide" && waitsLeft() > 0;
 
@@ -567,14 +664,17 @@ const waitDrift = () =>
 
 function pass() {
   S.mode = "review";
-  S.curIdx = Math.min(S.bars.length - 1, S.dIdx + REVIEW_DAYS);
+  S.curIdx = Math.min(S.bars.length - 1, S.dIdx + S.tf.review);
   render();
 }
 
 /* ---------- view helpers ---------- */
 
-const round2 = (v) => Math.round(v * 100) / 100;
-const fmtPx = (v) => v.toFixed(2);
+// Prices are quoted to the hand's own precision (`S.dp`): cents, or more
+// places for a split-adjusted history that trades under a dollar.
+const roundTo = (v, dp) => Math.round(v * 10 ** dp) / 10 ** dp;
+const roundPx = (v) => roundTo(v, S.dp);
+const fmtPx = (v) => v.toFixed(S.dp);
 const fmtPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 const fmtR = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}R`;
 const sign = (v) => (v >= 0 ? "up" : "down");
@@ -588,8 +688,8 @@ function fmtVol(v) {
 
 /** The bar range the chart draws for the current mode. */
 function viewRange() {
-  const to = S.mode === "review" ? Math.min(S.bars.length - 1, S.dIdx + REVIEW_DAYS) : S.curIdx;
-  const from = Math.max(0, S.dIdx - (LOOKBACK - 1));
+  const to = S.mode === "review" ? Math.min(S.bars.length - 1, S.dIdx + S.tf.review) : S.curIdx;
+  const from = Math.max(0, S.dIdx - (S.tf.lookback - 1));
   return [from, to];
 }
 
@@ -624,7 +724,9 @@ function renderStatus() {
     chips.push(
       chip(
         "DECIDE",
-        S.waited ? `WAITED ${S.waited}D ${fmtPct(waitDrift())}` : `${LOOKBACK}D CHART`,
+        S.waited
+          ? `WAITED ${S.waited}${S.tf.short} ${fmtPct(waitDrift())}`
+          : `${S.tf.lookback}${S.tf.short} CHART`,
         "sim-chip-mode"
       )
     );
@@ -637,7 +739,11 @@ function renderStatus() {
     const t = S.trade;
     const st = tradeStats(t, S.bars[S.curIdx].c);
     chips.push(
-      chip(t.side === SHORT ? "SHORT" : "LONG", `${S.curIdx - t.entryIndex}D HELD`, "sim-chip-mode")
+      chip(
+        t.side === SHORT ? "SHORT" : "LONG",
+        `${S.curIdx - t.entryIndex}${S.tf.short} HELD`,
+        "sim-chip-mode"
+      )
     );
     chips.push(chip("ENTRY", fmtPx(t.entryPrice)));
     chips.push(chip("OPEN", `${Math.round(t.open * 100)}%`));
@@ -654,7 +760,7 @@ function renderStatus() {
     const fwd = seen.length ? ((seen[seen.length - 1].c - from) / from) * 100 : 0;
     const best = seen.length ? ((Math.max(...seen.map((b) => b.h)) - from) / from) * 100 : 0;
     const worst = seen.length ? ((Math.min(...seen.map((b) => b.l)) - from) / from) * 100 : 0;
-    chips.push(chip("PASSED", `NEXT ${seen.length}D`, "sim-chip-mode"));
+    chips.push(chip("PASSED", `NEXT ${seen.length}${S.tf.short}`, "sim-chip-mode"));
     chips.push(chip("CLOSE", fmtPct(fwd), sign(fwd)));
     chips.push(chip("HIGH", fmtPct(best), "up"));
     chips.push(chip("LOW", fmtPct(worst), "down"));
@@ -704,8 +810,13 @@ const seg = (cls, title, body) => `<span class="mk-seg ${cls}" title="${title}">
 
 // The two fixed titles. Written out here rather than inline so the segment
 // list below stays a list of what is on the strip.
-const TREND_TITLE =
-  "Trend on the daily and weekly: price &gt; 21EMA &gt; 50SMA is bullish, price &lt; 50SMA bearish.";
+const TREND_TITLE = {
+  d: "Trend on the daily, then the weekly (the daily is scored): price &gt; 21EMA &gt; 50SMA is bullish, price &lt; 50SMA bearish.",
+  w: "Trend on the weekly, then the daily (the weekly is scored): price &gt; 21EMA &gt; 50SMA is bullish, price &lt; 50SMA bearish.",
+};
+
+/** A market lookback, which is always in sessions, in the timeframe's words. */
+const lbText = (n) => (S.tf.id === "w" ? `${Math.round(n / 5)}-week` : `${n}-day`);
 const UNMAPPED_TITLE =
   "No sector ETF for this ticker — benchmarked against SPY, and the sector points are excluded from the score.";
 
@@ -740,7 +851,18 @@ function marketBanner() {
   return { cls: "mk-block", text };
 }
 
-/** The rule-mode toggle: the one control on the strip, and the last thing on it. */
+/**
+ * The timeframe toggle. It sits beside the rule mode at the end of the strip,
+ * and it deals a new hand (see `toggleTf`).
+ */
+const tfButton = () =>
+  `<button type="button" id="mk-tf" class="mk-mode ${tf.id === "w" ? "mk-tf-w" : ""}" title="${
+    tf.id === "w"
+      ? "Weekly chart: decide on Friday's close, fills at Monday's open. Tap to deal a daily hand."
+      : "Daily chart. Tap to deal a weekly hand: 10/30-week averages, Sunday decisions, Monday fills."
+  }">${tf.id === "w" ? "1W" : "1D"}</button>`;
+
+/** The rule-mode toggle: the other control on the strip, and the last thing on it. */
 const modeButton = () =>
   `<button type="button" id="mk-mode" class="mk-mode ${rules === "strict" ? "mk-strict" : ""}" title="${
     rules === "strict"
@@ -777,7 +899,12 @@ function renderMarket() {
       const sc = scoreFor(st, side);
       const pct = compositePct([sc]);
       const sec = st.sector;
-      const idx = (sym) => `${sym} ${glyph(st.indices[sym]?.d)}${glyph(st.indices[sym]?.w)}`;
+      // Two glyphs per index, the SCORED timeframe first.
+      const other = st.tf === "w" ? "d" : "w";
+      const idx = (sym) =>
+        `${sym} ${glyph(st.indices[sym]?.[st.tf])}${glyph(st.indices[sym]?.[other])}`;
+      const trendTitle = TREND_TITLE[st.tf] || TREND_TITLE.d;
+      const [lbShort, lbMid, lbScore] = st.lookbacks;
       html =
         seg(
           `mk-score ${scoreBand(pct)}`,
@@ -789,22 +916,22 @@ function renderMarket() {
         ) +
         // SPY is never the segment that gets dropped: it is the one the score
         // reads, so QQQ and IWM travel in their own, droppable, segment.
-        seg("", TREND_TITLE, idx(BENCHMARK)) +
-        seg("mk-opt", TREND_TITLE, INDICES.filter((sym) => sym !== BENCHMARK).map(idx).join(" ")) +
+        seg("", trendTitle, idx(BENCHMARK)) +
+        seg("mk-opt", trendTitle, INDICES.filter((sym) => sym !== BENCHMARK).map(idx).join(" ")) +
         (sec.unmapped
           ? seg("mk-unmapped", UNMAPPED_TITLE, "⚠ SECTOR ? · BENCH SPY")
           : seg(
               "",
-              `${sec.name} over 20 sessions: rank ${sec.rank}/${sec.of} ` +
-                `(${fmtPct(sec.ret ?? 0)}). 5-day rank ${sec.rank5 ?? "–"}, ` +
-                `1-day rank ${sec.rank1 ?? "–"}.`,
+              `${sec.name} over ${lbText(lbScore)}: rank ${sec.rank}/${sec.of} ` +
+                `(${fmtPct(sec.ret ?? 0)}). ${lbText(lbMid)} rank ${sec.rankMid ?? "–"}, ` +
+                `${lbText(lbShort)} rank ${sec.rankShort ?? "–"}.`,
               `${sec.etf} #${sec.rank ?? "?"}/${sec.of} ${glyph(bandTrend(sec.band))}`
             )) +
         (st.rs == null
           ? ""
           : seg(
               st.rs >= 0 ? "mk-bull" : "mk-bear",
-              `20-day relative strength against SPY: the stock's RS line, ` +
+              `${lbText(MARKET_TF[st.tf].rs)} relative strength against SPY: the stock's RS line, ` +
                 `${st.rs >= 0 ? "up" : "down"} ${Math.abs(st.rs).toFixed(2)}% over the window.`,
               `RS ${st.rs >= 0 ? "+" : ""}${st.rs.toFixed(1)}%`
             )) +
@@ -820,16 +947,17 @@ function renderMarket() {
   }
 
   el.className = cls;
-  el.innerHTML = html + modeButton();
+  el.innerHTML = html + tfButton() + modeButton();
+  wire("mk-tf", toggleTf);
   wire("mk-mode", toggleRules);
 }
 
 /* ---------- render: action bar ---------- */
 
-function button(id, label, cls = "", disabled = false) {
+function button(id, label, cls = "", disabled = false, title = "") {
   return `<button type="button" id="${id}" class="sim-btn ${cls}"${
     disabled ? " disabled" : ""
-  }>${label}</button>`;
+  }${title ? ` title="${title}"` : ""}>${label}</button>`;
 }
 
 function renderActions() {
@@ -851,7 +979,7 @@ function renderActions() {
       ) +
       // Between the two entries and the discard, because that is what it is:
       // not taking the trade, but not throwing the hand away either.
-      button("act-wait", "WAIT 1D", "sim-btn-wait", !canWait()) +
+      button("act-wait", `WAIT 1${S.tf.short}`, "sim-btn-wait", !canWait()) +
       button("act-pass", "PASS", "sim-btn-pass") +
       button(
         "act-short",
@@ -861,13 +989,16 @@ function renderActions() {
       );
   } else if (S.mode === "trade") {
     const half = S.trade.open > 0.5 + 1e-9;
+    // Weekly exits are decided on Sunday and filled at Monday's open; say so
+    // where the finger is, since the tape will move a week when it fills.
+    const exitTitle = S.tf.exitFill === "nextOpen" ? "Fills at the next week's open" : "Fills at today's close";
     html =
-      button("act-next", "+1 DAY", "sim-btn-next") +
+      button("act-next", `+1 ${S.tf.unit}`, "sim-btn-next") +
       // Dragging sets any stop; this hits the entry exactly, which is the one
       // level worth a button — the trade stops costing anything.
       button("act-be", "B/E", "sim-btn-stop", !canBreakeven()) +
-      (half ? button("act-half", "EXIT 50%", "sim-btn-exit") : "") +
-      button("act-all", half ? "EXIT ALL" : "EXIT REST", "sim-btn-exit");
+      (half ? button("act-half", "EXIT 50%", "sim-btn-exit", false, exitTitle) : "") +
+      button("act-all", half ? "EXIT ALL" : "EXIT REST", "sim-btn-exit", false, exitTitle);
   } else {
     html = button("act-new", "NEXT OPPORTUNITY ▸", "sim-btn-new");
   }
@@ -1076,8 +1207,7 @@ function renderChart() {
   for (let i = from; i <= to; i++) {
     consider(bars[i].l);
     consider(bars[i].h);
-    consider(S.ind.e9[i]);
-    consider(S.ind.e22[i]);
+    for (const l of S.tf.lines) if (l.fit) consider(S.ind.lines[l.key][i]);
   }
   consider(liveStop());
   if (S.trade) {
@@ -1091,7 +1221,7 @@ function renderChart() {
   // trade is open the drag is fenced between the stop and the current close,
   // both already in range, so the air would only flatten the candles.
   if (S.mode === "decide") {
-    const air = (S.ind.atr[S.dIdx] || S.bars[S.dIdx].c * 0.02) * STOP_ATR;
+    const air = (S.ind.atr[S.dIdx] || S.bars[S.dIdx].c * 0.02) * AIR_ATR;
     consider(S.bars[S.dIdx].c + air);
     consider(S.bars[S.dIdx].c - air);
   }
@@ -1141,21 +1271,25 @@ function renderChart() {
     }
     return pts;
   };
-  out += polyline(maPts(S.ind.s200), "sim-ma sim-ma200", "sim-clip-price");
-  out += polyline(maPts(S.ind.e22), "sim-ma sim-ma22");
-  out += polyline(maPts(S.ind.e9), "sim-ma sim-ma9");
+  // Back to front, as the profile lists them. A line outside the price scale
+  // is clipped to the panel.
+  for (const l of S.tf.lines) {
+    out += polyline(maPts(S.ind.lines[l.key]), `sim-ma ${l.cls}`, l.fit ? "" : "sim-clip-price");
+  }
 
-  // The 200SMA is often far outside a 35-day window; say where it is instead
-  // of letting the clip hide it silently. Right-anchored at the top, beside
-  // the price axis where the other numbers live — on the left it overprinted
-  // the 9EMA/22EMA/200SMA legend whenever the average sat above the window.
-  const s200 = S.ind.s200[to];
-  if (s200 != null && (s200 > hi || s200 < lo)) {
-    const away = ((s200 - bars[to].c) / bars[to].c) * 100;
+  // The daily 200SMA is often far outside a 35-day window; say where it is
+  // instead of letting the clip hide it silently. Right-anchored at the top,
+  // beside the price axis where the other numbers live — on the left it
+  // overprinted the legend whenever the average sat above the window.
+  for (const l of S.tf.lines) {
+    if (!l.offScale) continue;
+    const v = S.ind.lines[l.key][to];
+    if (v == null || (v <= hi && v >= lo)) continue;
+    const away = ((v - bars[to].c) / bars[to].c) * 100;
     out += text(
       W - PAD.r - 3,
       P.top + 9,
-      `200SMA ${s200 > hi ? "▲" : "▼"} ${fmtPx(s200)} (${fmtPct(away)})`,
+      `${l.label} ${v > hi ? "▲" : "▼"} ${fmtPx(v)} (${fmtPct(away)})`,
       "sim-ma-off",
       "end"
     );
@@ -1291,17 +1425,18 @@ function renderChart() {
   out += text(
     PAD.l + 3,
     M.top + 8,
-    `MACD 12/26/9 ${lastHist == null ? "" : lastHist.toFixed(2)}`,
+    `MACD 12/26/9 ${lastHist == null ? "" : lastHist.toFixed(S.dp)}`,
     "sim-plabel"
   );
 
   // ---- RSI ----
   const R = panels.rsi;
   const yRsi = (v) => R.bot - (v / 100) * R.h;
+  const [rsiLo, rsiHi] = S.tf.rsiBands;
   for (const [level, cls] of [
-    [30, "sim-grid sim-grid-dash"],
+    [rsiLo, "sim-grid sim-grid-dash"],
     [50, "sim-grid sim-rsi-mid"],
-    [70, "sim-grid sim-grid-dash"],
+    [rsiHi, "sim-grid sim-grid-dash"],
   ]) {
     out += line(PAD.l, yRsi(level), W - PAD.r, yRsi(level), cls);
     out += text(W - PAD.r + 4, yRsi(level) + 3, String(level), "sim-axis");
@@ -1350,9 +1485,13 @@ function renderChart() {
   }
 
   // ---- legend ----
-  out += text(PAD.l + 3, P.top + 9, "9EMA", "sim-plabel sim-lg9");
-  out += text(PAD.l + 38, P.top + 9, "22EMA", "sim-plabel sim-lg22");
-  out += text(PAD.l + 80, P.top + 9, "200SMA", "sim-plabel sim-lg200");
+  // Fastest first, the way a reader scans from the price outwards. Each label
+  // is placed after the last at the mono face's ~5.4px advance.
+  let lx = PAD.l + 3;
+  for (const l of [...S.tf.lines].reverse()) {
+    out += text(lx, P.top + 9, l.label, `sim-plabel ${l.cls.replace("sim-ma", "sim-lg")}`);
+    lx += l.label.length * 5.4 + 8;
+  }
 
   wrap.innerHTML = `<svg class="sim-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${out}</svg>`;
   scale = { W, H, panel: P, yPrice, priceAt, lo, hi };
@@ -1360,7 +1499,8 @@ function renderChart() {
 
 /* ---------- stop dragging ---------- */
 
-const TICK = 0.01; // prices are quoted to the cent, so the fence is one cent wide
+// The fence is one price tick wide: a cent, or finer under a dollar (`S.dp`).
+const tick = () => 10 ** -S.dp;
 
 function stopFromEvent(ev) {
   const svg = document.querySelector("#sim-chart .sim-svg");
@@ -1368,7 +1508,7 @@ function stopFromEvent(ev) {
   const rect = svg.getBoundingClientRect();
   const py = ev.clientY - rect.top;
   const clamped = Math.max(scale.panel.top, Math.min(scale.panel.bot, py));
-  return fenceStop(round2(scale.priceAt(clamped)));
+  return fenceStop(roundPx(scale.priceAt(clamped)));
 }
 
 /**
@@ -1382,8 +1522,8 @@ function fenceStop(price) {
   if (!base) return price;
   const close = S.bars[S.curIdx].c;
   return base.side === SHORT
-    ? Math.min(base.stop, Math.max(round2(close + TICK), price))
-    : Math.max(base.stop, Math.min(round2(close - TICK), price));
+    ? Math.min(base.stop, Math.max(roundPx(close + tick()), price))
+    : Math.max(base.stop, Math.min(roundPx(close - tick()), price));
 }
 
 /** Live feedback while dragging — moving attributes, not a full re-render. */
@@ -1464,8 +1604,8 @@ function initDrag() {
 
 function render() {
   if (!S) return;
-  // One hook covers every way the tape moves — taking a position, +1 DAY, and
-  // PASS's twenty-session jump. resolvePattern is idempotent and terminal
+  // One hook covers every way the tape moves — taking a position, +1 DAY/WEEK,
+  // a next-open exit, and PASS's jump. resolvePattern is idempotent and terminal
   // states short-circuit, so calling it on every render costs nothing.
   // paintStop() deliberately does NOT call render(), which is what keeps
   // dragging the stop from disturbing the annotation.
@@ -1538,7 +1678,7 @@ Promise.all([loadUniverse(), loadMarket()])
 window.__sim = {
   state: () => S,
   setStop: (v) => {
-    setStop(round2(v));
+    setStop(roundPx(v));
     render();
   },
   breakeven: stopToBreakeven,
@@ -1548,5 +1688,9 @@ window.__sim = {
   rules: () => rules,
   setRules: (v) => {
     if (v !== rules) toggleRules();
+  },
+  tf: () => tf.id,
+  setTf: (v) => {
+    if (v !== tf.id) toggleTf();
   },
 };

@@ -4,7 +4,10 @@
 // The model the simulator trains against:
 //   * You decide on the CLOSE of the decision day, with the stop already set.
 //   * Entry fills at the NEXT day's OPEN — you cannot buy the bar you decided on.
-//   * Discretionary exits (half or all) fill at that day's CLOSE.
+//   * Discretionary exits (half or all) fill at that bar's CLOSE on the daily
+//     chart, and at the NEXT bar's OPEN on the weekly one. A weekly trader
+//     decides on Sunday, after Friday's close, so the first price they can
+//     actually get is Monday's open (`decideExit`, fill "nextOpen").
 //   * The stop is live from the entry bar onwards and fills intraday: at the
 //     stop price normally, at the open if the bar gapped straight through it.
 //   * The stop can be TRAILED while the trade runs, but only one way: towards
@@ -67,6 +70,33 @@ export function exitTrade(trade, { index, price, fraction = 1, reason = "manual"
     exits: [...trade.exits, { index, price, fraction: size, reason }],
     stopped: trade.stopped || reason === "stop",
   };
+}
+
+/**
+ * A discretionary exit decided on bar `index` of `bars`, filled per `fill`:
+ *
+ *   "close"     at `bars[index].c`, on that bar — you are watching the close.
+ *   "nextOpen"  at `bars[index + 1].o`, on the next bar. The fill happens at the
+ *               open, before anything else that bar does. Whatever is still
+ *               open afterwards (half of it, after EXIT 50%) is then carried
+ *               through the rest of the bar, so the resting stop can still
+ *               take it out that same week.
+ *
+ * With no next bar to fill on, a "nextOpen" exit falls back to the close.
+ * Returns `{trade, index, stopped}`, where `index` is the bar the tape stands
+ * on afterwards and `stopped` says the remainder hit its stop on it.
+ */
+export function decideExit(trade, bars, index, { fraction = 1, fill = "close", reason = "manual" } = {}) {
+  if (!isOpen(trade)) return { trade, index, stopped: false };
+  if (fill !== "nextOpen" || index + 1 >= bars.length) {
+    const t = exitTrade(trade, { index, price: bars[index].c, fraction, reason });
+    return { trade: t, index, stopped: false };
+  }
+  const next = index + 1;
+  const bar = bars[next];
+  const out = exitTrade(trade, { index: next, price: bar.o, fraction, reason });
+  const stepped = stepTrade(out, bar, next);
+  return { trade: stepped.trade, index: next, stopped: stepped.stopped };
 }
 
 /**

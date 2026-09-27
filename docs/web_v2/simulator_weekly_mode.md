@@ -1,9 +1,41 @@
 # Simulator: a weekly mode
 
 A plan for letting the swing simulator deal **weekly** charts as well as daily
-ones, with a toggle between the two. Planning only. No code changes are made
-in this step, and every number below is a starting point for calibration, not
-a finding.
+ones, with a toggle between the two. §0 records what shipped and which of the
+plan's open questions were settled how; the rest is the original plan, kept
+for its reasoning.
+
+## 0. Status: shipped
+
+The four open questions (§11) were decided as:
+
+| Question | Decision | Where it lives |
+|---|---|---|
+| Weekly exit fill | **Monday's open** (`exitFill: "nextOpen"`) | `sim-engine.js` `decideExit` |
+| Default weekly stop | **One tick under the decision week's low**, falling back to 0.5 weekly ATR under the close when that low is closer than that | `sim-timeframe.js` `defaultStop` |
+| Moving averages | **Weinstein: 10- and 30-week SMAs only** (replaces §3's 10/20 EMA + 40 SMA) | `WEEKLY.lines` |
+| History | **Everything the cache holds**, for both timeframes | `build_sim.py`, `build_sim_market.py`, `deploy.yml` |
+
+Phases 1–4 of §10 shipped together. The profile refactor, the engine's
+next-open exits, the weekly bars, indicators and toggle, and the weekly market
+confluence are all in. Phase 5, weekly chart patterns, has **not** been done:
+weekly hands run the ladder with S/R only until a weekly census calibrates the
+chart-pattern and candlestick gates. Phase 6's longer history is done, as
+full history rather than 10 years. The "flip the same hand" peek is not.
+
+Taking the whole history changes some of the numbers below. Warm-up is no
+longer tight (§3's table), so the 30-week SMA was chosen on Weinstein's merits,
+not to save bars. Deals also now reach back to 1962 on both timeframes.
+Split-adjusted prices there run under a dollar, so the build keeps four
+significant figures and the page quotes each hand at its own precision. Hands
+dealt before 1993 have no market strip, because SPY did not exist yet; the
+strip fails open, as it does for any gap in the feed.
+
+The CI cache key moved to `market-duckdb-v3-` so the first deploy seeds every
+S&P 500 name with `period="max"`. The old caches only hold them from 2019, and
+incremental refresh never reaches backwards. Expect that first deploy to take
+noticeably longer. The published `sim/` directory also grows to a few hundred
+MB (long-listed names are ~750 KB of JSON each).
 
 ## 1. Is weekly the right move?
 
