@@ -1,6 +1,6 @@
 ---
 name: macro-beans-site
-description: Use this skill when developing, modifying, or deploying the Macro Beans web platform served at https://bennetwi92.github.io/macro-beans/. The platform has two generations — the active v2 "cockpit" (a dense terminal-style app under web/v2/) and the deprecated v1 arcade site (under web/). Triggers include any work in web/, web/v2/, scripts/site/, .github/workflows/deploy.yml, or requests to add an instrument, add a portfolio, add a scanner strategy, add a page, publish a report, change the site design, or deploy the site. Covers architecture, design systems, data pipeline, code conventions, how to add things, local testing, and the deploy pipeline for BOTH generations — but defaults new work to v2.
+description: Use this skill when developing, modifying, or deploying the Macro Beans web platform served at https://bennetwi92.github.io/macro-beans/. The platform has two generations — the active v2 "cockpit" (a dense terminal-style app under web/v2/) and the deprecated v1 arcade site (under web/). Triggers include any work in web/, web/v2/, scripts/site/, scripts/scorecard/, data/fundamentals/, .github/workflows/deploy.yml or fundamentals.yml, the weekly review (tape / shortlist / card / book / orders), the weekly strategy, scorecards, sizing or portfolio construction, or requests to add an instrument, add a portfolio, add a scanner strategy, add a page, publish a report, change the site design, or deploy the site. Covers architecture, design systems, data pipeline, code conventions, how to add things, local testing, and the deploy pipeline for BOTH generations — but defaults new work to v2.
 ---
 
 # Macro Beans web platform
@@ -42,8 +42,14 @@ engine + tests are shared infrastructure, not dead code).
 - **App**: vanilla HTML / CSS / ES-module JS, terminal-styled, under `web/v2/`.
   Two third-party libs, both via CDN: **Tabulator** (data grids) and the
   **Neon** JS client (private pages). No build step, no framework, no bundler.
+- **The weekly review is the front door** — five numbered steps of one Sunday
+  routine, first in the app bar and the landing page (`v2/` → `tape.html`):
+  TAPE → SHORTLIST → CARD (public) → BOOK → ORDERS (private). A weekly,
+  long-only S&P 500 strategy with scorecards and portfolio construction. See
+  [The weekly review](#the-weekly-review) — its rules bind any change there.
 - **Two kinds of page**:
-  - **Public analytical** (no login): Price sheet, Scanner, Chart, Reports —
+  - **Public analytical** (no login): the TAPE / SHORTLIST / CARD steps, Price
+    sheet, Scanner, Chart, Reports, Simulator —
     fed by pre-built JSON in `web/v2/data/` (**gitignored**, built in CI).
   - **Private / personal** (Neon login): Trades, Positions, Portfolio, Requests —
     the owner's trading book, stored in **Neon Postgres** with Auth (JWT) +
@@ -51,7 +57,9 @@ engine + tests are shared infrastructure, not dead code).
 - **Data source**: the shared **DuckDB price cache** (`data/market.duckdb`), not
   yfinance directly. Build scripts read the cache via `MarketStore`.
 - **Build scripts** (`scripts/site/`): `build_price_sheet.py`, `build_charts.py`,
-  `build_fx.py`, `build_reports.py`, `build_sim.py`, `build_sim_market.py`.
+  `build_fx.py`, `build_reports.py`, `build_sim.py`, `build_sim_market.py`, and
+  one **Node** build, `build_scorecards.mjs`, which runs the browser's own
+  modules (never a Python port).
 - **Local test**: `cd web && python3 -m http.server 8765`, then open
   `http://localhost:8765/v2/price-sheet.html` (serve from `web/`, not `web/v2/`,
   because cockpit pages load `../css/macro-beans.css`).
@@ -90,6 +98,12 @@ Components:
 
 ```
 web/v2/
+  index.html            redirect → tape.html (the routine's first step)
+  tape.html             review 1, public — risk budget, index trends, breadth, sectors
+  shortlist.html        review 2, public — Tabulator grid of this week's scorecards
+  card.html             review 3, public — one name's card, recomputed in-browser (?t=&d=)
+  book.html             review 4, private — holdings re-judged by the strategy (Neon)
+  orders.html           review 5, private — the week's orders from construct.js (Neon)
   price-sheet.html      public — Tabulator grid, metrics as-of a picked date
   scanner.html          public — daily long-only BUY shortlist + edge vs baseline
   chart.html            public — full-bleed SVG line chart + search + zoom
@@ -118,7 +132,15 @@ web/v2/
     sim-candles.js      pure tier-2 candlestick catalogue (TA-Lib thresholds)
     sim-market.js       pure market confluence: index trend, sector rank, RS, score
     sim-timeframe.js    pure timeframe profiles (daily / weekly), weekly resampler, default stop
-    prices.js           cockpit menu + FX → native-currency-to-GBP helpers
+    strategy.js         pure: the weekly strategy's RULES — stage, setups, stop, runTrade, analogues
+    scorecard.js        pure: blocks, per-setup PROFILES (weights), vetoes, headline
+    fundamental-score.js pure: quality/value as percentiles within GICS sector
+    tape.js             pure: breadth series + the weekly risk budget (FULL/HALF/DEFENSIVE)
+    construct.js        pure: portfolio construction, sizing, caps, RESET, manageHolding
+    review.js           the review pages' loaders, step strip and formatters
+    rv-tape.js / rv-shortlist.js / rv-card.js / rv-book.js / rv-orders.js   review pages
+    rv-holdings.js      the real (Neon) book judged by the strategy — BOOK + ORDERS
+    prices.js           cockpit menu + FX → native-currency-to-GBP helpers (+ S&P closes from scorecards.json)
     book.js             pure trading-book accounting (average cost, GBP)
     trades.js / positions.js / portfolio.js / requests.js   private pages
   data/                 gitignored — built fresh in CI
@@ -131,6 +153,9 @@ web/v2/
     sim-universe.json   {built_at, tickers:[{t,n,s,b,f,l}]}  simulator index
     sim/<TICKER>.json   {ticker,name,sector,bars:[[iso,o,h,l,c,v]]} full-history daily OHLCV
     sim-market.json     {built_at,dates,close:{SYM:[…]},sectors:{GICS:ETF}} market context
+    scorecards.json     {built_at,week,tape,breadth,priors,rows:[card…]} the weekly review
+    fundamentals.json   {as_of,grades:{T:{quality,value,detail}},raw:{T:{…}}}
+    earnings.json       {T:[[iso,surprise|null],…]} so the CARD can recompute any week
 
 scripts/site/
   build_price_sheet.py  cache → web/v2/data/price-sheet.json (800 bars/inst)
@@ -139,15 +164,23 @@ scripts/site/
   build_reports.py      docs/*.md → reports.json + reports/<slug>.html
   build_sim.py          cache → sim-universe.json + sim/<TICKER>.json (S&P 500)
   build_sim_market.py   cache → sim-market.json (SPY/QQQ/IWM + 11 sector ETFs + VIX)
+  build_scorecards.mjs  NODE — sim JSON + data/fundamentals → scorecards/fundamentals/earnings.json
+                        (--ledger also writes data/scorecard/ledger/<week>.csv)
+  _scorecard_data.mjs   shared loaders for the Node build AND the research backtest
   _common.py            BuildTally (coverage gate) + write_json (compact)
 
-.github/workflows/deploy.yml   builds v1 + v2, deploys web/ (so v2 is at /v2/)
+src/data/fundamentals.py       weekly .info snapshot + earnings calendar (yfinance) → data/fundamentals/
+data/fundamentals/             COMMITTED — snapshots/<date>.csv, earnings.csv (history cannot be refetched)
+data/scorecard/ledger/         COMMITTED — each week's cards as they stood (forward evidence)
+scripts/scorecard/             research: backtest.mjs (→ docs/scorecard/), grade_ledger.mjs
+
+.github/workflows/deploy.yml        builds v1 + v2, deploys web/ (so v2 is at /v2/)
+.github/workflows/fundamentals.yml  Saturday: snapshot + ledger → commit → dispatch deploy
 ```
 
-> **Nav vs. reality:** `nav.js` `PAGES` also lists `instruments.html` and
-> `systems.html`. Those pages are **planned but not yet built** — the links 404
-> until someone adds them. If you build one, drop the HTML into `web/v2/` and it
-> lights up automatically (the entry is already in `PAGES`).
+> **Nav:** `nav.js` `PAGES` has two groups — the five numbered review steps,
+> then the toolbox — rendered with a divider. `HOME` is `tape.html`. The old
+> unbuilt Instruments / Systems entries were removed (they 404'd).
 
 ## Page shell
 
@@ -363,6 +396,55 @@ The Scanner replaces v1's per-strategy pages. To add one:
    `web/v2/data/`, and wire it into `deploy.yml`. Update `.gitignore` if it emits
    a new path under `web/v2/data/`.
 
+### The weekly review
+
+The cockpit's front door: a weekly, **long-only** strategy on the S&P 500
+(the book is a cash ISA) run as five steps of one Sunday sitting. Spec and
+decision log: `docs/web_v2/scorecard_strategy_spec.md` (§0 is what shipped).
+Evidence: `docs/scorecard/weekly_strategy_backtest.md` (Reports page).
+
+**One strategy, one implementation.** `strategy.js` holds the RULES — Weinstein
+stage on the 30-week, the three setups (PULLBACK / BREAKOUT / REVERSAL, each
+BUY or WATCH), the initial stop (`stopFor`: under the week's low, at least
+`RULES.stop.minAtr` = 1 ATR), and `runTrade`, which plays a trade out under the
+fixed exits (break-even at +1R, trail 1 ATR under the 10-week, weekly close
+under the 30-week, 26 weeks). Every consumer replays trades with `runTrade`:
+the like-week analogues, the backtest, the CARD's "what happened next", the
+BOOK's derived stops. `scorecard.js` only GRADES what the rules produced; it
+never invents a trade. `construct.js` turns BUY cards + the real book into
+orders.
+
+Rules that bind work here:
+
+1. **Build ≡ browser.** `build_scorecards.mjs` imports `web/v2/js/*.js` and the
+   CARD page recomputes the same card from the same files. Never port the math
+   to Python, never let the page compute something the build did not — the
+   shortlist and the card must agree to the digit.
+2. **No look-ahead**, as in the simulator: everything "at week w" reads bars
+   0..w; analogues count only trades EXITED by w; an earnings report is known
+   only STRICTLY after its date; a fundamentals snapshot never grades a week
+   before it was taken. Each has a test.
+3. **Fail open.** An unavailable block leaves the headline (`compositePct`
+   rescale); it is never scored zero.
+4. **Weights are priors, not fits.** The backtest found no block that reliably
+   ranks setups on this (survivorship-biased) universe; weights fitted to
+   in-sample ICs failed out of sample. Do not "tune" `PROFILES` against the
+   backtest — change a weight only on ledger evidence, and re-run
+   `node scripts/scorecard/backtest.mjs` after ANY change to `strategy.js` or
+   `scorecard.js` so the report stays true.
+5. **Stops fill on daily bars** inside the week (`stepWeek`) — stricter than the
+   simulator's weekly-bar fill, on purpose: it is what prices earnings gaps.
+6. **The committed evidence is append-only.** `data/fundamentals/snapshots/`
+   and `data/scorecard/ledger/` cannot be rebuilt — never rewrite or delete a
+   past file, and never move them into the gitignored cache. The ledger's
+   grader reports names that have left the universe; never make it drop them.
+7. **Page scripts are `js/rv-<step>.js`** — `tape.js` and `book.js` are pure
+   modules and must stay DOM-free.
+
+`?t=<TICKER>&d=<ISO>` on `card.html` replays any past week (priors and
+fundamentals are live-week-only and drop out of a replay). The CARD links to
+`simulator.html?t=&d=&tf=w` to practise the same hand.
+
 ### Work on the simulator
 
 `simulator.html` is a single-screen app, not a document: the app bar, a status
@@ -526,7 +608,7 @@ python -m src.data.refresh --surface web && python -m src.data.refresh --surface
 
 # serve from web/ (NOT web/v2/ — cockpit pages reference ../css/macro-beans.css)
 cd web && python3 -m http.server 8765
-# open http://localhost:8765/v2/price-sheet.html
+# open http://localhost:8765/v2/price-sheet.html   (or /v2/tape.html — the weekly review)
 
 # engine tests (shared with v1; run if you touched strategy-engine.js)
 node --test tests/web/*.test.js        # or: npm test
@@ -588,9 +670,16 @@ still apply to it — match the existing pixel-arcade patterns and beginner tone
 - **Steps**: checkout → Python 3.11 → install deps → **restore DuckDB cache**
   (rolling `actions/cache`) → v1 builds (`build_data` → `build_reference` →
   `build_portfolios` → `validate_data`) → **refresh cache** (`--surface web`,
-  `--surface cockpit`) → v2 builds (`build_price_sheet` → `build_charts` →
-  `build_fx` → `build_reports`) → upload `web/` artifact → deploy to Pages.
-  Uploading `web/` is why v2 lands at `/v2/`.
+  `--surface cockpit`, the S&P 500, market context) → v2 builds
+  (`build_price_sheet` → `build_charts` → `build_fx` → `build_sim` →
+  `build_sim_market` → **Node** → `build_scorecards.mjs` → `build_reports`) →
+  upload `web/` artifact → deploy to Pages. Uploading `web/` is why v2 lands at
+  `/v2/`. A push touching `data/fundamentals/**` also redeploys.
+- **Weekly evidence** (`.github/workflows/fundamentals.yml`, Saturday 06:00 UTC):
+  refresh → build sim data → `python -m src.data.fundamentals` →
+  `build_scorecards.mjs --ledger` → **commit** `data/fundamentals` +
+  `data/scorecard/ledger` → `gh workflow run deploy.yml` (a GITHUB_TOKEN push
+  does not trigger workflows, so the deploy is dispatched explicitly).
 - **Engine tests** run separately in `.github/workflows/ci.yml` (Node built-in
   runner) on pushes/PRs touching `web/js/`, `tests/web/`, or `package.json` —
   these guard the engine shared by v1 and v2.
@@ -635,6 +724,11 @@ without a hosting alternative.
   Security scoping it to the signed-in user.
 - ❌ Don't compute analytics server-side — do it at build time (JSON) or in the
   browser.
+- ❌ Don't reimplement the weekly strategy's math anywhere but `web/v2/js/`
+  (the Node build and the backtest import it), and don't fit `PROFILES` weights
+  to backtest ICs.
+- ❌ Don't rewrite, delete or gitignore `data/fundamentals/snapshots/` or
+  `data/scorecard/ledger/` — append-only evidence that cannot be refetched.
 
 **v1 arcade (legacy)**
 - ❌ Don't build new v1 strategy/league pages by default — prefer v2.
@@ -651,6 +745,12 @@ without a hosting alternative.
 | **Add a tradeable instrument** | `config/instruments.toml` → `[[instrument]]` (`surfaces=["web"]` public, `["cockpit"]` v2-only) |
 | **Add a scanner strategy (v2)** | `web/js/strategy-engine.js` (math + tests) → register in `web/v2/js/scanner.js` `STRATEGIES` |
 | **Add a cockpit page (v2)** | new `web/v2/<page>.html` + `js/<page>.js`, add to `PAGES` in `nav.js` |
+| **Change the weekly strategy's rules** | `web/v2/js/strategy.js` (+ `tests/web/strategy.test.js`), then `node scripts/scorecard/backtest.mjs` and read the report |
+| **Change the scorecard / weights / vetoes** | `web/v2/js/scorecard.js` `PROFILES` (+ `tests/web/scorecard.test.js`) — priors, not fits; re-run the backtest |
+| **Change sizing / caps / budget** | `web/v2/js/construct.js` `CAPS` · `web/v2/js/tape.js` `BUDGETS` (+ `tests/web/weekly-book.test.js`) |
+| **Build the weekly review data** | `node scripts/site/build_scorecards.mjs` (after `build_sim.py` + `build_sim_market.py`) |
+| **Snapshot fundamentals / earnings** | `python -m src.data.fundamentals` (`--earnings-only` for the calendar) |
+| **Grade the forward ledger** | `node scripts/scorecard/grade_ledger.mjs` |
 | **Change the simulator** | `web/v2/js/simulator.js` (page, incl. the BUY/WAIT/PASS/SHORT bar) · `sim-indicators.js` / `sim-engine.js` / `sim-structure.js` / `sim-patterns.js` / `sim-candles.js` (math + `tests/web/sim-*.test.js`) |
 | **Tune the simulator's pattern detection** | constants in `sim-structure.js` / `sim-patterns.js`, then `node scripts/tools/pattern_census.mjs` against the bands in `docs/web_v2/chart_pattern_spec.md` §13 |
 | **Change the simulator universe** | `config/sp500.csv`, then `refresh --tickers-file` + `build_sim.py` |

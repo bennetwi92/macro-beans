@@ -23,7 +23,20 @@ export async function loadPrices() {
     for (const i of m.instruments || []) MENU[i.ticker.toUpperCase()] = i;
     FX = { gbpusd: f.gbpusd || null, gbpeur: f.gbpeur || null };
   } catch (_) { /* offline / not built yet — book still works with GBP defaults */ }
+  // The weekly review's universe: every S&P 500 name with its last weekly
+  // close (USD), so a US single bought off the shortlist is auto-marked on
+  // every book page. Registry instruments keep their own entries.
+  try {
+    const sc = await fetch("data/scorecards.json", { cache: "no-cache" }).then((r) => r.json());
+    for (const r of sc.rows || []) {
+      const t = r.t.toUpperCase();
+      if (!MENU[t] && r.c != null) MENU[t] = { ticker: t, name: r.n, currency: "USD", last: r.c };
+    }
+  } catch (_) { /* scorecards not built — registry marks only */ }
 }
+
+// Native -> GBP rate multiplier for a currency (null when an FX rate is missing).
+export const fxRates = () => ({ ...FX });
 
 // Smart default currency for a (possibly free-text) ticker.
 export function guessCurrency(ticker) {

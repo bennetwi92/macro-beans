@@ -9,6 +9,7 @@ on:
       - "src/data/**"
       - "config/**"
       - "docs/**"          # research notes -> v2 Reports page (build_reports.py)
+      - "data/fundamentals/**"   # weekly snapshots + earnings -> the scorecards
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
   schedule:
@@ -135,6 +136,22 @@ jobs:
         # One closes-only file covering every index, sector ETF and the VIX,
         # aligned onto SPY's calendar. Reads only from the cache.
         run: python scripts/site/build_sim_market.py
+
+      - name: Set up Node
+        # The weekly scorecards are built by the SAME ES modules the cockpit
+        # runs in the browser (web/v2/js/strategy.js, scorecard.js, …), so the
+        # shortlist and the CARD page can never disagree. No npm install: the
+        # modules have no dependencies.
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build weekly scorecards
+        # Every S&P 500 name scored as of the last completed week, the TAPE
+        # read and breadth, plus the fundamentals grades and earnings calendar
+        # the CARD page recomputes from. Reads the simulator JSON built above
+        # and the committed data/fundamentals/. Coverage-gated (exit 1 under 60%).
+        run: node scripts/site/build_scorecards.mjs
 
       - name: Build reports
         # Renders docs/ markdown research notes to HTML fragments + an index for
