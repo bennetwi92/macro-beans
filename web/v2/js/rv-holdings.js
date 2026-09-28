@@ -34,13 +34,13 @@ export async function loadBook() {
 
 /** Thesis wording for a holding: the stage now, read against the trade. */
 function thesis(m, row) {
-  if (!m) return { word: "UNSCORED", cls: "" };
-  if (m.action === "EXIT") return { word: "BROKEN", cls: "down" };
+  if (!m) return { word: "not covered", cls: "" };
+  if (m.action === "EXIT") return { word: "trend over", cls: "down" };
   const st = row?.st;
-  if (st === 2) return { word: "INTACT", cls: "up" };
-  if (st === 1) return { word: "BASING", cls: "" };
-  if (st === 3) return { word: "DEGRADED", cls: "cd-flag" };
-  if (st === 4) return { word: "BROKEN", cls: "down" };
+  if (st === 2) return { word: "still rising", cls: "up" };
+  if (st === 1) return { word: "gone flat", cls: "" };
+  if (st === 3) return { word: "stalling", cls: "cd-flag" };
+  if (st === 4) return { word: "falling", cls: "down" };
   return { word: "—", cls: "" };
 }
 

@@ -1,4 +1,4 @@
-// Weekly review · step 4 — BOOK: does what I hold still stand?
+// Weekly review · step 4 — BOOK (shown as MY STOCKS): should I keep what I own?
 //
 // Every open position re-judged by the strategy (rv-holdings.js): the stop
 // the rules give it this week, whether the thesis is intact, degraded or
@@ -7,7 +7,7 @@
 
 import "./nav.js";
 import { requireAuth, mountAccountBar, fmtGBP, esc } from "./neon.js";
-import { loadScorecards, stepStrip, px, num, failInto } from "./review.js";
+import { loadScorecards, stepStrip, px, num, failInto, SAY, setupName, xRisk } from "./review.js";
 import { daysBetween } from "./scorecard.js";
 import { loadBook, evaluate } from "./rv-holdings.js";
 
@@ -24,7 +24,7 @@ let week = null;
   }
   const session = await requireAuth(root);
   mountAccountBar(optbar, session);
-  root.innerHTML = `<div class="rv-empty">Reviewing the book…</div>`;
+  root.innerHTML = `<div class="rv-empty">Checking your stocks…</div>`;
   try {
     const book = await loadBook();
     const byAcct = [];
@@ -32,13 +32,13 @@ let week = null;
     week = byAcct[0]?.ev.sc.week ?? null;
     render(byAcct);
   } catch (e) {
-    failInto(root, "the trading book", e);
+    failInto(root, "your stocks", e);
   }
 })();
 
 function render(byAcct) {
   if (!byAcct.length) {
-    root.innerHTML = `<div class="rv-page"><div class="rv-empty">No accounts yet. Add one on <a href="portfolio.html" style="color:var(--cyan)">Portfolio</a>, then log trades on <a href="trades.html" style="color:var(--cyan)">Trades</a>.</div></div>`;
+    root.innerHTML = `<div class="rv-page"><div class="rv-empty">Nothing here yet. Add your broker account on <a href="portfolio.html" style="color:var(--cyan)">Portfolio</a>, then record what you bought on <a href="trades.html" style="color:var(--cyan)">Trades</a>.</div></div>`;
     return;
   }
   const all = byAcct.flatMap((x) => x.ev.holdings);
@@ -47,13 +47,12 @@ function render(byAcct) {
   root.innerHTML =
     `<div class="rv-page">` +
     `<div class="rv-banner ${exits.length ? "rv-def" : "rv-full"}">` +
-    `<span class="rv-banner-lv">${exits.length ? `${exits.length} TO EXIT` : "BOOK INTACT"}</span>` +
-    `<span class="rv-banner-kv">open positions <b>${all.length}</b></span>` +
-    `<span class="rv-banner-kv">scored <b>${all.filter((h) => h.scored).length}</b></span>` +
-    `<span class="rv-banner-kv">reports due <b>${due.length}</b></span>` +
+    `<span class="rv-banner-lv">${exits.length ? `SELL ${exits.length}` : "KEEP THEM ALL"}</span>` +
+    `<span class="rv-banner-kv">${exits.length ? `${exits.length} of your ${all.length} stocks should be sold this week` : `all ${all.length} of your stocks are fine to keep this week`}</span>` +
+    (due.length ? `<span class="rv-banner-kv">${due.length} ${due.length === 1 ? "reports" : "report"} earnings soon</span>` : "") +
     `</div>` +
     byAcct.map(({ acc, ev }) => account(acc, ev)).join("") +
-    `<p class="rv-note">Stops are <b>derived</b>, not typed in. For each position the strategy's own trade is replayed from the week before its first buy, at its actual average cost: the initial stop under that week's low (at least 1 ATR), break-even at +1R, then 1 ATR under the 10-week. So the resting order at the broker should sit where this page says. If it doesn't, the page is right and the order is out of date. Positions outside the S&P 500 universe (the LSE ETFs) aren't scored.</p>` +
+    `<p class="rv-note">Click a stock to see its full check. The stop-loss is worked out for you from when and at what price you bought, and it only ever moves up. Make sure the stop-loss order at your broker matches the one here (↑ means it went up this week; the To do page lists the changes). "Result so far" compares your gain or loss with the amount you risked: +1× means you're up by as much as you risked. Stocks outside the S&P 500 (such as UK ETFs) aren't covered.</p>` +
     `</div>`;
 }
 
@@ -62,39 +61,39 @@ function account(acc, ev) {
   const heat = ev.holdings.reduce((s, h) => s + (h.riskGBP || 0), 0);
   return (
     `<section class="rv-sec"><div class="rv-h"><span>${esc(acc.name)}${acc.type ? ` · ${esc(acc.type)}` : ""}</span>` +
-    `<span class="rv-h-r">equity ${fmtGBP(ev.equityGBP)} · cash ${fmtGBP(ev.cashGBP)} · open risk ${fmtGBP(heat)}${ev.equityGBP > 0 ? ` (${num((heat / ev.equityGBP) * 100, 1)}%)` : ""}</span></div>` +
+    `<span class="rv-h-r">worth ${fmtGBP(ev.equityGBP)} · cash ${fmtGBP(ev.cashGBP)} · you'd lose ${fmtGBP(heat)}${ev.equityGBP > 0 ? ` (${num((heat / ev.equityGBP) * 100, 1)}%)` : ""} if every stop-loss hit</span></div>` +
     (ev.holdings.length
       ? `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr>` +
-        `<th>name</th><th>verdict</th><th>thesis</th><th class="r">qty</th><th class="r">avg</th><th class="r">last</th>` +
-        `<th class="r">stop</th><th class="r">R now</th><th class="r">held</th><th class="r">value</th><th>why</th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : `<div class="dim-note">No open positions.</div>`) +
+        `<th>stock</th><th>do</th><th>trend</th><th class="r">shares</th><th class="r">you paid</th><th class="r">price now</th>` +
+        `<th class="r">stop-loss</th><th class="r">result so far</th><th class="r">held</th><th class="r">worth</th><th>why</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="dim-note">You don't own any stocks in this account.</div>`) +
     `</section>`
   );
 }
 
 function row(h) {
   const m = h.m;
-  const act = !h.scored ? `<span class="rv-chip">OUTSIDE</span>` : m ? `<span class="rv-chip rv-${m.action.toLowerCase()}">${m.action}</span>` : `<span class="rv-chip">—</span>`;
+  const act = !h.scored ? `<span class="rv-chip">—</span>` : m ? `<span class="rv-chip rv-${m.action.toLowerCase()}">${SAY.action[m.action] ?? m.action}</span>` : `<span class="rv-chip">—</span>`;
   const raised = m && m.prevStop != null && m.stop != null && m.stop > m.prevStop + 1e-9;
   const why = !h.scored
-    ? "not in the scored universe"
+    ? "not covered: we only check S&P 500 stocks"
     : [
         m?.reason,
-        m?.action === "EXIT" && h.row?.status === "BUY" ? `but a fresh ${h.row.setup} BUY this week: RESET on ORDERS` : null,
-        h.earningsSoon ? `report due ${h.earningsSoon}` : null,
+        m?.action === "EXIT" && h.row?.status === "BUY" ? `but it's a fresh buy (${setupName(h.row.setup)}) this week, so keep it: see To do` : null,
+        h.earningsSoon ? `earnings report due ${h.earningsSoon}: the price may jump` : null,
       ].filter(Boolean).join(" · ");
   const held = h.firstBuy && week ? Math.max(0, Math.round(daysBetween(h.firstBuy, week) / 7)) : null;
   return (
     `<tr class="${m?.action === "EXIT" ? "bk-pos-exit " : ""}${h.scored ? "rv-link" : ""}"${h.scored ? ` onclick="location.href='card.html?t=${encodeURIComponent(h.t)}'"` : ""}>` +
     `<td><span class="ps-tkr">${esc(h.t)}</span></td>` +
     `<td>${act}</td>` +
-    `<td class="${h.thesis.cls}">${h.thesis.word}${h.row?.st ? ` <span class="dim-note">st${h.row.st}</span>` : ""}</td>` +
+    `<td class="${h.thesis.cls}">${h.thesis.word}</td>` +
     `<td class="r">${num(h.qty, 2)}</td>` +
     `<td class="r">${px(h.avgNative)}</td>` +
     `<td class="r">${px(h.priceNative)}</td>` +
     `<td class="r">${h.stopNative == null ? "—" : px(h.stopNative)}${raised ? ` <span class="rv-new">↑</span>` : ""}</td>` +
-    `<td class="r ${h.rNow > 0 ? "up" : h.rNow < 0 ? "down" : ""}">${h.rNow == null ? "—" : `${h.rNow >= 0 ? "+" : ""}${h.rNow.toFixed(2)}R`}</td>` +
-    `<td class="r">${held != null ? `${held}w` : "—"}</td>` +
+    `<td class="r ${h.rNow > 0 ? "up" : h.rNow < 0 ? "down" : ""}">${h.rNow == null ? "—" : `${xRisk(h.rNow)} risk`}</td>` +
+    `<td class="r">${held != null ? `${held} wk` : "—"}</td>` +
     `<td class="r">${h.valueGBP == null ? "—" : fmtGBP(h.valueGBP)}</td>` +
     `<td class="wrap dim-note">${esc(why)}</td>` +
     `</tr>`

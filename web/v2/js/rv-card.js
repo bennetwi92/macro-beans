@@ -1,4 +1,4 @@
-// Weekly review · step 3 — CARD: is this one a trade?
+// Weekly review · step 3 — CARD (shown as CHECK): should I buy this one?
 //
 // The card is RECOMPUTED here, in the browser, by the same scorecard.js
 // `scoreCard` over the same files the build read (the name's sim/<T>.json,
@@ -31,6 +31,9 @@ import {
   num,
   statusChip,
   failInto,
+  SAY,
+  setupName,
+  xRisk,
 } from "./review.js";
 import { eventTable, weekAsOf, runTrade } from "./strategy.js";
 import { scoreCard, BLOCKS, BLOCK_LABELS, PROFILES } from "./scorecard.js";
@@ -43,8 +46,8 @@ let asOfParam = params.get("d") || "";
 
 const bar = createOptionsBar("optbar", {
   primary: [
-    { type: "search", id: "cd-t", label: "TICKER", value: ticker, placeholder: "e.g. AAPL" },
-    { type: "date", id: "cd-d", label: "AS OF", value: asOfParam },
+    { type: "search", id: "cd-t", label: "STOCK", value: ticker, placeholder: "e.g. AAPL" },
+    { type: "date", id: "cd-d", label: "LOOK BACK TO", value: asOfParam },
   ],
   onChange: (id, v) => {
     if (id === "cd-t") ticker = String(v || "").trim().toUpperCase().split(/\s/)[0];
@@ -75,7 +78,7 @@ const bar = createOptionsBar("optbar", {
 async function show() {
   const sc = await loadScorecards();
   if (!ticker) return pickOne(sc);
-  root.innerHTML = `<div class="rv-empty">Scoring ${esc(ticker)}…</div>`;
+  root.innerHTML = `<div class="rv-empty">Checking ${esc(ticker)}…</div>`;
   let series, market, fund, earnings;
   try {
     [series, market, fund, earnings] = await Promise.all([
@@ -85,13 +88,13 @@ async function show() {
       loadEarnings(),
     ]);
   } catch (e) {
-    return failInto(root, `${ticker} (is it in the S&P 500 universe?)`, e);
+    return failInto(root, `${ticker}. We only cover S&P 500 stocks: is the ticker right?`, e);
   }
   const { s, name, sector } = series;
   const last = s.bars.length - 1;
   let w = asOfParam ? weekAsOf(s, asOfParam) : last;
   if (w < 60) {
-    root.innerHTML = `<div class="rv-empty">Not enough history for ${esc(ticker)} as of ${esc(asOfParam)}.</div>`;
+    root.innerHTML = `<div class="rv-empty">Not enough price history for ${esc(ticker)} before ${esc(asOfParam)}.</div>`;
     return;
   }
   const live = w === last && s.bars[w].d === sc.week;
@@ -116,10 +119,10 @@ async function show() {
 function pickOne(sc) {
   const buys = sc.rows.filter((r) => r.status === "BUY").sort((a, b) => b.total - a.total);
   root.innerHTML =
-    `<div class="rv-page"><div class="rv-empty">Pick a name above, or one of this week's BUYs:<br><br>` +
+    `<div class="rv-page"><div class="rv-empty">Type a stock's ticker above (for example AAPL for Apple), or pick one of this week's buys:<br><br>` +
     (buys.length
-      ? buys.map((r) => `<a href="card.html?t=${esc(r.t)}" style="color:var(--cyan);margin-right:14px">${esc(r.t)} <span class="dim-note">${esc(r.setup)} ${r.total.toFixed(0)}</span></a>`).join("")
-      : "none this week — try the WATCH list on the shortlist.") +
+      ? buys.map((r) => `<a href="card.html?t=${esc(r.t)}" style="color:var(--cyan);margin-right:14px">${esc(r.t)} <span class="dim-note">${esc(setupName(r.setup))} · score ${r.total.toFixed(0)}</span></a>`).join("")
+      : `nothing is a buy this week. The <a href="shortlist.html" style="color:var(--cyan)">Ideas</a> page shows the ones that are close.`) +
     `</div></div>`;
 }
 
@@ -131,40 +134,46 @@ function render({ sc, s, w, live, card, name, sector, fund, grade, history, even
     `<div class="rv-page">` +
     `<div class="cd-head"><span class="cd-tkr">${esc(ticker)}</span><span class="cd-name">${esc(name)}</span>` +
     `<span class="dim-note">${esc(sector || "")}${info.industry ? ` · ${esc(info.industry)}` : ""}</span>` +
-    `<span class="dim-note">close ${px(b.c)} · week to ${esc(b.d)}${live ? "" : " · <b style=\"color:var(--gold)\">REPLAY</b>"}</span>` +
-    `<span class="cd-score">${card.total == null ? "—" : card.total.toFixed(0)}<span class="dim-note" style="font-size:11px">/100</span></span></div>` +
+    `<span class="dim-note">price ${px(b.c)} at the close on ${esc(b.d)}${live ? "" : ` · <b style="color:var(--gold)">LOOKING BACK: this is how it stood that week</b>`}</span>` +
+    `<span class="cd-score" title="How well it scores across the checks below, out of 100">${card.total == null ? "—" : card.total.toFixed(0)}<span class="dim-note" style="font-size:11px">/100</span></span></div>` +
     verdict(card) +
     chart(s, w, card) +
     `<div class="rv-grid2" style="margin-top:14px">` +
-    `<section class="rv-sec"><div class="rv-h"><span>The blocks${card.setup ? ` · weighted for a ${card.setup}` : ""}</span><span class="rv-h-r">weight</span></div>` +
-    blocks(card, prof) +
-    `<p class="rv-note">Unavailable blocks leave the headline, which rescales over the rest. A missing feed never counts against a name. The weights are priors, not fitted (see the backtest).</p></section>` +
     `<div>` +
     plan(card) +
     likeWeek(card, s, events, w) +
-    `</div></div>` +
+    `</div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>How the score is made</span><span class="rv-h-r">points</span></div>` +
+    blocks(card, prof) +
+    `<p class="rv-note">Each check gets a grade from A (good) to F (poor). "Points" is how much each check counts for this type of buy. A check with no data (·) is left out rather than counted against the stock.</p></section>` +
+    `</div>` +
     `<div class="rv-grid2">` +
     fundamentals(grade, info, fund, live) +
     historyTable(history, card) +
     `</div>` +
     (!live ? outcome(s, w, card) : "") +
     `<div class="cd-links">` +
-    `<a href="simulator.html?t=${encodeURIComponent(ticker)}&d=${encodeURIComponent(b.d)}&tf=w">▶ practise this hand in the simulator (weekly)</a>` +
-    `<a href="shortlist.html">← back to the shortlist</a>` +
-    (live && card.status === "BUY" ? `<a href="orders.html">→ size it on ORDERS</a>` : "") +
+    `<a href="simulator.html?t=${encodeURIComponent(ticker)}&d=${encodeURIComponent(b.d)}&tf=w">▶ practise this chart in the simulator</a>` +
+    `<a href="shortlist.html">← back to Ideas</a>` +
+    (live && card.status === "BUY" ? `<a href="orders.html">→ see how many shares to buy (To do)</a>` : "") +
     `</div>` +
     `</div>`;
 }
 
 function verdict(card) {
-  const alts = (card.alternatives || []).map((a) => `${a.setup} ${a.status}${a.total != null ? ` ${a.total.toFixed(0)}` : ""}`);
+  const alts = (card.alternatives || []).map((a) => `${setupName(a.setup)}: ${SAY.status[a.status] ?? a.status}`);
   return (
     `<div class="cd-verdict">${statusChip(card.status)}` +
-    (card.setup ? `<span class="rv-setup">${card.setup}</span>` : "") +
-    `<span class="cd-why">${esc(card.why || "")}</span>` +
+    `<b>${card.status ? SAY.statusLong[card.status] : "No buy signal this week"}</b>` +
+    (card.setup ? `<span class="rv-setup" title="${esc(SAY.setupLong[card.setup])}">${setupName(card.setup)}</span><span class="dim-note">${esc(SAY.setupLong[card.setup])}</span>` : "") +
+    `</div>` +
+    `<div class="cd-verdict" style="margin-top:-8px">` +
+    (card.status === "PASS" && card.vetoes?.length
+      ? `<span class="cd-why">It looks promising (${esc(card.why || "")}), but:</span>`
+      : `<span class="cd-why">Why: ${esc(card.why || "")}</span>`) +
     (card.vetoes || []).map((v) => `<span class="cd-veto">✕ ${esc(v)}</span>`).join("") +
     (card.flags || []).map((f) => `<span class="cd-flag">⚑ ${esc(f)}</span>`).join("") +
-    (alts.length ? `<span class="dim-note">also: ${esc(alts.join(" · "))}</span>` : "") +
+    (alts.length ? `<span class="dim-note">also looks like: ${esc(alts.join(" · "))}</span>` : "") +
     `</div>`
   );
 }
@@ -181,7 +190,7 @@ function blocks(card, prof) {
       `<span class="cd-bl">${BLOCK_LABELS[k]}</span>` +
       `<span class="rv-grade rv-g-${na ? "na" : bl.grade}">${na ? "·" : bl.grade}</span>` +
       `<span class="cd-bar"><i style="width:${width}%"></i></span>` +
-      `<span class="cd-bx" title="${esc(bl.text)}">${esc(bl.text)}</span>` +
+      `<span class="cd-bx">${esc(bl.text)}</span>` +
       `<span class="cd-bw">${wt == null ? "" : wt}</span>` +
       `</div>`
     );
@@ -191,19 +200,19 @@ function blocks(card, prof) {
 function plan(card) {
   const p = card.plan;
   if (!p) {
-    return `<section class="rv-sec"><div class="rv-h"><span>Trade plan</span></div><div class="dim-note">No setup this week, so no trade. Stage ${card.stage ?? "—"} (${card.stageAge ?? 0} weeks).</div></section>`;
+    const st = card.stage ? ` Its price trend is ${SAY.stage[card.stage]}.` : "";
+    return `<section class="rv-sec"><div class="rv-h"><span>If you buy</span></div><div class="dim-note">Nothing to buy this week: the price chart doesn't show one of the three buying patterns.${st}</div></section>`;
   }
+  const upside = p.blueSky ? null : (p.resistance.price / p.entry - 1) * 100;
   return (
-    `<section class="rv-sec"><div class="rv-h"><span>Trade plan</span><span class="rv-h-r">enter at Monday's open</span></div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>If you buy</span><span class="rv-h-r">order for Monday's open</span></div>` +
     `<dl class="rv-kv">` +
-    `<dt>entry ≈</dt><dd>${px(p.entry)} <span class="dim-note">(Friday's close stands in for Monday's open)</span></dd>` +
-    `<dt>stop</dt><dd class="down">${px(p.stop)} <span class="dim-note">−${num(p.riskPct, 1)}% · under the week's low, at least 1 ATR</span></dd>` +
-    `<dt>risk / share</dt><dd>${px(p.risk)}</dd>` +
-    `<dt>resistance</dt><dd>${p.blueSky ? `<span class="up">none within two years (blue sky)</span>` : `${px(p.resistance.price)} <span class="dim-note">×${p.resistance.touches} · +${num((p.resistance.price / p.entry - 1) * 100, 1)}%</span>`}</dd>` +
-    `<dt>support</dt><dd>${p.support ? `${px(p.support.price)} <span class="dim-note">×${p.support.touches}</span>` : "—"}</dd>` +
-    `<dt>R:R</dt><dd>${num(p.rr, 1)}${p.rr != null && p.rr < 1.5 ? ' <span class="down">under 1.5 — no room</span>' : ""}</dd>` +
+    `<dt>buy at about</dt><dd>${px(p.entry)} <span class="dim-note">(Friday's closing price)</span></dd>` +
+    `<dt>stop-loss</dt><dd class="down">${px(p.stop)} <span class="dim-note">sell automatically if it falls here: −${num(p.riskPct, 1)}%</span></dd>` +
+    `<dt>could rise to</dt><dd>${p.blueSky ? `<span class="up">no past high in the way: the price is in clear air</span>` : `${px(p.resistance.price)} <span class="dim-note">+${num(upside, 1)}%, a price it stalled at ${p.resistance.touches} times before</span>`}</dd>` +
+    `<dt>upside vs downside</dt><dd>${p.rr == null ? "—" : `could gain ${num(p.rr, 1)}× what it risks`}${p.rr != null && p.rr < 1.5 ? ' <span class="down">(under 1.5×: not enough room)</span>' : ""}</dd>` +
     `</dl>` +
-    `<p class="rv-note">Exits are fixed in advance. The stop rests all week. At +1R it moves to break-even, then trails 1 ATR under the 10-week. A weekly close under the 30-week ends the trade, and so does 26 weeks without one. Size comes from the stop, on ORDERS.</p>` +
+    `<p class="rv-note">Set the stop-loss when you buy and leave it. The plan for selling is fixed in advance: once the stock is up by as much as you risked, the stop-loss moves up to your buy price so you can't lose, then keeps rising behind the price. You also sell if it closes a week below its 30-week average (the gold line), or after 26 weeks. The To do page works out how many shares.</p>` +
     `</section>`
   );
 }
@@ -211,50 +220,61 @@ function plan(card) {
 function likeWeek(card, s, events, w) {
   const a = card.analogue;
   if (!card.setup) return "";
+  const kind = setupName(card.setup);
   const done = events.filter((e) => e.setup === card.setup && !e.trade.open && e.trade.exitIdx <= w);
   const rows = done
     .slice(-8)
     .reverse()
     .map((e) => {
       const r = e.trade.r;
-      return `<tr><td>${esc(s.bars[e.w].d)}</td><td class="r ${r > 0 ? "up" : "down"}">${r >= 0 ? "+" : ""}${r.toFixed(2)}R</td><td>${esc(e.trade.reason)}</td><td class="r">${e.trade.weeks}w</td></tr>`;
+      return `<tr><td>${esc(s.bars[e.w].d)}</td><td class="r ${r > 0 ? "up" : "down"}">${xRisk(r)}</td><td>${esc(SAY.exit[e.trade.reason] ?? e.trade.reason)}</td><td class="r">${e.trade.weeks} wk</td></tr>`;
     })
     .join("");
   return (
-    `<section class="rv-sec"><div class="rv-h"><span>Like-week · this strategy's ${card.setup} trades on ${esc(ticker)}</span></div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>Track record: past ${esc(kind)} buys on ${esc(ticker)}</span></div>` +
     (a && a.n
-      ? `<dl class="rv-kv"><dt>trades</dt><dd>${a.n} · ${num(a.win * 100, 0)}% won</dd>` +
-        `<dt>mean / median</dt><dd>${a.meanR >= 0 ? "+" : ""}${num(a.meanR)}R / ${a.medianR >= 0 ? "+" : ""}${num(a.medianR)}R</dd>` +
-        `<dt>worst</dt><dd class="down">${num(a.worstR)}R</dd>` +
-        `<dt>13w vs drift</dt><dd>${a.edge == null ? "—" : pct(a.edge * 100)}</dd>` +
-        (a.prior != null ? `<dt>universe</dt><dd>${a.prior >= 0 ? "+" : ""}${num(a.prior)}R per ${card.setup}</dd>` : "") +
+      ? `<dl class="rv-kv"><dt>past trades</dt><dd>${a.n} · ${num(a.win * 100, 0)}% made money</dd>` +
+        `<dt>typical result</dt><dd>${xRisk(a.medianR)} the risk <span class="dim-note">(average ${xRisk(a.meanR)})</span></dd>` +
+        `<dt>worst</dt><dd class="down">${xRisk(a.worstR)} the risk</dd>` +
         `</dl>` +
-        `<div class="rv-tbl-wrap" style="margin-top:6px"><table class="rv-tbl"><thead><tr><th>decided</th><th class="r">R</th><th>exit</th><th class="r">held</th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : `<div class="dim-note">No completed ${card.setup} trades on this name before this week.</div>`) +
-    `<p class="rv-note">Only trades that had already exited count, because those are the outcomes you could have known. Samples on one name are small, so the block scores this name against the universe's expectancy, shrunk by sample size.</p>` +
+        `<div class="rv-tbl-wrap" style="margin-top:6px"><table class="rv-tbl"><thead><tr><th>bought</th><th class="r">result</th><th>why it was sold</th><th class="r">held</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="dim-note">No finished ${esc(kind)} trades on this stock before this week.</div>`) +
+    `<p class="rv-note">Results are shown as a multiple of the money risked: +2× means it made twice what you stood to lose, −1× means it hit the stop-loss. Only finished trades count. One stock has few trades, so this is a rough guide.</p>` +
     `</section>`
   );
 }
 
+// Plain names for the fundamentals measures (fundamental-score.js keys).
+const MEASURE = {
+  revenueGrowth: "sales growth",
+  earningsGrowth: "profit growth",
+  operatingMargins: "profit margin",
+  returnOnAssets: "return on assets",
+  returnOnEquity: "return on shareholders' money",
+  fcfMargin: "cash generated",
+  lowLeverage: "low debt",
+  earningsYield: "cheap vs profits",
+  ebitdaYield: "cheap vs earnings",
+  bookYield: "cheap vs assets",
+};
+
 function fundamentals(grade, info, fund, live) {
   if (!grade || grade.quality == null) {
-    return `<section class="rv-sec"><div class="rv-h"><span>Fundamentals</span></div><div class="dim-note">No graded snapshot for this name.</div></section>`;
+    return `<section class="rv-sec"><div class="rv-h"><span>The business</span></div><div class="dim-note">No company data for this stock.</div></section>`;
   }
   const row = (m) => {
     const p = grade.detail?.[m.key];
-    return p == null ? "" : `<tr><td>${esc(m.label)}</td><td class="r">${p}</td><td><span class="tp-bar" style="width:${Math.round(p * 0.6)}px"></span></td></tr>`;
+    return p == null ? "" : `<tr><td>${esc(MEASURE[m.key] ?? m.label)}</td><td class="r">${p}%</td><td><span class="tp-bar" style="width:${Math.round(p * 0.6)}px"></span></td></tr>`;
   };
   const raw = [
-    ["fwd P/E", info.forwardPE],
-    ["EV/EBITDA", info.enterpriseToEbitda],
-    ["rev growth", info.revenueGrowth != null ? `${(info.revenueGrowth * 100).toFixed(1)}%` : null],
-    ["op margin", info.operatingMargins != null ? `${(info.operatingMargins * 100).toFixed(1)}%` : null],
-    ["debt/equity", info.debtToEquity],
+    ["price / expected profit (P/E)", info.forwardPE],
+    ["sales growth", info.revenueGrowth != null ? `${(info.revenueGrowth * 100).toFixed(1)}%` : null],
+    ["profit margin", info.operatingMargins != null ? `${(info.operatingMargins * 100).toFixed(1)}%` : null],
   ].filter(([, v]) => v != null);
   return (
-    `<section class="rv-sec"><div class="rv-h"><span>Fundamentals · sector percentiles</span><span class="rv-h-r">snapshot ${esc(fund.as_of)}${live ? "" : " (not used in a replay)"}</span></div>` +
-    `<dl class="rv-kv"><dt>quality</dt><dd><b>${grade.quality}</b>th pct</dd><dt>value</dt><dd><b>${grade.value ?? "—"}</b>th pct</dd></dl>` +
-    `<div class="rv-tbl-wrap" style="margin-top:6px"><table class="rv-tbl"><tbody>${[...QUALITY, ...VALUE].map(row).join("")}</tbody></table></div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>The business, vs others in its industry</span><span class="rv-h-r">data from ${esc(fund.as_of)}${live ? "" : " (not used when looking back)"}</span></div>` +
+    `<dl class="rv-kv"><dt>strength</dt><dd>better than <b>${grade.quality}%</b> of its industry</dd><dt>price</dt><dd>${grade.value == null ? "—" : `cheaper than <b>${grade.value}%</b> of its industry`}</dd></dl>` +
+    `<div class="rv-tbl-wrap" style="margin-top:6px"><table class="rv-tbl"><thead><tr><th>measure</th><th class="r">beats</th><th></th></tr></thead><tbody>${[...QUALITY, ...VALUE].map(row).join("")}</tbody></table></div>` +
     (raw.length ? `<p class="rv-note">${raw.map(([k, v]) => `${k} ${esc(typeof v === "number" ? v.toFixed(1) : v)}`).join(" · ")}</p>` : "") +
     `</section>`
   );
@@ -264,26 +284,26 @@ function historyTable(history, card) {
   const rows = [card, ...history]
     .map(
       (c) =>
-        `<tr><td>${esc(c.date)}</td><td>${statusChip(c.status)}</td><td class="rv-setup">${esc(c.setup || "")}</td>` +
-        `<td class="r">${c.total == null ? "—" : c.total.toFixed(0)}</td><td class="r">${c.stage ?? "—"}</td></tr>`
+        `<tr><td>${esc(c.date)}</td><td>${statusChip(c.status)}</td><td class="rv-setup">${esc(setupName(c.setup))}</td>` +
+        `<td class="r">${c.total == null ? "—" : c.total.toFixed(0)}</td><td>${c.stage ? SAY.stage[c.stage] : "—"}</td></tr>`
     )
     .join("");
   return (
-    `<section class="rv-sec"><div class="rv-h"><span>The last weeks on ${esc(ticker)}</span><span class="rv-h-r">WATCH turning BUY is the routine working</span></div>` +
-    `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr><th>week</th><th>status</th><th>setup</th><th class="r">score</th><th class="r">stage</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>The last few weeks on ${esc(ticker)}</span><span class="rv-h-r">"not yet" turning "buy" is normal</span></div>` +
+    `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr><th>week</th><th>verdict</th><th>type</th><th class="r">score</th><th>trend</th></tr></thead><tbody>${rows}</tbody></table></div>` +
     `</section>`
   );
 }
 
-/** A replay can show what happened next — under the strategy's own exits. */
+/** Looking back can show what happened next, under the strategy's own selling rules. */
 function outcome(s, w, card) {
   if (card.status !== "BUY" && card.status !== "WATCH") return "";
   const t = runTrade(s, w);
-  if (!t) return `<section class="rv-sec"><div class="rv-h"><span>What happened next</span></div><div class="dim-note">Monday opened through the stop, so the order would have been cancelled.</div></section>`;
+  if (!t) return `<section class="rv-sec"><div class="rv-h"><span>What happened next</span></div><div class="dim-note">On Monday it opened below the stop-loss, so you would not have bought.</div></section>`;
   return (
-    `<section class="rv-sec"><div class="rv-h"><span>What happened next · had it been bought</span></div>` +
-    `<div>${t.open ? "still running" : `${esc(t.reason)} exit ${esc(s.bars[t.exitIdx].d)}`} after ${t.weeks} weeks: ` +
-    `<b class="${t.r > 0 ? "up" : "down"}">${t.r >= 0 ? "+" : ""}${t.r.toFixed(2)}R</b> (${pct(t.pct)})</div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>What happened next, if you had bought</span></div>` +
+    `<div>${t.open ? "still held today" : `sold in the week of ${esc(s.bars[t.exitIdx].d)} (${esc(SAY.exit[t.reason] ?? t.reason)})`} after ${t.weeks} weeks: ` +
+    `<b class="${t.r > 0 ? "up" : "down"}">${pct(t.pct)}</b> <span class="dim-note">(${xRisk(t.r)} the risk)</span></div>` +
     `</section>`
   );
 }
@@ -302,9 +322,9 @@ function chart(s, w, card) {
   const p = card.plan;
   const levels = [];
   if (p) {
-    levels.push({ v: p.stop, cls: "stop", lbl: `STOP ${px(p.stop)}` });
-    if (p.resistance) levels.push({ v: p.resistance.price, cls: "res", lbl: `RES ${px(p.resistance.price)}` });
-    if (p.support) levels.push({ v: p.support.price, cls: "sup", lbl: `SUP ${px(p.support.price)}` });
+    levels.push({ v: p.stop, cls: "stop", lbl: `STOP-LOSS ${px(p.stop)}` });
+    if (p.resistance) levels.push({ v: p.resistance.price, cls: "res", lbl: `PAST HIGH ${px(p.resistance.price)}` });
+    if (p.support) levels.push({ v: p.support.price, cls: "sup", lbl: `FLOOR ${px(p.support.price)}` });
   }
   let lo = Infinity;
   let hi = -Infinity;
@@ -382,10 +402,10 @@ function chart(s, w, card) {
     (AFTER ? `<line class="cd-dec" x1="${decX}" x2="${decX}" y1="${pad.t}" y2="${H - pad.b}"/>` : "") +
     years.join("") +
     `</svg>` +
-    `<div class="cd-legend"><span><i style="border-color:var(--cyan)"></i>10-week</span><span><i style="border-color:var(--gold)"></i>30-week</span>` +
-    (p ? `<span><i style="border-color:var(--loss);border-top-style:dashed"></i>stop</span>` : "") +
-    (AFTER ? `<span>faded: the weeks after the decision</span>` : "") +
-    `<span>weekly bars, ${n} weeks${logScale ? " · log scale" : ""}</span></div>`
+    `<div class="cd-legend"><span><i style="border-color:var(--cyan)"></i>10-week average</span><span><i style="border-color:var(--gold)"></i>30-week average (the main trend)</span>` +
+    (p ? `<span><i style="border-color:var(--loss);border-top-style:dashed"></i>stop-loss</span>` : "") +
+    (AFTER ? `<span>faded: what happened afterwards</span>` : "") +
+    `<span>one candle per week, ${n} weeks${logScale ? " · log scale" : ""}</span></div>`
   );
 }
 

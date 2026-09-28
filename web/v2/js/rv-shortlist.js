@@ -1,6 +1,6 @@
 // Weekly review · step 2 — SHORTLIST: what qualifies this week?
 //
-// One row per candidate from the build's scorecards (scorecard.js
+// Shown to the user as step 2, IDEAS. One row per candidate from the build's scorecards (scorecard.js
 // `scoreCard`, run over the S&P 500 as of the last completed week): its
 // setup, BUY / WATCH / PASS, the headline, a letter per analysis block, the
 // trade's geometry, and what changed since last week. A row opens the CARD.
@@ -14,13 +14,13 @@
 import "./nav.js";
 import { TabulatorFull as Tabulator } from "https://cdn.jsdelivr.net/npm/tabulator-tables@6.5.2/dist/js/tabulator_esm.min.js";
 import { createOptionsBar } from "./options-bar.js";
-import { loadScorecards, stepStrip, esc, gradeChip, changeNote, failInto, px } from "./review.js";
+import { loadScorecards, stepStrip, esc, gradeChip, changeNote, failInto, px, SAY, setupName } from "./review.js";
 import { BLOCKS, BLOCK_LABELS, PROFILES } from "./scorecard.js";
 
 const root = document.getElementById("shortlist-root");
 root.innerHTML = `<div id="sl-grid"></div>`;
 
-const state = { status: "ACTIVE", setup: "ALL", q: "" };
+const state = { status: "ACTIVE", setup: "ALL", q: "", detail: false };
 let rows = [];
 let grid = null;
 let built = false;
@@ -28,7 +28,10 @@ let built = false;
 // The blocks that can carry weight somewhere. Pattern is weightless in every
 // profile (see PROFILES) and would be a column of dots.
 const COLS = BLOCKS.filter((k) => Object.values(PROFILES).some((p) => p.weights[k] > 0));
-const SHORT = { market: "MKT", stage: "STG", rs: "RS", structure: "STR", momentum: "MOM", analogue: "LWK", earnings: "ERN", fundamental: "FND" };
+const SHORT = { market: "MKT", stage: "TREND", rs: "VS MKT", structure: "ROOM", momentum: "MOM", analogue: "RECORD", earnings: "EARN", fundamental: "BIZ" };
+// Columns only shown with MORE DETAIL on: the per-check grades and the numbers
+// behind the trade. The simple view answers "what, and why" only.
+const DETAIL = [...COLS.map((k) => `blocks.${k}.s`), "plan.rr", "st", "s"];
 
 createOptionsBar("optbar", {
   primary: [
@@ -38,27 +41,41 @@ createOptionsBar("optbar", {
       label: "SHOW",
       value: state.status,
       options: [
-        { value: "BUY", label: "BUY" },
-        { value: "ACTIVE", label: "BUY+WATCH" },
-        { value: "SETUPS", label: "ALL SETUPS" },
-        { value: "ALL", label: "ALL NAMES" },
+        { value: "BUY", label: "BUY ONLY" },
+        { value: "ACTIVE", label: "BUY + NOT YET" },
+        { value: "SETUPS", label: "ALL SIGNALS" },
+        { value: "ALL", label: "EVERY STOCK" },
       ],
     },
     {
       type: "seg",
       id: "sl-setup",
-      label: "SETUP",
+      label: "TYPE",
       value: state.setup,
       options: [
         { value: "ALL", label: "ALL" },
-        { value: "PULLBACK", label: "PULLBACK" },
-        { value: "BREAKOUT", label: "BREAKOUT" },
-        { value: "REVERSAL", label: "REVERSAL" },
+        { value: "PULLBACK", label: SAY.setup.PULLBACK },
+        { value: "BREAKOUT", label: SAY.setup.BREAKOUT },
+        { value: "REVERSAL", label: SAY.setup.REVERSAL },
       ],
     },
-    { type: "text", id: "sl-q", label: "FIND", placeholder: "ticker or name" },
+    { type: "text", id: "sl-q", label: "FIND", placeholder: "ticker or company" },
+    {
+      type: "seg",
+      id: "sl-detail",
+      label: "VIEW",
+      value: "SIMPLE",
+      options: [
+        { value: "SIMPLE", label: "SIMPLE" },
+        { value: "DETAIL", label: "MORE DETAIL" },
+      ],
+    },
   ],
   onChange: (id, v) => {
+    if (id === "sl-detail") {
+      state.detail = v === "DETAIL";
+      return showDetail();
+    }
     if (id === "sl-status") state.status = v;
     if (id === "sl-setup") state.setup = v;
     if (id === "sl-q") state.q = String(v || "").trim().toUpperCase();
@@ -81,7 +98,7 @@ document.getElementById("sl-q")?.addEventListener("input", (e) => {
   document.getElementById("steps").innerHTML = stepStrip("shortlist", { week: sc.week });
   if (b) {
     document.querySelector(".rv-step-q").textContent =
-      `what qualifies? · ${b.level} budget: ≤ ${b.maxNew} new at ${b.riskPct}% risk · week to ${sc.week}`;
+      `which stocks look worth buying? · ${SAY.level[b.level].toLowerCase()} week: buy up to ${b.maxNew} · click a row to check it`;
   }
   rows = sc.rows.map((r) => ({ ...r, change: changeNote(r), rank: r.status === "BUY" ? 3 : r.status === "WATCH" ? 2 : r.status === "PASS" ? 1 : 0 }));
   build();
@@ -104,15 +121,23 @@ function apply() {
   if (el && !n) {
     el.textContent =
       state.status === "BUY"
-        ? "Nothing to buy this week. Cash is a position, and a week with no qualifying trade is a result, not a failure."
-        : "Nothing matches.";
+        ? "Nothing worth buying this week. That's fine: holding cash and waiting is a perfectly good decision."
+        : "No stocks match these filters.";
+  }
+}
+
+function showDetail() {
+  if (!grid || !built) return;
+  for (const f of DETAIL) {
+    const col = grid.getColumn(f);
+    if (col) state.detail ? col.show() : col.hide();
   }
 }
 
 const statusFmt = (cell) => {
   const r = cell.getRow().getData();
   const s = r.status;
-  const chip = s ? `<span class="rv-chip rv-${s.toLowerCase()}">${s}</span>` : `<span class="dim-note">—</span>`;
+  const chip = s ? `<span class="rv-chip rv-${s.toLowerCase()}">${SAY.status[s]}</span>` : `<span class="dim-note">—</span>`;
   const ch = r.change === "NEW" ? ` <span class="rv-new">NEW</span>` : r.change ? ` <span class="rv-was">${esc(r.change)}</span>` : "";
   return chip + ch;
 };
@@ -123,14 +148,14 @@ function build() {
     layout: "fitData",
     height: "100%",
     index: "t",
-    placeholder: "Nothing matches.",
+    placeholder: "No stocks match these filters.",
     initialSort: [
       { column: "total", dir: "desc" },
       { column: "rank", dir: "desc" },
     ],
     columns: [
       {
-        title: "NAME",
+        title: "STOCK",
         field: "t",
         frozen: true,
         minWidth: 150,
@@ -140,8 +165,14 @@ function build() {
         },
       },
       { title: "", field: "rank", visible: false },
-      { title: "STATUS", field: "status", minWidth: 108, formatter: statusFmt, sorter: (a, b, ra, rb) => ra.getData().rank - rb.getData().rank },
-      { title: "SETUP", field: "setup", minWidth: 80, formatter: (c) => `<span class="rv-setup">${esc(c.getValue() || "")}</span>` },
+      { title: "VERDICT", field: "status", minWidth: 120, headerTooltip: "BUY: worth buying this week. NOT YET: close, check again next week. SKIP: something important is wrong.", formatter: statusFmt, sorter: (a, b, ra, rb) => ra.getData().rank - rb.getData().rank },
+      {
+        title: "TYPE",
+        field: "setup",
+        minWidth: 90,
+        headerTooltip: `DIP: ${SAY.setupLong.PULLBACK}. NEW HIGH: ${SAY.setupLong.BREAKOUT}. TURNAROUND: ${SAY.setupLong.REVERSAL}.`,
+        formatter: (c) => `<span class="rv-setup" title="${esc(SAY.setupLong[c.getValue()] || "")}">${esc(setupName(c.getValue()))}</span>`,
+      },
       {
         title: "SCORE",
         field: "total",
@@ -149,7 +180,7 @@ function build() {
         minWidth: 56,
         sorter: "number",
         formatter: (c) => (c.getValue() == null ? "—" : `<b>${c.getValue().toFixed(0)}</b>`),
-        headerTooltip: "The weighted headline over the available blocks (0–100). A consistent checklist, not a forecast.",
+        headerTooltip: "0 to 100: how many of the checks this stock passes, weighted by how much each matters. Higher is better, but it's a checklist, not a prediction.",
       },
       ...COLS.map((k) => ({
         title: SHORT[k],
@@ -157,41 +188,45 @@ function build() {
         hozAlign: "center",
         minWidth: 38,
         sorter: "number",
-        headerTooltip: BLOCK_LABELS[k],
+        headerTooltip: `${BLOCK_LABELS[k]} (A is best, E is worst)`,
+        visible: false,
         formatter: (c) => gradeChip(c.getRow().getData().blocks?.[k]),
       })),
       {
-        title: "STOP",
+        title: "MAX LOSS",
         field: "plan.riskPct",
         hozAlign: "right",
         minWidth: 52,
         sorter: "number",
         formatter: (c) => (c.getValue() == null ? "—" : `−${c.getValue().toFixed(1)}%`),
-        headerTooltip: "Distance from this week's close to the strategy's initial stop.",
+        headerTooltip: "How far the price can fall before you sell to cut the loss (the stop-loss).",
       },
       {
-        title: "R:R",
+        title: "GAIN:LOSS",
         field: "plan.rr",
+        visible: false,
         hozAlign: "right",
         minWidth: 44,
         sorter: "number",
         formatter: (c) => (c.getValue() == null ? "—" : c.getValue().toFixed(1)),
-        headerTooltip: "Room to the nearest resistance per unit of risk (capped at 6 ATR in blue sky).",
+        headerTooltip: "How far it could rise to its next past high, for each 1 it could lose. 2 or more is good.",
       },
-      { title: "CLOSE", field: "c", hozAlign: "right", minWidth: 62, formatter: (c) => px(c.getValue()) },
+      { title: "PRICE $", field: "c", hozAlign: "right", minWidth: 62, formatter: (c) => px(c.getValue()) },
       {
-        title: "STAGE",
+        title: "TREND",
         field: "st",
-        hozAlign: "center",
-        minWidth: 48,
+        visible: false,
+        minWidth: 90,
+        headerTooltip: "Which way the stock's longer-term trend points, and for how many weeks.",
         formatter: (c) => {
           const r = c.getRow().getData();
-          return r.st == null ? "—" : `${r.st}<span class="dim-note">·${r.age}w</span>`;
+          return r.st == null ? "—" : `${SAY.stage[r.st]}<span class="dim-note"> ${r.age}w</span>`;
         },
       },
       {
-        title: "EARNINGS",
+        title: "NEXT RESULTS",
         field: "next",
+        headerTooltip: "When the company next reports its profits. Prices can jump either way on the day.",
         minWidth: 84,
         formatter: (c) => {
           const r = c.getRow().getData();
@@ -199,9 +234,10 @@ function build() {
           return c.getValue() ? `<span class="${soon ? "cd-flag" : "dim-note"}">${esc(c.getValue())}</span>` : "—";
         },
       },
-      { title: "SECTOR", field: "s", minWidth: 120, formatter: (c) => `<span class="dim-note">${esc(c.getValue() || "")}</span>` },
+      { title: "INDUSTRY", field: "s", minWidth: 120, visible: false, formatter: (c) => `<span class="dim-note">${esc(c.getValue() || "")}</span>` },
       {
         title: "WHY",
+        headerTooltip: "The reason for the verdict, in a line.",
         field: "why",
         minWidth: 240,
         cssClass: "sl-why",
@@ -218,5 +254,6 @@ function build() {
   grid.on("tableBuilt", () => {
     built = true;
     apply();
+    showDetail();
   });
 }

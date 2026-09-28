@@ -44,15 +44,15 @@ export const BLOCKS = Object.freeze([
 ]);
 
 export const BLOCK_LABELS = Object.freeze({
-  market: "MARKET & SECTOR",
-  stage: "TREND / STAGE",
-  rs: "REL. STRENGTH",
-  structure: "STRUCTURE",
-  pattern: "PATTERN",
+  market: "MARKET MOOD",
+  stage: "TREND",
+  rs: "VS THE MARKET",
+  structure: "ROOM TO RISE",
+  pattern: "CHART PATTERN",
   momentum: "MOMENTUM",
-  analogue: "LIKE-WEEK",
-  earnings: "EARNINGS",
-  fundamental: "FUNDAMENTAL",
+  analogue: "TRACK RECORD",
+  earnings: "LATEST RESULTS",
+  fundamental: "BUSINESS",
 });
 
 /**
@@ -135,13 +135,13 @@ const block = (key, available, score, text, raw = {}) => ({
  * weeks (15), VIX haircut. Long side: the book is long-only.
  */
 export function marketBlock(ms) {
-  if (!ms?.available) return block("market", false, null, "no market feed for this week");
+  if (!ms?.available) return block("market", false, null, "no market data this week");
   const sc = scoreFor(ms, "long");
-  if (!sc.available) return block("market", false, null, "market feed incomplete");
-  const reg = ms.regime ? ms.regime.toUpperCase() : "—";
-  const sec = ms.sector.rank ? `${ms.sector.etf} ${ms.sector.rank}/${ms.sector.of}` : `${ms.sector.etf} unranked`;
-  const vix = ms.vix != null ? ` · VIX ${ms.vix.toFixed(0)}` : "";
-  return block("market", true, sc.total / sc.max, `${sc.total}/${sc.max} · SPY ${reg}(w) · ${sec}${vix}`, {
+  if (!sc.available) return block("market", false, null, "market data incomplete");
+  const reg = { bull: "market rising", bear: "market falling", neutral: "market sideways" }[ms.regime] ?? "market trend unclear";
+  const sec = ms.sector.rank ? `industry ${ordinal(ms.sector.rank)} best of ${ms.sector.of}` : "industry unranked";
+  const vix = ms.vix != null ? ` · fear gauge ${ms.vix.toFixed(0)}` : "";
+  return block("market", true, sc.total / sc.max, `${reg} · ${sec}${vix}`, {
     total: sc.total,
     max: sc.max,
     regime: ms.regime,
@@ -162,7 +162,7 @@ export function marketBlock(ms) {
  */
 export function stageBlock(s, w, setup) {
   const st = s.stage[w];
-  if (st == null) return block("stage", false, null, "not enough history");
+  if (st == null) return block("stage", false, null, "not enough price history");
   const age = s.age[w];
   const sl = slope30(s, w) ?? 0;
   const aligned = s.sma10[w] != null && s.sma30[w] != null && s.sma10[w] > s.sma30[w];
@@ -178,9 +178,10 @@ export function stageBlock(s, w, setup) {
   } else {
     score = st === 1 ? 0.6 + 0.4 * clamp01((sl + 1) / 1) : 0;
   }
-  const dir = sl > RULES.flatAtr ? "rising" : sl < -RULES.flatAtr ? "falling" : "flat";
-  const pos = s.sma30[w] != null ? ((s.closes[w] / s.sma30[w] - 1) * 100).toFixed(1) : "—";
-  return block("stage", true, score, `STAGE ${st} · ${age} wk · 30wk ${dir} · ${pos}% vs 30wk`, {
+  const word = { 1: "flat", 2: "rising", 3: "stalling", 4: "falling" }[st];
+  const gap = s.sma30[w] != null ? (s.closes[w] / s.sma30[w] - 1) * 100 : null;
+  const pos = gap == null ? "" : ` · ${Math.abs(gap).toFixed(0)}% ${gap >= 0 ? "above" : "below"} its 30-week average`;
+  return block("stage", true, score, `${word} for ${age} ${age === 1 ? "week" : "weeks"}${pos}`, {
     stage: st,
     age,
     slopeAtr: round(sl),
@@ -202,12 +203,15 @@ export function rsBlock(s, w, market) {
   let hi52 = -Infinity;
   for (let k = Math.max(0, w - 51); k <= w; k++) hi52 = Math.max(hi52, s.bars[k].h);
   const offHigh = hi52 > 0 ? (s.closes[w] / hi52 - 1) * 100 : null;
-  if (rs26 == null && offHigh == null) return block("rs", false, null, "no benchmark");
+  if (rs26 == null && offHigh == null) return block("rs", false, null, "no market data to compare with");
   // RS: −20% → 0, +20% → 1. Off-high: −30% → 0, at the high → 1.
   const a = rs26 == null ? null : clamp01((rs26 + 20) / 40);
   const b = offHigh == null ? null : clamp01((offHigh + 30) / 30);
   const score = a == null ? b : b == null ? a : 0.6 * a + 0.4 * b;
-  const txt = `${rs26 == null ? "RS —" : `RS26w ${rs26 >= 0 ? "+" : ""}${rs26.toFixed(1)}%`} · ${offHigh == null ? "" : `${offHigh.toFixed(1)}% off 52wk high`}`;
+  const txt = [
+    rs26 == null ? null : `${rs26 >= 0 ? "beat" : "lagged"} the S&P 500 by ${Math.abs(rs26).toFixed(0)}% over 6 months`,
+    offHigh == null ? null : offHigh > -1 ? "at its 1-year high" : `${Math.abs(offHigh).toFixed(0)}% below its 1-year high`,
+  ].filter(Boolean).join(" · ");
   return block("rs", true, score, txt, { rs26: round(rs26), offHigh: round(offHigh) });
 }
 
@@ -217,7 +221,7 @@ export function rsBlock(s, w, market) {
  * tested level. "Buy low" made measurable.
  */
 export function structureBlock(plan, setup) {
-  if (!plan || plan.rr == null) return block("structure", false, null, "no stop distance");
+  if (!plan || plan.rr == null) return block("structure", false, null, "no stop-loss price");
   const rrS = clamp01((plan.rr - 1) / 2.5);
   let supS = 0;
   if (plan.support && plan.atr > 0) {
@@ -225,9 +229,9 @@ export function structureBlock(plan, setup) {
     supS = gap <= 1.5 ? Math.min(1, plan.support.touches / 4) : 0;
   }
   const score = setup === "PULLBACK" ? 0.75 * rrS + 0.25 * supS : rrS;
-  const res = plan.blueSky ? "no resistance in 2y" : `res ${((plan.target / plan.entry - 1) * 100).toFixed(1)}% above`;
-  const sup = plan.support ? ` · supp ${((1 - plan.support.price / plan.entry) * 100).toFixed(1)}% below ×${plan.support.touches}` : "";
-  return block("structure", true, score, `R:R ${plan.rr.toFixed(1)} · ${res}${sup}`, {
+  const res = plan.blueSky ? "no past high in the way" : `past high ${((plan.target / plan.entry - 1) * 100).toFixed(0)}% above`;
+  const sup = plan.support ? ` · floor ${((1 - plan.support.price / plan.entry) * 100).toFixed(0)}% below` : "";
+  return block("structure", true, score, `could gain ${plan.rr.toFixed(1)}× what it risks · ${res}${sup}`, {
     rr: round(plan.rr),
     blueSky: plan.blueSky,
   });
@@ -261,7 +265,7 @@ export function momentumBlock(s, w, setup) {
   const r = s.rsi[w];
   const h = s.macd.hist[w];
   const hp = s.macd.hist[w - 1];
-  if (r == null || h == null) return block("momentum", false, null, "not enough history");
+  if (r == null || h == null) return block("momentum", false, null, "not enough price history");
   const vx = s.vma10[w - 1] > 0 ? s.bars[w].v / s.vma10[w - 1] : null;
   const turning = hp != null && h > hp;
   let score;
@@ -274,7 +278,7 @@ export function momentumBlock(s, w, setup) {
   } else {
     score = ((r >= 50 && r <= 65 ? 1 : r > 65 ? 0.6 : 0.2) + (h > 0 ? 1 : 0.3)) / 2;
   }
-  const txt = `RSI ${r.toFixed(0)} · MACD hist ${turning ? "rising" : "falling"}${vx != null ? ` · vol ×${vx.toFixed(1)}` : ""}`;
+  const txt = `${turning ? "picking up" : "fading"} · RSI ${r.toFixed(0)} of 100${vx != null ? ` · volume ${vx.toFixed(1)}× usual` : ""}`;
   return block("momentum", true, score, txt, { rsi: round(r, 1), turning, volX: round(vx) });
 }
 
@@ -288,12 +292,11 @@ export function momentumBlock(s, w, setup) {
 export function analogueBlock(stats) {
   if (!stats || stats.n < 3) {
     const n = stats?.n ?? 0;
-    return block("analogue", false, null, `${n} past ${n === 1 ? "trade" : "trades"} on this name — too few`, { n });
+    return block("analogue", false, null, `only ${n} past ${n === 1 ? "trade" : "trades"} like this on this stock, too few to judge`, { n });
   }
   const prior = stats.prior ?? 0;
   const score = 0.5 + (stats.shrunkR - prior) / 0.8;
-  const txt = `${stats.meanR >= 0 ? "+" : ""}${stats.meanR.toFixed(2)}R avg · ${(stats.win * 100).toFixed(0)}% win · n=${stats.n}` +
-    (stats.edge != null ? ` · edge ${stats.edge >= 0 ? "+" : ""}${(stats.edge * 100).toFixed(1)}% vs drift` : "");
+  const txt = `${stats.n} past trades · ${(stats.win * 100).toFixed(0)}% made money · average ${stats.meanR >= 0 ? "+" : "−"}${Math.abs(stats.meanR).toFixed(1)}× the risk`;
   return block("analogue", true, score, txt, {
     n: stats.n,
     meanR: round(stats.meanR),
@@ -312,18 +315,18 @@ export function analogueBlock(stats) {
  * `reports` is `[{d, surprise}]` ascending (surprise in percent; may be null).
  */
 export function earningsBlock(reports, decisionIso) {
-  if (!Array.isArray(reports) || !reports.length) return block("earnings", false, null, "no earnings history");
+  if (!Array.isArray(reports) || !reports.length) return block("earnings", false, null, "no earnings reports on file");
   let last = null;
   for (const r of reports) {
     if (r.d < decisionIso && r.surprise != null && Number.isFinite(r.surprise)) last = r;
   }
-  if (!last) return block("earnings", false, null, "no reported surprise yet");
+  if (!last) return block("earnings", false, null, "no earnings report yet");
   const age = daysBetween(last.d, decisionIso);
-  if (age > EARNINGS_DRIFT_DAYS) return block("earnings", false, null, `last report ${last.d} — drift spent`);
+  if (age > EARNINGS_DRIFT_DAYS) return block("earnings", false, null, `last report ${last.d} is too long ago to matter`);
   // −10% surprise → 0, 0 → 0.5, +10% → 1; tapering as the drift ages.
   const raw = clamp01(0.5 + last.surprise / 20);
   const score = 0.5 + (raw - 0.5) * (1 - age / (2 * EARNINGS_DRIFT_DAYS));
-  return block("earnings", true, score, `surprise ${last.surprise >= 0 ? "+" : ""}${last.surprise.toFixed(1)}% · ${last.d} (${age}d ago)`, {
+  return block("earnings", true, score, `profits ${last.surprise >= 0 ? "beat" : "missed"} forecasts by ${Math.abs(last.surprise).toFixed(0)}% · ${age} days ago`, {
     surprise: round(last.surprise, 1),
     reported: last.d,
     ageDays: age,
@@ -344,19 +347,19 @@ export function nextEarnings(reports, decisionIso) {
  * `fund` is `{quality, value, asOf, detail}` with percentiles 0..100.
  */
 export function fundamentalBlock(fund, setup, decisionIso) {
-  if (!fund || fund.quality == null) return block("fundamental", false, null, "no fundamentals snapshot for this week");
+  if (!fund || fund.quality == null) return block("fundamental", false, null, "no company data this week");
   if (fund.asOf && fund.asOf < decisionIso && daysBetween(fund.asOf, decisionIso) > 14) {
-    return block("fundamental", false, null, `snapshot ${fund.asOf} is stale`);
+    return block("fundamental", false, null, `company data from ${fund.asOf} is out of date`);
   }
   if (fund.asOf && fund.asOf > addDays(decisionIso, 14)) {
     // A snapshot taken after the week being decided would be look-ahead.
-    return block("fundamental", false, null, "no snapshot this early");
+    return block("fundamental", false, null, "no company data this far back");
   }
   const q = fund.quality / 100;
   const v = fund.value == null ? null : fund.value / 100;
   const wq = setup === "REVERSAL" ? 0.8 : 0.7;
   const score = v == null ? q : wq * q + (1 - wq) * v;
-  return block("fundamental", true, score, `quality ${ordinal(fund.quality)} · value ${fund.value == null ? "—" : ordinal(fund.value)} pct in sector`, {
+  return block("fundamental", true, score, `stronger than ${Math.round(fund.quality)}% of its industry${fund.value == null ? "" : ` · cheaper than ${Math.round(fund.value)}%`}`, {
     quality: round(fund.quality, 0),
     value: round(fund.value, 0),
   });
@@ -431,7 +434,7 @@ export function scoreCard(ctx) {
 
   const found = setupsAt(s, w);
   if (!found.length) {
-    return { ...base, setup: null, status: null, why: "no setup this week", total: null, blocks: shared, vetoes: [], flags: [], plan: null, alternatives: [] };
+    return { ...base, setup: null, status: null, why: "no buy signal this week", total: null, blocks: shared, vetoes: [], flags: [], plan: null, alternatives: [] };
   }
 
   const plan = planAt(s, w);
@@ -469,25 +472,25 @@ function cardFor(ctx, found, plan, shared, ms, date, next) {
   const flags = [];
   let status = found.status;
   let why = found.why;
-  if (plan.rr != null && plan.rr < MIN_RR) vetoes.push(`R:R ${plan.rr.toFixed(1)} < ${MIN_RR} — resistance too close`);
+  if (plan.rr != null && plan.rr < MIN_RR) vetoes.push(`too little room to rise: a past high is close overhead`);
   if (prof.marketGate && blocks.market.available && blocks.market.score * 100 < STRICT_MIN) {
-    vetoes.push(`market tailwinds under ${STRICT_MIN}%`);
+    vetoes.push(`the market and this industry are too weak right now`);
   }
   if (setup === "REVERSAL" && ctx.fundamentals?.quality != null && ctx.fundamentals.quality < REVERSAL_QUALITY_MIN) {
-    vetoes.push(`quality ${ordinal(ctx.fundamentals.quality)} pct — a reversal needs a business that survives`);
+    vetoes.push(`weaker business than most of its industry: a turnaround needs a strong company`);
   }
-  if (setup === "REVERSAL" && ctx.fundamentals?.quality == null) flags.push("quality unverified");
+  if (setup === "REVERSAL" && ctx.fundamentals?.quality == null) flags.push("business strength unknown");
   if (next && daysBetween(date, next) <= EARNINGS_WINDOW_DAYS) {
-    flags.push(`earnings ${next}`);
+    flags.push(`earnings report ${next}`);
     if (status === "BUY") {
       status = "WATCH";
-      why = `earnings ${next} — enter after the report`;
+      why = `earnings report due ${next}: wait until after it, as the price can jump either way`;
     }
   }
   if (vetoes.length) status = "PASS";
   else if (status === "BUY" && total != null && total < prof.minScore) {
     status = "WATCH";
-    why = `score ${total.toFixed(0)} under ${prof.minScore}`;
+    why = `score ${total.toFixed(0)} is below the ${prof.minScore} needed to buy`;
   }
   return { setup, status, why, total, blocks, vetoes, flags, analogue: stats, facts: found.facts };
 }

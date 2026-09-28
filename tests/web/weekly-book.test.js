@@ -122,7 +122,7 @@ test("caps: position size, cash, heat, weekly count, sector count", () => {
   const holdings = ["H1", "H2", "H3"].map((t) => ({ t, qty: 1, entryGBP: 100, stopGBP: 100, priceGBP: 100, sector: "X", action: "HOLD" }));
   const sec = construct({ equityGBP: 10000, cashGBP: 9700, holdings, candidates: [{ t: "A", total: 90, sector: "X", entry: 100, stop: 95 }], budget: FULL });
   assert.equal(sec.orders.length, 0);
-  assert.match(sec.skipped[0].reason, /X names already/);
+  assert.match(sec.skipped[0].reason, /own 3 X names/);
 });
 
 test("heat: no order takes open risk past the budget's cap", () => {
@@ -187,7 +187,7 @@ test("manageHolding: a holding past its time limit is an EXIT, with the reason",
   const s = prepareSeries(barsFromCloses(ramp(600, 50, 0.002)));
   const m = manageHolding(s, s.bars[40].d, s.bars[40].o);
   assert.equal(m.action, "EXIT");
-  assert.match(m.reason, /time exit/);
+  assert.match(m.reason, /time limit/);
 });
 
 test("manageHolding: a holding bought under the strategy's stop is managed under the 30-week rule", () => {

@@ -251,7 +251,7 @@ export function setupsAt(s, w) {
       out.push({
         setup: "PULLBACK",
         status: upClose && upperHalf ? "BUY" : "WATCH",
-        why: upClose && upperHalf ? "turned up off the 10-week" : "pulling back — wait for an up week",
+        why: upClose && upperHalf ? "dipped, then bounced back up this week" : "dipping: wait for a week that closes higher",
         facts: { depthAtr: depth, vs10Atr: vs10, high },
       });
     }
@@ -281,7 +281,7 @@ export function setupsAt(s, w) {
         out.push({
           setup: "BREAKOUT",
           status: "BUY",
-          why: at === w ? "weekly close through the 26-week high" : "broke out last week, still near the level",
+          why: at === w ? "closed above its 6-month high this week" : "broke above its 6-month high last week and is still close to it",
           facts: { level, extAtr: (c - level) / a, breakoutIdx: at },
         });
       } else if (level == null) {
@@ -291,7 +291,7 @@ export function setupsAt(s, w) {
           out.push({
             setup: "BREAKOUT",
             status: "WATCH",
-            why: "coiling under the 26-week high",
+            why: "just under its 6-month high: buy if it closes above",
             facts: { level: lv, extAtr: (c - lv) / a, breakoutIdx: null },
           });
         }
@@ -315,7 +315,7 @@ export function setupsAt(s, w) {
           out.push({
             setup: "REVERSAL",
             status: buy ? "BUY" : "WATCH",
-            why: buy ? "higher low, back above a rising 10-week" : "higher low — wait for momentum",
+            why: buy ? "has stopped falling and is climbing again" : "has stopped falling: wait for it to start climbing",
             facts: { declined, lastLow: lows[lows.length - 1].price, prevLow: lows[lows.length - 2].price },
           });
         }
