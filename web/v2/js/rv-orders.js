@@ -1,4 +1,4 @@
-// Weekly review · step 5 — ORDERS: what do I actually do?
+// Weekly review · step 5 — ORDERS (shown as TO DO): what exactly do I do on Monday?
 //
 // The week's orders for one account, from construct.js `construct`: EXIT what
 // the rules say is over, TRAIL the stops they have ratcheted, TRIM anything
@@ -9,7 +9,7 @@
 
 import "./nav.js";
 import { requireAuth, mountAccountBar, fmtGBP, esc } from "./neon.js";
-import { loadScorecards, stepStrip, px, num, levelClass, failInto } from "./review.js";
+import { loadScorecards, stepStrip, px, num, levelClass, failInto, SAY } from "./review.js";
 import { loadBook, evaluate } from "./rv-holdings.js";
 import { construct, CAPS, COSTS } from "./construct.js";
 import { toGBP, fxRates } from "./prices.js";
@@ -31,10 +31,10 @@ let accountId = null;
   try {
     book = await loadBook();
   } catch (e) {
-    return failInto(root, "the trading book", e);
+    return failInto(root, "your stocks", e);
   }
   if (!book.accounts.length) {
-    root.innerHTML = `<div class="rv-page"><div class="rv-empty">No accounts yet. Add one on <a href="portfolio.html" style="color:var(--cyan)">Portfolio</a>.</div></div>`;
+    root.innerHTML = `<div class="rv-page"><div class="rv-empty">Nothing here yet. Add your broker account on <a href="portfolio.html" style="color:var(--cyan)">Portfolio</a>.</div></div>`;
     return;
   }
   // Default to the ISA: the account this strategy was sized for.
@@ -43,7 +43,7 @@ let accountId = null;
 })();
 
 async function run() {
-  root.innerHTML = `<div class="rv-empty">Building this week's orders…</div>`;
+  root.innerHTML = `<div class="rv-empty">Working out this week's to-do list…</div>`;
   const ev = await evaluate(book, accountId);
   const sc = ev.sc;
   const budget = sc.tape?.budget;
@@ -82,7 +82,7 @@ function render(sc, ev, res, budget, fxOk) {
   const acctSel =
     `<div class="od-acct">ACCOUNT <select id="od-acct">` +
     book.accounts.map((a) => `<option value="${a.id}"${a.id === accountId ? " selected" : ""}>${esc(a.name)}${a.type ? ` · ${esc(a.type)}` : ""}</option>`).join("") +
-    `</select><span>equity <b style="color:var(--ink)">${fmtGBP(ev.equityGBP)}</b> · cash ${fmtGBP(ev.cashGBP)}</span></div>`;
+    `</select><span>worth <b style="color:var(--ink)">${fmtGBP(ev.equityGBP)}</b> · cash ${fmtGBP(ev.cashGBP)}</span></div>`;
   const heatCapPct = budget?.heatMax ?? 0;
   const pctOf = (x) => (ev.equityGBP > 0 ? `${num((x / ev.equityGBP) * 100, 2)}%` : "—");
   const rows = res.orders.map(orderRow).join("");
@@ -93,25 +93,26 @@ function render(sc, ev, res, budget, fxOk) {
     `<div class="rv-page">` +
     acctSel +
     `<div class="rv-banner ${levelClass(budget?.level)}">` +
-    `<span class="rv-banner-lv">${budget?.level ?? "—"}</span>` +
-    `<span class="rv-banner-kv">risk / new position <b>${budget?.riskPct ?? "—"}%</b></span>` +
-    `<span class="rv-banner-kv">heat <b>${pctOf(res.heatBefore)}</b> → <b>${pctOf(res.heatAfter)}</b> of ${heatCapPct}% cap</span>` +
-    `<span class="rv-banner-kv">positions after <b>${res.positionsAfter}</b> / ${CAPS.maxPositions}</span>` +
-    `<span class="rv-banner-kv">cash after <b>${fmtGBP(res.cashAfter)}</b></span>` +
+    `<span class="rv-banner-lv">${SAY.level[budget?.level] ?? "—"}</span>` +
+    `<span class="rv-banner-kv">each new stock risks <b>${budget?.riskPct ?? "—"}%</b> of your account</span>` +
+    `<span class="rv-banner-kv">stocks owned after <b>${res.positionsAfter}</b> of ${CAPS.maxPositions} max</span>` +
+    `<span class="rv-banner-kv">cash left <b>${fmtGBP(res.cashAfter)}</b></span>` +
+    `<span class="rv-banner-kv" title="What you would lose if every stop-loss were hit at once">at risk <b>${pctOf(res.heatBefore)}</b> → <b>${pctOf(res.heatAfter)}</b> (limit ${heatCapPct}%)</span>` +
     `</div>` +
-    (!fxOk ? `<div class="cd-veto" style="margin-bottom:10px">No GBP/USD rate in this build, so BUYs can't be sized. Holdings are still reviewed.</div>` : "") +
-    `<section class="rv-sec"><div class="rv-h"><span>This week's orders · for Monday's open</span><span class="rv-h-r">week to ${esc(sc.week)}</span></div>` +
+    (!fxOk ? `<div class="cd-veto" style="margin-bottom:10px">The pound/dollar exchange rate is missing this week, so we can't work out how many shares to buy. Sells and stop-loss changes below still apply.</div>` : "") +
+    `<section class="rv-sec"><div class="rv-h"><span>Your to-do list · place these for Monday's open</span><span class="rv-h-r">prices to Friday ${esc(sc.week)}</span></div>` +
     (res.orders.length
-      ? `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr><th>action</th><th>name</th><th class="r">qty</th><th class="r">price</th><th class="r">value £</th><th class="r">stop</th><th class="r">risk £</th><th>reason</th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : `<div class="rv-empty" style="padding:10px 0">No orders this week. Nothing to exit and nothing qualifies within the budget. Cash is a position.</div>`) +
+      ? `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr><th>do</th><th>stock</th><th class="r">shares</th><th class="r">price</th><th class="r">cost £</th><th class="r">stop-loss</th><th class="r">could lose £</th><th>why</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="rv-empty" style="padding:10px 0">Nothing to do this week. Nothing needs selling and nothing is worth buying. Holding cash is fine.</div>`) +
     `</section>` +
     (skipped
-      ? `<section class="rv-sec"><div class="rv-h"><span>Candidates not taken</span><span class="rv-h-r">and why</span></div>` +
-        `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr><th>name</th><th class="r">score</th><th>reason</th></tr></thead><tbody>${skipped}</tbody></table></div></section>`
+      ? `<section class="rv-sec"><div class="rv-h"><span>Buys we left out</span><span class="rv-h-r">and why</span></div>` +
+        `<div class="rv-tbl-wrap"><table class="rv-tbl"><thead><tr><th>stock</th><th class="r">score</th><th>why</th></tr></thead><tbody>${skipped}</tbody></table></div></section>`
       : "") +
-    `<section class="rv-sec"><div class="rv-h"><span>Checklist to take to the broker</span></div>` +
+    `<section class="rv-sec"><div class="rv-h"><span>Checklist: copy this and work through it in your broker's app</span></div>` +
     `<textarea class="od-copy" readonly>${esc(checklist(sc, res))}</textarea></section>` +
-    `<p class="rv-note">Order of work: exits first (they free cash and heat), then stop moves, then trims, then buys, best score first. A holding the rules would exit that is also a fresh BUY this week is a RESET: it's kept under the new trade's stop, not sold and bought back. Each buy risks ${budget?.riskPct ?? "—"}% of equity scaled 60–100% by score, so size = risk ÷ (entry − stop), capped at ${CAPS.maxPositionPct}% of equity, ${CAPS.maxPerSector} names a sector, and no near-twin (correlation over ${CAPS.maxCorr}) of a holding. The only rebalancing is the ${CAPS.trimPct}% trim band, because trading more often doesn't pay (docs/rebalancing/report.md). Costs assume ${COSTS.fxPct}% FX each way. Prices are Friday's close, and Monday's open will differ: keep the stop, re-size if it gaps.</p>` +
+    `<p class="rv-note">Do them in this order: sells first (they free up cash), then stop-loss changes, then buys, best first. The number of shares is set so that if a stock falls to its stop-loss you lose about ${budget?.riskPct ?? "—"}% of your account, never more. To spread risk, no stock is more than ${CAPS.maxPositionPct}% of the account, you hold at most ${CAPS.maxPerSector} from one industry, and we skip a stock that moves almost in step with one you own. Prices are Friday's; Monday's will be a little different, which is fine. Keep the same stop-loss price.</p>` +
+    `<details class="rv-note"><summary>The fine print</summary>Each buy risks ${budget?.riskPct ?? "—"}% of your account, scaled 60–100% by score: shares = risk ÷ (buy price − stop-loss). "Moves in step" means a correlation over ${CAPS.maxCorr}. A stock is trimmed only once it grows past ${CAPS.trimPct}% of the account, because trading more often doesn't pay. Costs assume ${COSTS.fxPct}% currency conversion each way. A stock the rules would sell that is a fresh buy the same week is kept, with the new stop-loss, rather than sold and bought back.</details>` +
     `</div>`;
   document.getElementById("od-acct").onchange = (e) => {
     accountId = e.target.value;
@@ -123,13 +124,13 @@ function orderRow(o) {
   const cls = `rv-chip rv-${o.action.toLowerCase()}`;
   const link = `<a href="card.html?t=${encodeURIComponent(o.t)}" style="color:var(--ink)"><span class="ps-tkr">${esc(o.t)}</span></a>`;
   if (o.action === "RESET") {
-    return `<tr><td><span class="rv-chip rv-trail">RESET</span></td><td>${link}</td><td></td><td></td><td></td><td class="r">$${px(o.stopNative)}</td><td></td><td class="wrap dim-note">${esc(o.reason)}</td></tr>`;
+    return `<tr><td><span class="rv-chip rv-trail">${SAY.action.RESET}</span></td><td>${link}</td><td></td><td></td><td></td><td class="r">$${px(o.stopNative)}</td><td></td><td class="wrap dim-note">${esc(o.reason)}</td></tr>`;
   }
   if (o.action === "TRAIL") {
-    return `<tr><td><span class="${cls}">STOP ↑</span></td><td>${link}</td><td></td><td></td><td></td><td class="r">$${px(o.stopNative)}</td><td></td><td class="wrap dim-note">${esc(o.reason)}</td></tr>`;
+    return `<tr><td><span class="${cls}">${SAY.action.TRAIL} ↑</span></td><td>${link}</td><td></td><td></td><td></td><td class="r">$${px(o.stopNative)}</td><td></td><td class="wrap dim-note">${esc(o.reason)}</td></tr>`;
   }
   return (
-    `<tr><td><span class="${cls}">${o.action}</span></td><td>${link}</td>` +
+    `<tr><td><span class="${cls}">${SAY.action[o.action] ?? o.action}</span></td><td>${link}</td>` +
     `<td class="r">${num(o.qty, 2)}</td>` +
     `<td class="r">${o.entryNative != null ? `$${px(o.entryNative)}` : fmtGBP(o.priceGBP)}</td>` +
     `<td class="r">${fmtGBP((o.valueGBP ?? o.qty * o.priceGBP) || 0)}</td>` +
@@ -140,15 +141,15 @@ function orderRow(o) {
 }
 
 function checklist(sc, res) {
-  const L = [`Weekly review — week to ${sc.week}`, ""];
-  if (!res.orders.length) L.push("No orders. Hold cash.");
+  const L = [`Weekly to-do — prices to Friday ${sc.week}`, ""];
+  if (!res.orders.length) L.push("Nothing to do this week. Hold cash.");
   for (const o of res.orders) {
-    if (o.action === "EXIT") L.push(`[ ] SELL ALL ${o.t} (${num(o.qty, 2)}) at the open — ${o.reason}`);
-    else if (o.action === "TRIM") L.push(`[ ] SELL ${num(o.qty, 2)} ${o.t} at the open — ${o.reason}`);
-    else if (o.action === "TRAIL") L.push(`[ ] MOVE STOP ${o.t} to $${px(o.stopNative)}`);
-    else if (o.action === "RESET") L.push(`[ ] KEEP ${o.t}, MOVE STOP to $${px(o.stopNative)} — fresh ${o.setup} this week`);
-    else if (o.action === "BUY") L.push(`[ ] BUY ${num(o.qty, 2)} ${o.t} at the open (~$${px(o.entryNative)}), then STOP at $${px(o.stopNative)} — ${o.reason}`);
+    if (o.action === "EXIT") L.push(`[ ] SELL ALL ${num(o.qty, 2)} shares of ${o.t} at market on Monday. Why: ${o.reason}`);
+    else if (o.action === "TRIM") L.push(`[ ] SELL ${num(o.qty, 2)} shares of ${o.t} at market on Monday. Why: ${o.reason}`);
+    else if (o.action === "TRAIL") L.push(`[ ] ${o.t}: change the stop-loss order to $${px(o.stopNative)}`);
+    else if (o.action === "RESET") L.push(`[ ] KEEP ${o.t}, and change its stop-loss order to $${px(o.stopNative)} (it's a fresh buy again this week)`);
+    else if (o.action === "BUY") L.push(`[ ] BUY ${num(o.qty, 2)} shares of ${o.t} at market on Monday (about $${px(o.entryNative)}), then set a stop-loss order at $${px(o.stopNative)}`);
   }
-  L.push("", "Log every fill on the Trades page so the book stays the source of truth.");
+  L.push("", "Afterwards, record what you actually bought and sold on the Trades page so next week's review is right.");
   return L.join("\n");
 }

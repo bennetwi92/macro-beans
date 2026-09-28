@@ -950,6 +950,10 @@ polygon.sim-pat-failed, polygon.sim-pat-expired, polygon.sim-pat-abandoned{ opac
 .rv-h .rv-h-r{ font-weight:400; letter-spacing:0; text-transform:none; }
 .rv-empty{ padding:22px 12px; color:var(--dim); line-height:1.6; }
 .rv-note{ color:var(--dim); font-size:11px; line-height:1.5; margin:6px 0 0; }
+details.rv-note summary{ cursor:pointer; color:var(--ink); margin:4px 0; }
+.rv-list{ margin:0; padding-left:18px; line-height:1.6; font-size:12px; }
+.rv-list li{ margin:2px 0; }
+.rv-list b{ color:var(--ink); }
 .rv-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .rv-grid3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
 @media (max-width:760px){ .rv-grid2, .rv-grid3{ grid-template-columns:1fr; } }
@@ -1061,7 +1065,7 @@ polygon.sim-pat-failed, polygon.sim-pat-expired, polygon.sim-pat-abandoned{ opac
 .cd-block.na{ color:var(--dim); }
 .cd-block .cd-bl{ font-size:10px; letter-spacing:.05em; }
 .cd-block .cd-bw{ color:var(--dim); font-size:10px; text-align:right; }
-.cd-block .cd-bx{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cd-block .cd-bx{ line-height:1.35; }
 @media (max-width:560px){
   .cd-block{ grid-template-columns:96px 18px 1fr 28px; }
   .cd-block .cd-bar{ display:none; }

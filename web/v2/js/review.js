@@ -11,12 +11,51 @@ import { prepareMarket } from "./sim-market.js";
 import { prepareSeries } from "./strategy.js";
 
 export const STEPS = [
-  { n: 1, key: "tape", label: "TAPE", file: "tape.html", q: "what is the tide?" },
-  { n: 2, key: "shortlist", label: "SHORTLIST", file: "shortlist.html", q: "what qualifies?" },
-  { n: 3, key: "card", label: "CARD", file: "card.html", q: "is this one a trade?" },
-  { n: 4, key: "book", label: "BOOK", file: "book.html", q: "does what I hold still stand?" },
-  { n: 5, key: "orders", label: "ORDERS", file: "orders.html", q: "what do I actually do?" },
+  { n: 1, key: "tape", label: "MARKET", file: "tape.html", q: "is this a good week to buy?" },
+  { n: 2, key: "shortlist", label: "IDEAS", file: "shortlist.html", q: "which stocks look worth buying?" },
+  { n: 3, key: "card", label: "CHECK", file: "card.html", q: "should I buy this one?" },
+  { n: 4, key: "book", label: "MY STOCKS", file: "book.html", q: "should I keep what I own?" },
+  { n: 5, key: "orders", label: "TO DO", file: "orders.html", q: "what exactly do I do on Monday?" },
 ];
+
+/* ---------- plain-English vocabulary ----------
+ *
+ * The rules modules speak in keys (BUY / WATCH / PASS, FULL / HALF /
+ * DEFENSIVE, PULLBACK / BREAKOUT / REVERSAL, Weinstein stages 1-4). The
+ * pages are for someone new to trading, so every key is SHOWN through these
+ * maps and never printed raw. Keys stay as they are: CSS classes, the build
+ * and the ledger use them.
+ */
+export const SAY = {
+  status: { BUY: "BUY", WATCH: "NOT YET", PASS: "SKIP" },
+  statusLong: {
+    BUY: "Worth buying this week",
+    WATCH: "Close, but not yet. Check again next week",
+    PASS: "Skip it. Something important is wrong",
+  },
+  setup: { PULLBACK: "DIP", BREAKOUT: "NEW HIGH", REVERSAL: "TURNAROUND" },
+  setupLong: {
+    PULLBACK: "a rising stock that has dipped and is bouncing back",
+    BREAKOUT: "a stock breaking above its highest price of the last six months",
+    REVERSAL: "a fallen stock that has stopped falling and is turning up",
+  },
+  level: { FULL: "GREEN LIGHT", HALF: "AMBER", DEFENSIVE: "RED LIGHT" },
+  levelLong: {
+    FULL: "Good conditions for buying",
+    HALF: "Mixed conditions, so buy less than usual",
+    DEFENSIVE: "Poor conditions, so buy very little",
+  },
+  trend: { bull: "UP", bear: "DOWN", neutral: "SIDEWAYS" },
+  stage: { 1: "flat", 2: "rising", 3: "stalling", 4: "falling" },
+  index: { SPY: "S&P 500", QQQ: "Nasdaq 100 (tech)", IWM: "Small companies" },
+  // runTrade's exit reasons
+  action: { BUY: "BUY", EXIT: "SELL ALL", TRIM: "SELL SOME", TRAIL: "RAISE STOP", RESET: "KEEP", HOLD: "KEEP" },
+  exit: { stop: "hit its stop-loss", trail: "hit its raised stop-loss", thesis: "uptrend ended", time: "time limit reached", open: "still held" },
+};
+
+/** "+1.4× risk": a result as a multiple of the money that was at risk (R). */
+export const xRisk = (r, dp = 1) =>
+  r == null || !Number.isFinite(r) ? "—" : Math.abs(r) < 0.5 * 10 ** -dp ? "0×" : `${r >= 0 ? "+" : "−"}${Math.abs(r).toFixed(dp)}×`;
 
 /* ---------- loaders ---------- */
 
@@ -66,7 +105,7 @@ export function stepStrip(current, { week = null, next = true } = {}) {
   const nx = next && i >= 0 && i < STEPS.length - 1 ? STEPS[i + 1] : null;
   return (
     `<nav class="rv-steps">${links}` +
-    `<span class="rv-step-q">${STEPS[i]?.q ?? ""}${week ? ` · week to ${week}` : ""}</span>` +
+    `<span class="rv-step-q">${STEPS[i]?.q ?? ""}${week ? ` · prices to Fri ${week}` : ""}</span>` +
     (nx ? `<a class="rv-step-next" href="${nx.file}">NEXT: ${nx.label} →</a>` : "") +
     `</nav>`
   );
@@ -97,7 +136,7 @@ export const updown = (x) => (x == null ? "" : x > 0 ? "up" : x < 0 ? "down" : "
 
 export function statusChip(status) {
   if (!status) return `<span class="rv-chip rv-none">—</span>`;
-  return `<span class="rv-chip rv-${status.toLowerCase()}">${status}</span>`;
+  return `<span class="rv-chip rv-${status.toLowerCase()}">${SAY.status[status] ?? status}</span>`;
 }
 
 export function gradeChip(b, title = "") {
@@ -105,12 +144,15 @@ export function gradeChip(b, title = "") {
   return `<span class="rv-grade rv-g-${b.g}" title="${esc(b.x)}">${b.g}</span>`;
 }
 
+/** A setup key → its short plain name. */
+export const setupName = (k) => (k ? SAY.setup[k] ?? k : "");
+
 /** A budget level → its colour class. */
 export const levelClass = (lv) => (lv === "FULL" ? "rv-full" : lv === "DEFENSIVE" ? "rv-def" : "rv-half");
 
 export function trendChip(t) {
   if (!t) return `<span class="rv-tr rv-tr-na">—</span>`;
-  return `<span class="rv-tr rv-tr-${t}">${t.toUpperCase()}</span>`;
+  return `<span class="rv-tr rv-tr-${t}">${SAY.trend[t] ?? t.toUpperCase()}</span>`;
 }
 
 /** "What changed since last week" for a scorecard row. */
@@ -118,11 +160,11 @@ export function changeNote(row) {
   const p = row.prev;
   if (!row.status) return p?.status === "BUY" ? "was BUY" : "";
   if (!p || !p.status) return "NEW";
-  if (p.status !== row.status) return `was ${p.status}`;
+  if (p.status !== row.status) return `was ${SAY.status[p.status] ?? p.status}`;
   return "";
 }
 
 /** Render a friendly failure into a mount. */
 export function failInto(el, what, err) {
-  el.innerHTML = `<div class="rv-empty">Couldn't load ${esc(what)}. The weekly build may not have run yet.<br><span class="dim-note">${esc(err?.message || err)}</span></div>`;
+  el.innerHTML = `<div class="rv-empty">Couldn't load ${esc(what)}. This week's numbers may not have been built yet. Try again later.<br><span class="dim-note">${esc(err?.message || err)}</span></div>`;
 }

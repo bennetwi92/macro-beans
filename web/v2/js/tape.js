@@ -114,23 +114,23 @@ export function budgetFor({ regime = null, stage2 = null, vix = null } = {}) {
   let level;
   if (regime == null && stage2 == null) {
     level = "HALF";
-    why.push("no market reading — middle budget");
+    why.push("no market data this week, so we stay in the middle");
   } else if (regime === "bear" || (stage2 != null && stage2 < BREADTH_DEFENSIVE)) {
     level = "DEFENSIVE";
-    if (regime === "bear") why.push("SPY weekly trend is BEAR");
-    if (stage2 != null && stage2 < BREADTH_DEFENSIVE) why.push(`only ${stage2.toFixed(0)}% of stocks in Stage 2`);
+    if (regime === "bear") why.push("the S&P 500 is in a downtrend");
+    if (stage2 != null && stage2 < BREADTH_DEFENSIVE) why.push(`only ${stage2.toFixed(0)}% of stocks are rising`);
   } else if (regime === "bull" && (stage2 == null || stage2 >= BREADTH_FULL)) {
     level = "FULL";
-    why.push("SPY weekly trend is BULL");
-    if (stage2 != null) why.push(`${stage2.toFixed(0)}% of stocks in Stage 2`);
+    why.push("the S&P 500 is in an uptrend");
+    if (stage2 != null) why.push(`${stage2.toFixed(0)}% of stocks are rising`);
   } else {
     level = "HALF";
-    if (regime) why.push(`SPY weekly trend is ${regime.toUpperCase()}`);
-    if (stage2 != null) why.push(`${stage2.toFixed(0)}% of stocks in Stage 2`);
+    if (regime) why.push(`the S&P 500 is ${regime === "bull" ? "in an uptrend" : regime === "bear" ? "in a downtrend" : "moving sideways"}`);
+    if (stage2 != null) why.push(`${stage2.toFixed(0)}% of stocks are rising${regime === "bull" ? `, and a green light needs ${BREADTH_FULL}%` : ""}`);
   }
   if (vix != null && vix > VIX_SPIKE && level !== "DEFENSIVE") {
     level = level === "FULL" ? "HALF" : "DEFENSIVE";
-    why.push(`VIX ${vix.toFixed(0)} > ${VIX_SPIKE} — one level down`);
+    why.push(`the fear gauge (VIX) is high at ${vix.toFixed(0)}, so one step more careful`);
   }
   return { ...BUDGETS[level], why };
 }

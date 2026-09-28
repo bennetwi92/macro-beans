@@ -10,11 +10,11 @@
 // library, the trainer, and the trading book's ledgers.
 
 export const PAGES = [
-  { label: "1 Tape",      file: "tape.html",      group: "review" },
-  { label: "2 Shortlist", file: "shortlist.html", group: "review" },
-  { label: "3 Card",      file: "card.html",      group: "review" },
-  { label: "4 Book",      file: "book.html",      group: "review" },
-  { label: "5 Orders",    file: "orders.html",    group: "review" },
+  { label: "1 Market",    file: "tape.html",      group: "review" },
+  { label: "2 Ideas",     file: "shortlist.html", group: "review" },
+  { label: "3 Check",     file: "card.html",      group: "review" },
+  { label: "4 My stocks", file: "book.html",      group: "review" },
+  { label: "5 To do",     file: "orders.html",    group: "review" },
   { label: "Price sheet", file: "price-sheet.html" },
   { label: "Scanner",     file: "scanner.html" },
   { label: "Chart",       file: "chart.html" },

@@ -124,7 +124,7 @@ export function manageHolding(s, entryIso, avgCost) {
       action: broken ? "EXIT" : "HOLD",
       stop: null,
       initialStop: null,
-      reason: broken ? "below the 30-week — Stage 2 is over" : "no strategy stop at this cost — held under the 30-week rule",
+      reason: broken ? "closed below its 30-week average: the uptrend is over" : "no stop-loss for this buy price: kept while it stays above its 30-week average",
       r: null,
       weeks: last - w,
       entryWeek: s.bars[w].d,
@@ -132,12 +132,12 @@ export function manageHolding(s, entryIso, avgCost) {
     };
   }
   if (!t.open) {
-    const labels = { stop: "initial stop breached", trail: "trailing stop breached", thesis: "weekly close below the 30-week", time: `held ${t.weeks} weeks — time exit` };
+    const labels = { stop: "hit its stop-loss", trail: "hit its raised stop-loss", thesis: "closed below its 30-week average: the uptrend is over", time: `held ${t.weeks} weeks: time limit reached` };
     return {
       action: "EXIT",
       stop: t.stop,
       initialStop: t.initialStop,
-      reason: `${labels[t.reason] || t.reason} (${s.bars[t.exitIdx].d})`,
+      reason: `${labels[t.reason] || t.reason} (week of ${s.bars[t.exitIdx].d})`,
       r: t.r,
       weeks: t.weeks,
       entryWeek: s.bars[w].d,
@@ -149,7 +149,7 @@ export function manageHolding(s, entryIso, avgCost) {
     stop: t.stop,
     prevStop,
     initialStop: t.initialStop,
-    reason: t.stop > t.initialStop ? "trailing" : "initial stop",
+    reason: t.stop > t.initialStop ? "stop-loss raised as it gained" : "original stop-loss",
     r: t.r,
     weeks: t.weeks,
     entryWeek: s.bars[w].d,
@@ -197,11 +197,11 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
         stopNative: c.stop,
         setup: c.setup,
         total: c.total,
-        reason: `${h.reason} — but a fresh ${c.setup} BUY this week: keep it under the new trade's stop`,
+        reason: `${h.reason}, but it's a fresh buy again this week: keep the shares with the new stop-loss`,
       });
       let qty = h.qty;
       if (qty > allowed * 1.25 && (qty - allowed) * h.priceGBP >= caps.minOrderGBP) {
-        orders.push({ action: "TRIM", t: h.t, qty: qty - allowed, priceGBP: h.priceGBP, reason: "re-sized to the new trade's risk" });
+        orders.push({ action: "TRIM", t: h.t, qty: qty - allowed, priceGBP: h.priceGBP, reason: "cut back to the size the new trade allows" });
         cash += (qty - allowed) * h.priceGBP * (1 - COSTS.fxPct / 100);
         qty = allowed;
       }
@@ -215,7 +215,7 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
       continue;
     }
     if (h.newStopGBP != null && h.newStopGBP > h.stopGBP + 1e-9) {
-      orders.push({ action: "TRAIL", t: h.t, stopGBP: h.newStopGBP, stopNative: h.newStopNative, reason: "stop ratcheted by the trail rule" });
+      orders.push({ action: "TRAIL", t: h.t, stopGBP: h.newStopGBP, stopNative: h.newStopNative, reason: "the price has risen, so raise the stop-loss to protect the gain" });
       h.stopGBP = h.newStopGBP;
     }
     kept.push(h);
@@ -228,7 +228,7 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
       const targetQty = ((caps.maxPositionPct / 100) * equityGBP) / h.priceGBP;
       const sell = h.qty - targetQty;
       if (sell * h.priceGBP >= caps.minOrderGBP) {
-        orders.push({ action: "TRIM", t: h.t, qty: sell, priceGBP: h.priceGBP, reason: `${((value / equityGBP) * 100).toFixed(0)}% of equity > ${caps.trimPct}% band` });
+        orders.push({ action: "TRIM", t: h.t, qty: sell, priceGBP: h.priceGBP, reason: `now ${((value / equityGBP) * 100).toFixed(0)}% of your account, over the ${caps.trimPct}% limit: sell some to spread the risk` });
         h.qty = targetQty;
         cash += sell * h.priceGBP * (1 - COSTS.fxPct / 100);
       }
@@ -246,19 +246,19 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
     if (reset.has(c.t)) continue; // already answered by its RESET order
     const skip = (why) => skipped.push({ t: c.t, total: c.total, reason: why });
     if (book.some((b) => b.t === c.t)) {
-      skip("already held");
+      skip("you already own it");
       continue;
     }
     if (added >= budget.maxNew) {
-      skip(`${budget.level} budget allows ${budget.maxNew} new ${budget.maxNew === 1 ? "position" : "positions"} a week`);
+      skip(`this week's limit is ${budget.maxNew} new ${budget.maxNew === 1 ? "stock" : "stocks"} (${budget.level} week)`);
       continue;
     }
     if (book.length >= caps.maxPositions) {
-      skip(`book full (${caps.maxPositions} positions)`);
+      skip(`you already hold the maximum of ${caps.maxPositions} stocks`);
       continue;
     }
     if (c.sector && book.filter((b) => b.sector === c.sector).length >= caps.maxPerSector) {
-      skip(`${caps.maxPerSector} ${c.sector} names already`);
+      skip(`you already own ${caps.maxPerSector} ${c.sector} names`);
       continue;
     }
     const twin = book
@@ -266,19 +266,19 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
       .filter((x) => x.r != null && x.r > caps.maxCorr)
       .sort((a, b) => b.r - a.r)[0];
     if (twin) {
-      skip(`${twin.r.toFixed(2)} correlated with ${twin.t}`);
+      skip(`moves almost in step with ${twin.t}, which you own (correlated with ${twin.t})`);
       continue;
     }
     const entryGBP = toGBP(c.entry);
     const stopGBP = toGBP(c.stop);
     if (!(entryGBP > stopGBP) || !(stopGBP > 0)) {
-      skip("no valid stop");
+      skip("no sensible stop-loss price");
       continue;
     }
     let riskGBP = equityGBP * (budget.riskPct / 100) * riskShare(c.total);
     if (heat + riskGBP > heatCap) riskGBP = heatCap - heat;
     if (riskGBP <= 0) {
-      skip(`heat cap ${budget.heatMax}% reached`);
+      skip(`total risk limit of ${budget.heatMax}% reached`);
       continue;
     }
     let qty = riskGBP / (entryGBP - stopGBP);
@@ -287,7 +287,7 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
     const spend = cash / (1 + COSTS.fxPct / 100);
     if (qty * entryGBP > spend) qty = spend / entryGBP;
     if (qty * entryGBP < caps.minOrderGBP) {
-      skip(cash < caps.minOrderGBP ? "no cash" : "position would be under the minimum order");
+      skip(cash < caps.minOrderGBP ? "not enough cash" : "would be too small to be worth buying");
       continue;
     }
     const cost = qty * entryGBP * (1 + COSTS.fxPct / 100);
@@ -304,7 +304,7 @@ export function construct({ equityGBP, cashGBP, holdings = [], candidates = [], 
       valueGBP: qty * entryGBP,
       total: c.total,
       setup: c.setup,
-      reason: `${c.setup ?? "BUY"} ${c.total?.toFixed(0) ?? "—"} · risk ${((risk / equityGBP) * 100).toFixed(2)}% of equity`,
+      reason: `score ${c.total?.toFixed(0) ?? "—"} · puts ${((risk / equityGBP) * 100).toFixed(2)}% of your account at risk`,
     });
     cash -= cost;
     heat += risk;

@@ -140,7 +140,7 @@ test("card: reward:risk under MIN_RR is a PASS, whatever the score", () => {
       const c = scoreCard({ t: "X", s, w, market: null, events: [], priors: null, earnings: null, fundamentals: null });
       if (c.setup && c.plan.rr != null && c.plan.rr < MIN_RR) {
         assert.equal(c.status, "PASS");
-        assert.ok(c.vetoes.some((v) => v.startsWith("R:R")));
+        assert.ok(c.vetoes.some((v) => v.startsWith("too little room to rise")));
         return;
       }
     }
