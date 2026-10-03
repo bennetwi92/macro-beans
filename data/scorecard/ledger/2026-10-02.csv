@@ -1,0 +1,82 @@
+week,t,sector,setup,status,total,market,stage,rs,structure,pattern,momentum,analogue,earnings,fundamental,close,stop,rr,next_earnings,budget,why
+2026-10-02,A,Health Care,BREAKOUT,BUY,88.6,1,0.933,0.93,1,,0.767,0.679,0.859,0.488,167.78,157.6,6,2026-11-25,DEFENSIVE,broke above its 6-month high last week and is still close to it
+2026-10-02,ABNB,Consumer Discretionary,PULLBACK,BUY,72.8,0.8,0.788,0.612,0.875,,0.393,,0.826,0.539,162.43,150.73,6,2026-11-05,DEFENSIVE,"dipped, then bounced back up this week"
+2026-10-02,ACN,Information Technology,REVERSAL,PASS,58.1,1,0.929,0.096,0.057,,1,0.375,0.667,0.508,198.9,172.1,1.14,2026-12-17,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-10-02,ADM,Consumer Staples,PULLBACK,WATCH,61.1,0.8,0.764,0.463,0.348,0.82,0.418,0.461,0.838,0.475,80.45,75.32,1.53,2026-11-03,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,AIZ,Financials,PULLBACK,BUY,61.7,0.8,0.862,0.594,0.185,0.1,0.451,0.309,0.838,0.496,267.32,255.78,1.62,2026-11-03,DEFENSIVE,"dipped, then bounced back up this week"
+2026-10-02,ALLE,Industrials,REVERSAL,WATCH,71.1,0.571,0.947,0.325,0.842,,1,,0.753,0.616,154.21,146.12,3.1,2026-10-22,DEFENSIVE,has stopped falling: wait for it to start climbing
+2026-10-02,AMD,Information Technology,BREAKOUT,BUY,84.1,1,0.75,0.976,1,,0.767,1,0.608,0.441,633.91,573.9,6,2026-11-03,DEFENSIVE,broke above its 6-month high last week and is still close to it
+2026-10-02,AME,Industrials,BREAKOUT,WATCH,68.4,0.571,0.704,0.64,1,0.864,0.767,0.673,0.663,0.572,251.93,240.45,6,2026-10-29,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,ANET,Information Technology,BREAKOUT,WATCH,88.2,1,0.692,0.953,1,,0.767,1,0.838,0.559,207.35,188.94,6,2026-11-03,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,APH,Information Technology,BREAKOUT,WATCH,86.9,1,0.714,0.903,1,,0.767,1,0.821,0.521,86.96,79.91,6,2026-10-28,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,BEN,Financials,PULLBACK,PASS,66.6,0.8,0.83,0.872,0.223,,0.265,1,0.771,0.498,32.81,31.04,1.33,2026-11-06,DEFENSIVE,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-10-02,BNY,Financials,PULLBACK,WATCH,69.9,0.8,0.809,0.607,0.522,,0.57,1,0.783,0.471,145.4,138.44,2.74,2026-10-15,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,CNC,Health Care,PULLBACK,PASS,68.4,1,0.854,0.873,0.125,0.1,0.35,0.575,0.819,0.395,62.99,58.18,0.6,2026-10-27,DEFENSIVE,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-10-02,COIN,Financials,REVERSAL,PASS,45.9,0.8,1,0.196,0.147,,1,,0.176,0.241,183,158.22,1.37,2026-10-29,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead; weaker business than most of its industry: a turnaround needs a strong company
+2026-10-02,COP,Energy,PULLBACK,WATCH,69.9,1,0.769,0.26,0.875,,0.36,0.439,0.843,0.585,126.75,119.1,6,2026-11-05,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,CPAY,Financials,PULLBACK,PASS,59.6,0.8,0.791,0.8,0.133,,0.263,0.344,0.715,0.535,394.6,372.37,1.44,2026-11-04,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,CRL,Health Care,BREAKOUT,WATCH,87.1,1,1,0.942,1,0.784,0.767,0.493,0.841,0.251,290.19,270.39,6,2026-11-04,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,CSCO,Information Technology,PULLBACK,BUY,79.1,1,0.871,0.761,0.75,,0.682,0.847,0.658,0.486,112.2,105.39,6,2026-11-12,DEFENSIVE,"dipped, then bounced back up this week"
+2026-10-02,CSX,Industrials,PULLBACK,BUY,61.1,0.571,0.795,0.529,0.75,,0.471,0.331,0.627,0.551,47.43,45.37,6,2026-10-21,DEFENSIVE,"dipped, then bounced back up this week"
+2026-10-02,CTAS,Industrials,REVERSAL,PASS,56.9,0.571,0.997,0.484,0.149,,1,0.305,0.511,0.606,193.02,183.44,1.37,2026-12-17,DEFENSIVE,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead
+2026-10-02,DDOG,Information Technology,BREAKOUT,WATCH,83.8,1,0.713,0.929,1,0.864,0.767,0.378,0.843,0.336,277.22,247.64,6,2026-11-05,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,DGX,Health Care,PULLBACK,WATCH,71.7,1,0.785,0.597,0.75,,0.251,0.558,0.805,0.465,233.33,221.45,6,2026-10-22,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,DOC,Real Estate,PULLBACK,PASS,61.1,0.571,0.818,0.5,0.25,,0.612,1,0.838,0.492,19.49,18.51,0.93,2026-10-22,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,DXCM,Health Care,PULLBACK,PASS,67.2,1,0.775,0.782,0.25,,0.297,0.371,0.824,0.589,85.36,79.78,0.6,2026-10-29,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,EBAY,Consumer Discretionary,PULLBACK,WATCH,63.1,0.8,0.789,0.558,0.459,,0.5,0.269,0.713,0.599,106.4,99.45,1.7,2026-11-04,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,EG,Financials,PULLBACK,PASS,56.1,0.8,0.77,0.538,0.25,,0.357,0.43,0.57,0.492,368.27,352.87,0.98,2026-10-28,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,EMR,Industrials,BREAKOUT,WATCH,67.5,0.571,0.696,0.763,1,,0.867,0.224,0.566,0.545,161.61,152.29,6,2026-11-04,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,EOG,Energy,PULLBACK,PASS,58.8,1,0.761,0.289,0.25,,0.447,0.463,0.571,0.785,141.38,132.85,0.73,2026-11-05,DEFENSIVE,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-10-02,FAST,Industrials,BREAKOUT,WATCH,62.6,0.571,0.715,0.549,1,,0.767,0.39,0.535,0.538,50.75,48.3,6,2026-10-14,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,GDDY,Information Technology,REVERSAL,PASS,62.1,1,1,0.295,0,,1,,0.76,0.481,97.21,86.91,0.85,2026-10-29,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-10-02,GL,Financials,PULLBACK,WATCH,63.7,0.8,0.804,0.534,0.628,,0.558,0.669,0.441,0.544,165.68,157.81,3.09,2026-10-21,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,GPC,Consumer Discretionary,REVERSAL,PASS,55.5,0.8,1,0.535,0.115,,1,0.227,0.604,0.312,127.24,119.59,1.29,2026-10-20,DEFENSIVE,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead; weaker business than most of its industry: a turnaround needs a strong company
+2026-10-02,GRMN,Consumer Discretionary,PULLBACK,WATCH,70.9,0.8,0.775,0.579,0.875,,0.324,0.573,0.821,0.602,281.16,264.08,6,2026-10-28,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,HCA,Health Care,REVERSAL,PASS,55.4,1,0.808,0.094,0.046,0.1,1,,0.538,0.492,426.69,398.32,1.12,2026-10-23,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-10-02,HST,Real Estate,PULLBACK,BUY,65.8,0.571,0.804,0.582,0.75,,0.744,0.425,0.65,0.611,22.56,21.54,6,2026-11-04,DEFENSIVE,"dipped, then bounced back up this week"
+2026-10-02,IBKR,Financials,PULLBACK,PASS,65.8,0.8,0.779,0.754,0.328,,0.456,0.781,0.739,0.461,88.3,81.67,1.47,2026-10-15,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,INCY,Health Care,PULLBACK,WATCH,72.5,1,0.774,0.596,0.557,,0.48,0.472,0.819,0.829,115.3,107.2,2.02,2026-10-27,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,IT,Information Technology,REVERSAL,BUY,69.2,1,1,0.272,0.47,,1,0.399,0.838,0.493,184.8,165.24,2.18,2026-11-03,DEFENSIVE,has stopped falling and is climbing again
+2026-10-02,IVZ,Financials,PULLBACK,WATCH,70.7,0.8,0.787,0.73,0.938,0.8,0.309,0.24,0.729,0.529,30.66,28.7,6,2026-10-27,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,J,Industrials,REVERSAL,PASS,51.7,0.571,1,0.327,0.217,,1,0.545,0.527,0.3,138.06,129.84,1.54,2026-11-19,DEFENSIVE,has stopped falling: wait for it to start climbing; weaker business than most of its industry: a turnaround needs a strong company
+2026-10-02,JCI,Industrials,BREAKOUT,WATCH,69.6,0.571,0.697,0.665,1,0.8,0.767,0.487,0.79,0.395,156.24,146.77,5.62,2026-10-27,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,JNJ,Health Care,PULLBACK,PASS,58.3,1,0.7,0.405,0.236,,0.436,0.631,0.545,0.505,256.03,243.27,1.16,2026-10-13,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,JPM,Financials,PULLBACK,WATCH,71.5,0.8,0.804,0.535,1,,0.571,0.354,0.664,0.591,332.38,318,6,2026-10-13,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,KEYS,Information Technology,BREAKOUT,BUY,87.1,1,0.679,0.883,1,0.82,0.767,0.974,0.876,0.511,384.64,355.32,5.69,2026-11-24,DEFENSIVE,closed above its 6-month high this week
+2026-10-02,KO,Consumer Staples,PULLBACK,PASS,55.4,0.8,0.793,0.517,0.127,,0.323,0.508,0.629,0.522,85.65,82.53,1.42,2026-10-20,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,LH,Health Care,PULLBACK,WATCH,71,1,0.746,0.515,0.938,,0.336,0.514,0.651,0.461,308.49,292.28,6,2026-10-27,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,LITE,Information Technology,BREAKOUT,WATCH,89.3,1,0.867,0.992,1,0.82,0.767,1,0.814,0.364,1085.42,881.22,4.48,2026-11-05,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,MCK,Health Care,BREAKOUT,WATCH,68.8,1,0.618,0.366,1,,0.767,0.736,0.641,0.227,902.28,847.28,5.74,2026-11-04,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,META,Communication Services,BREAKOUT,PASS,54.9,0.8,0.691,0.817,0.043,,0.767,0.221,0.179,0.564,728.08,671.86,1.11,2026-10-28,DEFENSIVE,broke above its 6-month high last week and is still close to it; too little room to rise: a past high is close overhead
+2026-10-02,MRNA,Health Care,BREAKOUT,BUY,77.7,1,0.75,0.879,1,,0.5,,0.642,0.188,190.01,169.4,6,2026-11-05,DEFENSIVE,broke above its 6-month high last week and is still close to it
+2026-10-02,MTD,Health Care,BREAKOUT,BUY,75.7,1,0.693,0.624,1,,0.767,0.521,0.697,0.408,1486.19,1393.51,6,2026-11-05,DEFENSIVE,broke above its 6-month high last week and is still close to it
+2026-10-02,NDSN,Industrials,BREAKOUT,WATCH,71.8,0.571,0.873,0.767,1,,0.767,0.396,0.691,0.562,333.54,319.1,6,2026-12-09,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,NOW,Information Technology,REVERSAL,PASS,61.6,1,1,0.462,0.181,,1,,0.653,0.321,134.38,120.38,1.45,2026-10-28,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead; weaker business than most of its industry: a turnaround needs a strong company
+2026-10-02,NTAP,Information Technology,BREAKOUT,BUY,89.7,1,0.75,0.968,1,,0.733,1,,0.51,226.27,199.74,3.69,2026-12-01,DEFENSIVE,closed above its 6-month high this week
+2026-10-02,NTRS,Financials,PULLBACK,WATCH,60.7,0.8,0.854,0.615,0.36,,0.554,1,0.248,0.601,171.4,162.88,2.2,2026-10-21,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,NUE,Materials,PULLBACK,WATCH,75.8,0.8,0.847,0.811,0.875,,0.454,0.663,0.719,0.636,240.39,223.21,6,2026-10-26,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,NVDA,Information Technology,BREAKOUT,WATCH,84.8,1,0.885,0.899,1,0.1,0.767,0.364,0.745,0.708,233.95,218.22,6,2026-11-17,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,NWSA,Communication Services,PULLBACK,PASS,60.5,0.8,0.811,0.539,0.25,,0.387,0.361,0.841,0.442,28.69,27.11,0.92,2026-11-05,DEFENSIVE,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-10-02,OXY,Energy,PULLBACK,PASS,57.6,1,0.75,0.225,0.069,0.82,0.412,0.437,0.841,0.6,58.08,54.22,1.23,2026-11-09,DEFENSIVE,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-10-02,PANW,Information Technology,BREAKOUT,BUY,82.3,1,0.75,0.98,1,,0.767,0.429,0.68,0.363,403.24,366.94,6,2026-11-19,DEFENSIVE,closed above its 6-month high this week
+2026-10-02,PFG,Financials,PULLBACK,WATCH,69.8,0.8,0.859,0.705,0.875,,0.28,0.364,0.723,0.344,111.96,106.62,6,2026-10-26,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,PLTR,Information Technology,BREAKOUT,BUY,84.4,1,0.87,0.702,1,,0.767,,0.835,0.623,188.75,171.63,6,2026-11-02,DEFENSIVE,broke above its 6-month high last week and is still close to it
+2026-10-02,PRU,Financials,PULLBACK,WATCH,73.4,0.8,0.816,0.577,1,,0.53,0.286,0.838,0.447,112.6,107.16,6,2026-10-28,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,PTC,Information Technology,REVERSAL,PASS,56.6,1,0.91,0.087,0,0.82,1,0.605,0.532,0.532,144.03,131.78,0.56,2026-11-11,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-10-02,ROST,Consumer Discretionary,PULLBACK,WATCH,66.9,0.8,0.758,0.387,0.75,,0.489,0.341,0.882,0.528,228.54,216.48,6,2026-11-19,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,SMCI,Information Technology,REVERSAL,PASS,68,1,1,0.658,0,,1,0.442,0.857,0.566,43.69,37.85,0.72,2026-11-03,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-10-02,STLD,Materials,PULLBACK,WATCH,67.9,0.8,0.768,0.618,0.938,0.864,0.51,0.252,0.517,0.584,231.99,213.83,6,2026-10-19,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,STT,Financials,PULLBACK,WATCH,70.3,0.8,0.955,0.851,0.315,,0.339,1,0.763,0.52,175.96,167.06,2.05,2026-10-14,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,STX,Information Technology,PULLBACK,WATCH,75.3,1,0.757,0.657,0.938,,0.383,0.201,0.819,0.585,848.99,722.85,6,2026-10-27,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,TER,Information Technology,BREAKOUT,WATCH,82.7,1,0.718,0.894,1,0.1,0.767,0.135,0.819,0.58,449.04,383.49,4.8,2026-10-21,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,TRGP,Energy,PULLBACK,BUY,72.8,1,0.806,0.484,0.75,0.864,0.321,0.95,0.843,0.315,281.74,265.12,6,2026-11-05,DEFENSIVE,"dipped, then bounced back up this week"
+2026-10-02,TRV,Financials,PULLBACK,WATCH,69.4,0.8,0.853,0.641,0.875,,0.255,0.077,0.788,0.624,360.38,344.71,6,2026-10-16,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,UHS,Health Care,REVERSAL,PASS,55.3,1,0.831,0.022,0.154,,1,0.207,0.486,0.556,175.72,163.48,1.39,2026-10-26,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-10-02,UNH,Health Care,PULLBACK,PASS,70.1,1,0.85,0.734,0.312,0.1,0.638,0.279,0.786,0.411,371.9,350.81,1.41,2026-10-13,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,V,Financials,PULLBACK,PASS,61.5,0.8,0.819,0.62,0.25,,0.359,1,0.588,0.551,360.66,346.89,0.87,2026-10-27,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,VLTO,Industrials,REVERSAL,PASS,58.7,0.571,1,0.421,0,,1,,0.819,0.536,94.68,90.2,0.85,2026-10-21,DEFENSIVE,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead
+2026-10-02,VRSN,Information Technology,PULLBACK,PASS,62.7,1,0.841,0.541,0.25,0.832,0.389,0.731,0.534,0.537,288.32,271.79,0.88,2026-10-22,DEFENSIVE,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-10-02,VTRS,Health Care,BREAKOUT,WATCH,80.9,1,0.65,0.823,1,,0.867,0,0.843,0.478,17.6,16.56,6,2026-11-05,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-10-02,WELL,Real Estate,PULLBACK,WATCH,54.6,0.571,0.756,0.501,0.875,,0.444,0.422,0.184,0.379,227.71,216.62,6,2026-10-26,DEFENSIVE,dipping: wait for a week that closes higher
+2026-10-02,XYZ,Financials,PULLBACK,PASS,61.9,0.8,0.787,0.64,0.188,,0.595,0.367,0.841,0.246,74.33,68.1,0.6,2026-11-03,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-10-02,ZBRA,Information Technology,BREAKOUT,WATCH,87.6,1,0.965,0.964,1,,0.767,0.372,0.838,0.477,375.86,350.66,6,2026-11-03,DEFENSIVE,just under its 6-month high: buy if it closes above
