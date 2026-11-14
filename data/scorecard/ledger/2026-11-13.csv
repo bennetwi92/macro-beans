@@ -1,0 +1,76 @@
+week,t,sector,setup,status,total,market,stage,rs,structure,pattern,momentum,analogue,earnings,fundamental,close,stop,rr,next_earnings,budget,why
+2026-11-13,ABNB,Consumer Discretionary,BREAKOUT,WATCH,83.2,0.8,0.695,0.925,1,,0.767,0.314,0.978,0.581,186.78,173.99,6,2027-02-11,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,ABT,Health Care,REVERSAL,PASS,63.5,1,1,0.783,0.173,,1,0.35,0.501,0.441,108.52,102.29,1.43,2027-01-28,HALF,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead
+2026-11-13,ACGL,Financials,BREAKOUT,BUY,83.9,0.8,0.863,0.861,1,,0.767,0.494,0.953,0.569,109.61,104.94,6,2027-02-08,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,AEE,Utilities,BREAKOUT,WATCH,72.6,0.8,0.671,0.717,1,,0.767,0.046,0.763,0.472,114.77,110.6,6,2027-02-10,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,AES,Utilities,BREAKOUT,WATCH,77.4,0.8,0.976,0.558,1,,0.767,0.22,0.973,0.457,14.91,14.73,6,2027-03-01,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,AIZ,Financials,BREAKOUT,BUY,84,0.8,0.75,0.983,1,,0.633,0.517,0.973,0.495,322.11,308.79,5.97,2027-02-09,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,ANET,Information Technology,BREAKOUT,PASS,73.4,0.571,0.716,0.877,0,,1,1,0.973,0.559,197.29,175.09,0.85,2027-02-09,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,ATO,Utilities,BREAKOUT,WATCH,61.8,0.8,0.596,0.534,0.42,,0.533,0.857,0.632,0.55,176.3,170.02,2.05,2027-02-03,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,BEN,Financials,BREAKOUT,WATCH,85.3,0.8,0.961,0.859,1,,0.767,0.532,0.981,0.514,36.02,34.11,6,2027-01-29,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,CBOE,Financials,BREAKOUT,BUY,79.2,0.8,0.87,0.764,1,,0.767,0.691,0.761,0.578,375.42,349.03,6,2027-02-05,HALF,closed above its 6-month high this week
+2026-11-13,CCL,Consumer Discretionary,BREAKOUT,PASS,65.3,0.8,0.688,0.73,0.09,,0.767,0.446,0.721,0.526,29.23,26.95,1.22,2026-12-18,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,CEG,Utilities,REVERSAL,PASS,65.3,0.8,0.95,0.224,0,,1,,0.989,0.673,280.2,246.99,0.83,2027-02-24,HALF,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead
+2026-11-13,CLX,Consumer Staples,BREAKOUT,BUY,77.2,1,0.634,0.827,0.263,,0.767,0.408,0.97,0.507,109.46,100.29,1.66,2027-02-02,HALF,closed above its 6-month high this week
+2026-11-13,COP,Energy,PULLBACK,BUY,76.4,1,0.761,0.896,0.75,,0.255,0.438,0.849,0.56,142.28,131.11,4.95,2027-02-04,HALF,"dipped, then bounced back up this week"
+2026-11-13,COST,Consumer Staples,BREAKOUT,BUY,77.4,1,0.694,0.817,1,,0.767,0.398,0.624,0.404,1106.21,1045.72,4.47,2026-12-10,HALF,closed above its 6-month high this week
+2026-11-13,CPAY,Financials,BREAKOUT,BUY,79.5,0.8,0.736,0.952,1,0.8,0.767,0.379,0.722,0.628,462.22,437.45,6,2027-02-03,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,CRM,Information Technology,PULLBACK,BUY,63.4,0.571,0.768,0.751,0.366,,0.519,0.821,0.783,0.534,217.84,198.06,1.8,2026-12-02,HALF,"dipped, then bounced back up this week"
+2026-11-13,CRWD,Information Technology,PULLBACK,WATCH,64,0.571,0.888,0.719,0.75,,0.401,0.308,0.681,0.283,226.61,199.22,6,2026-12-01,HALF,dipping: wait for a week that closes higher
+2026-11-13,CSX,Industrials,BREAKOUT,WATCH,74,0.571,0.469,0.877,1,0.1,0.767,0.681,0.817,0.587,52.05,49.15,4.89,2027-01-28,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,CTSH,Information Technology,REVERSAL,BUY,61.6,0.571,1,0.65,0.241,,1,0.678,0.58,0.543,63.01,57.2,1.6,2027-02-03,HALF,has stopped falling and is climbing again
+2026-11-13,CVX,Energy,PULLBACK,BUY,75.9,1,0.784,0.879,0.75,,0.25,0.202,0.891,0.57,219.89,206,4.97,2027-01-29,HALF,"dipped, then bounced back up this week"
+2026-11-13,DXCM,Health Care,PULLBACK,PASS,74.1,1,0.781,0.867,0.25,,0.779,0.37,0.881,0.546,83.33,77.07,0.92,2027-02-11,HALF,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-11-13,EFX,Industrials,BREAKOUT,PASS,54.1,0.571,0.67,0.623,0,,0.533,0.6,0.623,0.543,188.12,172.64,0.53,2027-02-03,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,ERIE,Financials,BREAKOUT,PASS,69.6,0.8,0.694,0.902,0,,0.767,0.932,0.705,0.437,274.73,254.76,0.93,2027-02-22,HALF,broke above its 6-month high last week and is still close to it; too little room to rise: a past high is close overhead
+2026-11-13,EXC,Utilities,BREAKOUT,PASS,63.5,0.8,0.628,0.667,0,,0.533,0.184,0.962,0.48,46.25,44.29,0.92,2027-02-11,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,EXR,Real Estate,BREAKOUT,BUY,74,0.8,0.887,0.802,1,,0.767,0.659,0.465,0.568,158.5,151.6,6,2027-02-18,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,FERG,Industrials,BREAKOUT,PASS,56.9,0.571,0.651,0.689,0,,0.867,0.139,0.715,0.314,256.47,240.63,0.69,2027-03-01,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,FOX,Communication Services,BREAKOUT,WATCH,72.9,0.571,0.696,0.542,1,,0.767,0.704,0.97,0.612,61.11,57.12,6,2027-02-04,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,FOXA,Communication Services,BREAKOUT,WATCH,75.8,0.571,0.699,0.556,1,0.82,1,,0.97,0.607,68.42,63.77,6,2027-02-04,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,GEHC,Health Care,REVERSAL,PASS,70.1,1,1,0.902,0,,0.8,,0.956,0.514,83.02,78.09,0.63,2027-02-03,HALF,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-13,GEN,Information Technology,BREAKOUT,WATCH,74.6,0.571,0.938,0.947,1,,0.767,0.245,0.635,0.643,30.4,27.97,6,2027-02-04,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,GPC,Consumer Discretionary,PULLBACK,PASS,60.4,0.8,0.754,0.782,0.25,,0.565,0.284,0.571,0.39,123.34,115.67,0.92,2027-02-16,HALF,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-13,GRMN,Consumer Discretionary,PULLBACK,PASS,66,0.8,0.742,0.794,0.188,,0.393,0.571,0.956,0.608,283.03,263.94,0.76,2027-02-17,HALF,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-13,GWW,Industrials,BREAKOUT,BUY,80.2,0.571,0.947,0.954,1,,0.867,0.367,0.858,0.506,1489.3,1422.77,6,2027-02-02,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,HCA,Health Care,REVERSAL,BUY,71,1,1,0.787,0.285,,0.8,,0.906,0.437,499.05,468.27,1.71,2027-01-26,HALF,has stopped falling and is climbing again
+2026-11-13,HPQ,Information Technology,PULLBACK,PASS,60.2,0.571,0.818,0.747,0.25,0.864,0.458,0.738,0.783,0.314,29.36,26.25,0.87,2026-11-24,HALF,"earnings report due 2026-11-24: wait until after it, as the price can jump either way; too little room to rise: a past high is close overhead"
+2026-11-13,HUM,Health Care,BREAKOUT,WATCH,89.7,1,0.75,0.981,1,,1,0.211,0.981,0.374,450,417.58,6,2027-02-10,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,ICE,Financials,REVERSAL,BUY,74.2,0.8,1,0.845,1,0.82,0.8,0.433,0.615,0.468,178.51,169.9,6,2027-02-04,HALF,has stopped falling and is climbing again
+2026-11-13,IDXX,Health Care,REVERSAL,BUY,86.1,1,1,0.886,1,,0.8,0.558,0.875,0.665,704.23,660.79,6,2027-02-01,HALF,has stopped falling and is climbing again
+2026-11-13,IEX,Industrials,BREAKOUT,WATCH,70.5,0.571,0.908,0.801,1,0.1,0.767,0.021,0.681,0.51,237.63,226.45,6,2027-02-03,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,INCY,Health Care,PULLBACK,PASS,74.8,1,0.792,0.847,0.356,,0.645,0.47,0.818,0.763,120.97,113.05,1.35,2027-02-09,HALF,"dipped, then bounced back up this week; too little room to rise: a past high is close overhead"
+2026-11-13,ISRG,Health Care,REVERSAL,PASS,68.3,1,0.982,0.391,0,,1,0.709,0.934,0.601,443.59,411.81,0.83,2027-01-21,HALF,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-13,JPM,Financials,PULLBACK,BUY,67.8,0.8,0.776,0.822,0.75,,0.677,0.352,0.366,0.511,346.19,331.35,6,2027-01-14,HALF,"dipped, then bounced back up this week"
+2026-11-13,MAR,Consumer Discretionary,BREAKOUT,BUY,82.8,0.8,0.906,0.928,1,,0.767,0.607,0.78,0.569,423.16,403.78,6,2027-02-09,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,MPC,Energy,PULLBACK,BUY,75.6,1,0.897,0.786,0.75,,0.235,0.72,0.668,0.618,414.65,370.04,4.87,2027-02-02,HALF,"dipped, then bounced back up this week"
+2026-11-13,MRK,Health Care,BREAKOUT,PASS,77.6,1,0.684,0.93,0,0.1,0.767,0.572,0.959,0.496,147.76,139.41,0.81,2027-02-02,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,NCLH,Consumer Discretionary,REVERSAL,PASS,61.9,0.8,0.925,0.404,0.133,,1,0.432,0.959,0.402,17.96,16.21,1.33,2027-03-01,HALF,has stopped falling and is climbing again; too little room to rise: a past high is close overhead; weaker business than most of its industry: a turnaround needs a strong company
+2026-11-13,NDSN,Industrials,BREAKOUT,PASS,62.3,0.571,0.901,0.842,0,,0.767,0.396,0.633,0.552,324.74,308.75,0.84,2026-12-09,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,NUE,Materials,PULLBACK,WATCH,69.2,0.8,0.842,0.624,0.875,,0.42,0.646,0.478,0.705,251.73,232.68,6,2027-01-25,HALF,dipping: wait for a week that closes higher
+2026-11-13,ORLY,Consumer Discretionary,REVERSAL,PASS,62.9,0.8,0.977,0.542,0,0.82,1,0.758,0.713,0.563,92.19,87.49,0.93,2027-02-10,HALF,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-13,PFG,Financials,PULLBACK,WATCH,67.6,0.8,0.829,0.8,1,,0.598,0.363,0.113,0.525,113.55,107.99,6,2027-02-08,HALF,dipping: wait for a week that closes higher
+2026-11-13,PLTR,Information Technology,REVERSAL,PASS,63.2,0.571,1,0.713,0.035,,0.65,,0.895,0.694,167.99,148.78,1.09,2027-02-01,HALF,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead
+2026-11-13,PNW,Utilities,BREAKOUT,WATCH,74.9,0.8,0.696,0.746,1,,0.867,0.605,0.677,0.365,107,102.67,6,2027-02-25,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,PPL,Utilities,BREAKOUT,PASS,54.2,0.8,0.599,0.535,0,,0.5,0.351,0.59,0.6,35.67,34.2,0.68,2027-02-19,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,PSA,Real Estate,BREAKOUT,BUY,67.5,0.8,0.891,0.741,1,,0.867,0.705,0.132,0.589,332.59,317.45,6,2027-02-11,HALF,broke above its 6-month high last week and is still close to it
+2026-11-13,PTC,Information Technology,BREAKOUT,PASS,66.2,0.571,0.982,0.995,0,,0.767,0.416,0.661,0.408,196,185.01,0.81,2027-02-09,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,PYPL,Financials,BREAKOUT,PASS,76.9,0.8,0.907,0.914,0.16,,0.767,0.554,0.953,0.493,59.28,55.6,1.4,2027-02-02,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,RMD,Health Care,REVERSAL,PASS,72.8,1,1,0.799,0.026,,1,0.267,0.906,0.725,239.53,223.86,1.06,2027-01-28,HALF,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-13,SJM,Consumer Staples,BREAKOUT,WATCH,85.8,1,0.995,0.969,1,,0.767,0.056,0.783,0.58,132.69,125.75,6,2026-11-24,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,SOLV,Health Care,BREAKOUT,WATCH,87.9,1,0.929,0.886,1,,0.767,,0.876,0.261,89.08,83.67,6,2027-02-25,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,SPG,Real Estate,BREAKOUT,WATCH,86.8,0.8,0.927,0.908,1,0.864,0.767,0.666,0.978,0.556,232.97,224.3,6,2027-02-01,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,STE,Health Care,REVERSAL,BUY,84.7,1,1,0.986,1,,0.8,0.252,0.967,0.556,264.32,249.66,5.49,2027-02-03,HALF,has stopped falling and is climbing again
+2026-11-13,STZ,Consumer Staples,BREAKOUT,PASS,60.9,1,0.599,0.542,0,,0.533,0.193,0.716,0.688,145.61,136.82,0.96,2027-01-07,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,SWKS,Information Technology,BREAKOUT,WATCH,73.2,0.571,0.91,0.953,1,,0.767,0.765,0.524,0.32,89.94,80.5,5.7,2027-02-02,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,TSCO,Consumer Discretionary,REVERSAL,PASS,71.4,0.8,0.825,0.589,0.949,,1,0.515,0.767,0.347,36.45,33.72,3.37,2027-01-28,HALF,has stopped falling and is climbing again; weaker business than most of its industry: a turnaround needs a strong company
+2026-11-13,UNP,Industrials,BREAKOUT,PASS,61.2,0.571,0.93,0.845,0,,0.767,0.311,0.569,0.6,302.44,288.67,0.81,2027-01-26,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,UPS,Industrials,BREAKOUT,PASS,59.9,0.571,0.721,0.847,0,,0.767,0.156,0.683,0.446,112.4,106.74,0.76,2027-01-26,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,VLO,Energy,PULLBACK,BUY,78.9,1,0.821,0.764,0.75,,0.304,0.683,0.94,0.668,379.83,341.5,5.16,2027-01-28,HALF,"dipped, then bounced back up this week"
+2026-11-13,WAB,Industrials,BREAKOUT,WATCH,70.2,0.571,0.718,0.786,1,,0.767,0.583,0.654,0.439,297.96,282.23,6,2027-02-10,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,WELL,Real Estate,BREAKOUT,WATCH,67.2,0.8,0.677,0.825,1,,0.767,0.697,0.223,0.456,244.46,232.64,6,2027-02-09,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,WTW,Financials,BREAKOUT,PASS,68.1,0.8,0.868,0.939,0,,0.767,0.734,0.554,0.443,335.34,317.08,0.83,2027-02-04,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,XEL,Utilities,BREAKOUT,WATCH,79.3,0.8,0.663,0.689,1,,1,0.49,0.919,0.415,81.61,78.29,6,2027-02-04,HALF,just under its 6-month high: buy if it closes above
+2026-11-13,YUM,Consumer Discretionary,BREAKOUT,PASS,64.8,0.8,0.658,0.723,0,,0.767,0.243,0.785,0.634,161.33,152.53,0.56,2027-02-03,HALF,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-13,ZBH,Health Care,BREAKOUT,PASS,67.2,1,0.706,0.889,0,,0.767,0.221,0.547,0.521,103.21,96.72,0.52,2027-02-10,HALF,broke above its 6-month high last week and is still close to it; too little room to rise: a past high is close overhead
+2026-11-13,ZBRA,Information Technology,PULLBACK,WATCH,63.5,0.571,0.869,0.767,0.596,,0.549,0.523,0.542,0.478,324,295.61,2.15,2027-02-09,HALF,dipping: wait for a week that closes higher
