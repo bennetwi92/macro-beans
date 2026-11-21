@@ -1,0 +1,53 @@
+week,t,sector,setup,status,total,market,stage,rs,structure,pattern,momentum,analogue,earnings,fundamental,close,stop,rr,next_earnings,budget,why
+2026-11-20,AAPL,Information Technology,PULLBACK,WATCH,59.9,0,0.874,0.932,0.938,,0.22,0.611,0.761,0.417,342.56,325.38,6,2027-01-28,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,ABNB,Consumer Discretionary,PULLBACK,WATCH,62,0.086,0.802,0.815,0.75,,0.431,,0.959,0.59,170.36,157.06,6,2027-02-11,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,AES,Utilities,BREAKOUT,BUY,71.8,0.286,0.965,0.701,1,,1,0.22,0.953,0.447,15.02,14.84,6,2027-03-01,DEFENSIVE,closed above its 6-month high this week
+2026-11-20,AMGN,Health Care,PULLBACK,WATCH,65.3,0.286,0.846,0.867,0.75,,0.287,0.53,0.953,0.568,435.64,409.23,6,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,APA,Energy,PULLBACK,WATCH,63,0.086,0.764,0.8,0.938,,0.394,0.34,0.953,0.765,45.03,41.09,6,2027-02-24,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,BLK,Financials,PULLBACK,PASS,51.4,0.086,0.764,0.688,0.25,,0.542,0.459,0.898,0.586,1101.72,1037.01,0.61,2027-01-14,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,COP,Energy,PULLBACK,WATCH,61.5,0.086,0.754,0.801,1,,0.4,0.438,0.835,0.555,136.12,126.78,6,2027-02-04,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,COST,Consumer Staples,BREAKOUT,BUY,64.1,0.286,0.709,0.813,1,,0.867,0.398,0.617,0.399,1102.15,1057.43,6,2026-12-10,DEFENSIVE,broke above its 6-month high last week and is still close to it
+2026-11-20,CRWD,Information Technology,PULLBACK,WATCH,53.8,0,0.859,0.733,0.875,,0.381,0.308,0.668,0.279,229.44,200.93,6,2026-12-01,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,CSX,Industrials,PULLBACK,WATCH,48.9,0,0.771,0.8,0.277,0.1,0.46,0.33,0.803,0.584,49.1,46.65,1.51,2027-01-28,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,CVX,Energy,PULLBACK,WATCH,61.6,0.086,0.782,0.77,1,,0.459,0.203,0.875,0.57,208.37,196.78,6,2027-01-29,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,DHR,Health Care,PULLBACK,PASS,55.9,0.286,0.788,0.882,0.256,,0.403,0.187,0.918,0.516,220.36,206.43,1.02,2027-01-27,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,DPZ,Consumer Discretionary,BREAKOUT,PASS,46.9,0.086,0.614,0.736,0.005,0.864,0.533,0.481,0.69,0.549,348.61,325.61,1.01,2027-02-22,DEFENSIVE,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-20,DXCM,Health Care,PULLBACK,PASS,54.9,0.286,0.787,0.809,0.125,,0.576,0.37,0.865,0.546,79.32,73.13,0.53,2027-02-11,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,EBAY,Consumer Discretionary,PULLBACK,PASS,45.5,0.086,0.794,0.697,0.133,,0.358,0.269,0.788,0.533,115.59,108.26,1.44,2027-02-24,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,EMR,Industrials,PULLBACK,PASS,46.8,0,0.749,0.837,0.365,,0.617,0.152,0.522,0.549,150.93,140.92,1.38,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,ERIE,Financials,REVERSAL,PASS,53.5,0.086,1,0.893,0.031,,1,0.639,0.696,0.458,272.43,252.9,1.08,2027-02-22,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-20,EXPD,Industrials,PULLBACK,WATCH,64,0,0.869,0.901,0.938,,0.245,0.736,0.953,0.588,192.56,182.79,6,2027-02-16,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,FAST,Industrials,PULLBACK,WATCH,58.5,0,0.76,0.866,1,,0.434,0.673,,0.528,50.61,47.77,6,2027-01-19,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,FDS,Financials,PULLBACK,WATCH,58.5,0.086,0.828,0.862,1,0.8,0.301,0.254,0.645,0.488,311.93,284.83,4.91,2026-12-17,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,GEHC,Health Care,REVERSAL,PASS,61.5,0.286,1,0.866,0.082,,1,,0.937,0.51,80.64,75.79,1.2,2027-02-03,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-20,GWW,Industrials,PULLBACK,PASS,43,0,0.82,0.776,0,,0.39,0,0.843,0.509,1357.35,1284.78,0.62,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,HCA,Health Care,REVERSAL,PASS,58.8,0.286,1,0.812,0.096,,1,,0.888,0.433,475.57,442.92,1.24,2027-01-26,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-20,HPQ,Information Technology,PULLBACK,PASS,50.2,0,0.799,0.696,0.355,0.864,0.57,0.738,0.764,0.311,27.96,24.93,1.35,2026-11-24,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,HST,Real Estate,PULLBACK,WATCH,50.2,0.086,0.832,0.894,0.151,,0.326,0.424,0.824,0.51,24.1,22.87,1.5,2027-02-17,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,HUM,Health Care,PULLBACK,PASS,57.9,0.286,0.937,0.79,0.125,,0.468,0.672,0.962,0.393,390,353.48,0.94,2027-02-10,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,ICE,Financials,REVERSAL,BUY,65.6,0.086,1,0.87,1,0.82,1,0.433,0.61,0.467,170,161.24,6,2027-02-04,DEFENSIVE,has stopped falling and is climbing again
+2026-11-20,IDXX,Health Care,REVERSAL,PASS,59.8,0.286,1,0.838,0.006,,0.8,0.558,0.86,0.665,676.21,632.98,1.01,2027-02-01,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-20,INCY,Health Care,PULLBACK,WATCH,62.4,0.286,0.783,0.819,0.592,,0.556,0.471,0.805,0.763,114.63,106.66,2.14,2027-02-09,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,IQV,Health Care,PULLBACK,WATCH,54.8,0.286,0.891,0.819,0.413,,0.479,0.307,0.585,0.434,245.82,227.89,1.96,2027-02-11,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,MET,Financials,PULLBACK,PASS,45.2,0.086,0.89,0.862,0.125,,0.432,0.177,0.519,0.466,95.67,90.83,0.91,2027-02-10,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,MPC,Energy,PULLBACK,WATCH,57.2,0.086,0.871,0.658,0.75,,0.503,0.65,0.661,0.618,367.19,330.11,6,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,MRK,Health Care,PULLBACK,PASS,59.6,0.286,0.789,0.81,0.25,0.1,0.624,0.662,0.94,0.503,133.72,124.69,0.71,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,MSFT,Information Technology,PULLBACK,PASS,47.3,0,0.83,0.822,0.193,,0.528,0.406,0.657,0.492,484.52,453.76,1.23,2027-01-27,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,NCLH,Consumer Discretionary,REVERSAL,PASS,45.5,0.086,0.934,0.475,0,,0.6,0.364,0.94,0.41,15.99,14.18,0.96,2027-03-01,DEFENSIVE,has stopped falling: wait for it to start climbing; too little room to rise: a past high is close overhead; weaker business than most of its industry: a turnaround needs a strong company
+2026-11-20,NDSN,Industrials,PULLBACK,WATCH,50.5,0,0.771,0.862,0.507,,0.543,0.532,,0.549,307.22,290.98,1.86,2026-12-09,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,ORLY,Consumer Discretionary,REVERSAL,PASS,53.5,0.086,0.976,0.686,0,0.82,1,0.758,0.704,0.562,92.65,88.04,0.85,2027-02-10,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-20,PRU,Financials,PULLBACK,WATCH,55.8,0.086,0.844,0.886,0.458,,0.394,0.286,0.953,0.326,117.73,111.95,1.69,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,PSX,Energy,PULLBACK,WATCH,63.8,0.086,0.876,0.733,0.75,,0.492,1,0.937,0.547,239.33,219.44,6,2027-02-03,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,PYPL,Financials,PULLBACK,WATCH,57.8,0.086,0.764,0.788,0.518,,0.611,0.477,0.934,0.501,53.29,49.4,2.31,2027-02-02,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,RMD,Health Care,REVERSAL,PASS,63.3,0.286,1,0.807,0.133,,1,0.267,0.889,0.716,235.63,220.17,1.33,2027-01-28,DEFENSIVE,has stopped falling and is climbing again; too little room to rise: a past high is close overhead
+2026-11-20,SJM,Consumer Staples,BREAKOUT,WATCH,71.3,0.286,1,0.974,1,,0.767,0.056,0.764,0.58,133.68,126.77,6,2026-11-24,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-11-20,SOLV,Health Care,PULLBACK,WATCH,58.8,0.286,0.815,0.837,0.392,0.1,0.522,,0.861,0.263,84.5,79.07,1.68,2027-02-25,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,TGT,Consumer Staples,BREAKOUT,WATCH,77.1,0.286,0.697,0.953,1,,1,0.563,0.995,0.52,165.83,156.13,5.91,2027-03-03,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-11-20,TSCO,Consumer Discretionary,REVERSAL,PASS,56.6,0.086,0.89,0.6,0.643,,1,0.515,0.755,0.343,38.44,35.67,2.61,2027-01-28,DEFENSIVE,has stopped falling and is climbing again; weaker business than most of its industry: a turnaround needs a strong company
+2026-11-20,TSN,Consumer Staples,BREAKOUT,WATCH,60.1,0.286,0.625,0.727,1,,1,0.332,0.489,0.433,65.12,60.45,4.47,2027-02-08,DEFENSIVE,just under its 6-month high: buy if it closes above
+2026-11-20,UNP,Industrials,PULLBACK,WATCH,45.5,0,0.796,0.77,0.353,0.1,0.476,0.1,0.566,0.598,287.29,273.05,1.76,2027-01-26,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,VEEV,Health Care,PULLBACK,PASS,56.6,0.286,0.928,0.756,0.284,,0.443,0.815,0.652,0.614,266.22,244,1.32,2026-11-25,DEFENSIVE,dipping: wait for a week that closes higher; too little room to rise: a past high is close overhead
+2026-11-20,VLO,Energy,PULLBACK,WATCH,60.5,0.086,0.789,0.632,0.75,,0.588,0.636,0.92,0.678,334.18,300.27,6,2027-01-28,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,WDAY,Information Technology,PULLBACK,WATCH,46.5,0,0.822,0.649,0.407,,0.605,0.106,0.64,0.433,174.52,156.01,1.94,2026-11-24,DEFENSIVE,dipping: wait for a week that closes higher
+2026-11-20,XEL,Utilities,BREAKOUT,PASS,59.5,0.286,0.664,0.795,0,,0.867,0.49,0.902,0.408,79.3,75.97,0.87,2027-02-04,DEFENSIVE,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
+2026-11-20,YUM,Consumer Discretionary,BREAKOUT,PASS,52.5,0.086,0.663,0.835,0,,0.767,0.243,0.773,0.627,160.7,152,0.69,2027-02-03,DEFENSIVE,just under its 6-month high: buy if it closes above; too little room to rise: a past high is close overhead
